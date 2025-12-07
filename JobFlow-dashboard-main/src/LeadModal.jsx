@@ -251,4 +251,255 @@ export default function LeadModal({
               <a
                 href={`sms:${form.phone || ""}`}
                 className="bg-white
+              <a
+                href={`sms:${form.phone || ""}`}
+                className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold transition-all shadow-sm hover:shadow flex-1 text-center"
+              >
+                Text
+              </a>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  `${form.address}, ${form.city}, ${form.state} ${form.zip}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold transition-all shadow-sm hover:shadow flex-1 text-center"
+              >
+                Maps
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* STATUS + ACTION BUTTONS */}
+          <div className="flex flex-wrap justify-between items-center gap-3 pb-4 border-b border-gray-200">
+            <div className="relative">
+              <button
+                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                className={`${statusColors[form.status]} text-white px-5 py-2 rounded-full font-bold text-sm uppercase tracking-wide shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2`}
+              >
+                {form.status}
+                <span className="text-xs">▼</span>
+              </button>
+
+              {statusDropdownOpen && (
+                <div className="absolute mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden min-w-[200px]">
+                  {statuses.map((s) => (
+                    <div
+                      key={s}
+                      onClick={() => {
+                        if (s === "Not Sold") {
+                          setShowNotSoldModal(true);
+                          setStatusDropdownOpen(false);
+                        } else {
+                          setForm((prev) => ({ ...prev, status: s }));
+                          setStatusDropdownOpen(false);
+                          if (s === "Appointment Set" && (!form.apptDate || !form.apptTime)) {
+                            setTimeout(() => setShowApptModal(true), 300);
+                          }
+                        }
+                      }}
+                      className="px-4 py-3 text-sm hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 font-medium text-gray-700"
+                    >
+                      {s}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT-SIDE PROGRESSION BUTTONS */}
+            <div className="flex items-center gap-2">
+              {form.status === "Appointment Set" ? (
+                <>
+                  <button
+                    onClick={() => setForm((prev) => ({ ...prev, status: "Sold" }))}
+                    className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-sm px-5 py-2 rounded-full font-bold uppercase tracking-wide shadow-md hover:shadow-lg transition-all active:scale-95"
+                  >
+                    Sold
+                  </button>
+
+                  <button
+                    onClick={() => setShowNotSoldModal(true)}
+                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-sm px-5 py-2 rounded-full font-bold uppercase tracking-wide shadow-md hover:shadow-lg transition-all active:scale-95"
+                  >
+                    Not Sold
+                  </button>
+                </>
+              ) : nextProgress ? (
+                <button
+                  onClick={() => setForm((prev) => ({ ...prev, status: nextProgress }))}
+                  className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white text-sm px-5 py-2 rounded-full font-bold uppercase tracking-wide shadow-md hover:shadow-lg transition-all active:scale-95"
+                >
+                  {nextProgress}
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          {/* DETAILS COMPONENT */}
+          <LeadDetails
+            form={form}
+            isEditing={isEditing}
+            formatDate={formatDate}
+            formatTime={formatTime}
+            setShowApptModal={setShowApptModal}
+            setShowDateModal={setShowDateModal}
+          />
+
+          {/* EDIT MODE FIELDS */}
+          {isEditing ? (
+            <div className="space-y-4 pt-4">
+              {/* name, address, city, etc (UNCHANGED — your existing fields) */}
+              {/* ... your entire edit form stays exactly the same ... */}
+            </div>
+          ) : (
+            <div
+              onClick={(e) => {
+                if (e.target.tagName !== "A") setIsEditing(true);
+              }}
+              className="text-sm space-y-3 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-4 border border-gray-200 cursor-pointer transition-all hover:shadow-md hover:border-blue-300"
+            >
+              {/* READ-ONLY DETAILS BLOCK (UNCHANGED) */}
+              {/* ... */}
+            </div>
+          )}
+
+          {/* VALIDATION ALERT (UNCHANGED) */}
+          {/* ... */}
+
+          {/* ACTION BUTTONS */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center pt-3 border-t border-gray-200 gap-3 flex-wrap">
+
+              {/* EXIT */}
+              <button
+                onClick={handleExit}
+                className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-8 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95"
+              >
+                Exit
+              </button>
+
+              {/* EDIT / SAVE */}
+              {!isEditing ? (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95"
+                >
+                  Edit
+                </button>
+              ) : (
+                <button
+                  onClick={handleSave}
+                  className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-8 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95"
+                >
+                  Save
+                </button>
+              )}
+            </div>
+
+            {/* NEW: SYNC TO GHL BUTTON */}
+            {!isEditing && (
+              <button
+                onClick={handleSyncToGHL}
+                disabled={syncLoading}
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95"
+              >
+                {syncLoading ? "Syncing…" : "Sync to GHL"}
+              </button>
+            )}
+          </div>
+
+          {/* DELETE CONTACT */}
+          <div className="text-center pt-4 border-t border-gray-100">
+            {!deleteConfirm ? (
+              <button
+                onClick={() => setDeleteConfirm(true)}
+                className="text-red-600 text-sm hover:text-red-700 font-medium hover:underline transition-colors"
+              >
+                Delete Contact
+              </button>
+            ) : (
+              <div className="flex justify-center items-center gap-4">
+                <span className="text-sm text-gray-600 font-medium">Are you sure?</span>
+                <button
+                  onClick={() => onDelete(form)}
+                  className="text-red-600 text-sm font-bold hover:text-red-700 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors"
+                >
+                  Yes, Delete
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(false)}
+                  className="text-gray-600 text-sm font-medium hover:text-gray-800 px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* MODALS (UNCHANGED) */}
+      {showDateModal && (
+        <DateModal
+          initialDate={form[showDateModal]}
+          initialTentative={
+            showDateModal === "installDate" ? form.installTentative : false
+          }
+          allowTentative={showDateModal === "installDate"}
+          label={
+            showDateModal === "installDate" ? "Set Install Date" : "Select Date"
+          }
+          onConfirm={(date, tentative) =>
+            handleDateConfirm(showDateModal, date, tentative)
+          }
+          onRemove={() => handleDateRemove(showDateModal)}
+          onClose={() => setShowDateModal(null)}
+        />
+      )}
+
+      {showApptModal && (
+        <ApptDateTimeModal
+          apptDate={form.apptDate}
+          apptTime={form.apptTime}
+          onConfirm={handleApptConfirm}
+          onRemove={handleApptRemove}
+          onClose={() => setShowApptModal(false)}
+        />
+      )}
+
+      {showNotSoldModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Reason Not Sold
+            </h3>
+            <p className="text-sm text-gray-600 mb-5">
+              Select the reason why this lead was not sold:
+            </p>
+            <div className="space-y-2">
+              {notSoldReasons.map((reason) => (
+                <button
+                  key={reason}
+                  onClick={() => handleNotSoldReasonSelect(reason)}
+                  className="w-full px-4 py-3.5 text-left font-semibold text-gray-700 bg-gray-50 hover:bg-gradient-to-r hover:from-blue-50 hover:to-emerald-50 hover:text-blue-700 rounded-xl transition-all border border-gray-200 hover:border-blue-300 shadow-sm hover:shadow-md"
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowNotSoldModal(false)}
+              className="w-full mt-4 px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 

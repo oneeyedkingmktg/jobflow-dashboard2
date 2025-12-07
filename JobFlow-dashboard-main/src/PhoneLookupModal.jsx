@@ -1,147 +1,170 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+import { GHLAPI } from "./api";
+import { AuthContext } from "./AuthContext";
 
-export default function PhoneLookupModal({ leads, onCreateNew, onEditExisting, onClose }) {
+export default function PhoneLookupModal({
+  leads,
+  onCreateNew,
+  onEditExisting,
+  onClose,
+}) {
+  const { activeCompany } = useContext(AuthContext);
   const [phoneInput, setPhoneInput] = useState("");
   const [lookupResult, setLookupResult] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const formatPhoneNumber = (value) => {
     if (!value) return value;
-    const phoneNumber = value.replace(/[^\d]/g, '');
-    const phoneNumberLength = phoneNumber.length;
-    if (phoneNumberLength < 4) return phoneNumber;
-    if (phoneNumberLength < 7) {
-      return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
-    }
+    const phoneNumber = value.replace(/[^\d]/g, "");
+    const len = phoneNumber.length;
+    if (len < 4) return phoneNumber;
+    if (len < 7) return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
     return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
   };
 
-  const normalizePhone = (phone) => {
-    return phone.replace(/[^\d]/g, '');
+  const cleanPhone = (value) => {
+    if (!value) return "";
+    return value.replace(/[^\d]/g, "");
   };
 
-  const handlePhoneChange = (e) => {
-    const formatted = formatPhoneNumber(e.target.value);
-    setPhoneInput(formatted);
-    setHasSearched(false);
-    setLookupResult(null);
-  };
+  const handleSearch = async () => {
+    const cleaned = cleanPhone(phoneInput);
+    if (!cleaned) return;
 
-  const handleLookup = () => {
-    const normalizedInput = normalizePhone(phoneInput);
-    
-    if (normalizedInput.length < 10) {
-      alert("Please enter a valid 10-digit phone number");
-      return;
+    setLoading(true);
+    setHasSearched(true);
+
+    // Local search of existing JobFlow leads
+    const localMatches = leads.filter((lead) =>
+      lead.phone_number?.replace(/[^\d]/g, "").includes(cleaned)
+    );
+
+    // If no local result, call GHL API
+    let ghlMatch = null;
+    try {
+      if (activeCompany?.id) {
+        const response = await GHLAPI.searchByPhone(cleaned, activeCompany.id);
+        if (response?.contacts?.length > 0) {
+          ghlMatch = response.contacts[0];
+        }
+      }
+    } catch (_) {
+      // silent fail — UI still works
     }
 
-    // Search for matching phone number in leads
-    const matchingLead = leads.find(lead => {
-      const normalizedLeadPhone = normalizePhone(lead.phone || "");
-      return normalizedLeadPhone === normalizedInput;
+    setLookupResult({
+      localMatches,
+      ghlMatch,
     });
 
-    setLookupResult(matchingLead);
-    setHasSearched(true);
+    setLoading(false);
   };
 
   const handleProceed = () => {
-    if (lookupResult) {
-      // Lead exists - open in edit mode
-      onEditExisting(lookupResult);
-    } else {
-      // Lead doesn't exist - create new with phone pre-filled
-      onCreateNew(phoneInput);
+    if (!lookupResult) return;
+
+    // Prefer local match first
+    if (lookupResult.localMatches?.length > 0) {
+      onEditExisting(lookupResult.localMatches[0]);
+      return;
     }
+
+    // GHL match → prefill new lead
+    if (lookupResult.ghlMatch) {
+      const c = lookupResult.ghlMatch;
+      const newLeadData = {
+        first_name: c.firstName || "",
+        last_name: c.lastName || "",
+        phone_number: c.phone || "",
+        email: c.email || "",
+        source: "Imported from GHL",
+      };
+      onCreateNew(newLeadData);
+      return;
+    }
+
+    // No match anywhere → new blank lead
+    onCreateNew({ phone_number: phoneInput });
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-slide-up">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-6">
-          <h2 className="text-2xl font-bold text-white">Phone Number Lookup</h2>
-          <p className="text-blue-100 text-sm mt-1">Check if lead already exists</p>
-        </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
+        <button
+          className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+          onClick={onClose}
+        >
+          ✕
+        </button>
 
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Enter Phone Number
-            </label>
-            <input
-              type="tel"
-              value={phoneInput}
-              onChange={handlePhoneChange}
-              placeholder="(555) 123-4567"
-              className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all text-base"
-              autoFocus
-            />
-          </div>
+        <h2 className="text-xl font-bold mb-4 text-center">Phone Lookup</h2>
 
-          {hasSearched && (
-            <div className={`p-4 rounded-xl border-2 ${
-              lookupResult 
-                ? 'bg-yellow-50 border-yellow-400' 
-                : 'bg-green-50 border-green-400'
-            }`}>
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">{lookupResult ? '⚠️' : '✅'}</span>
-                <div className="flex-1">
-                  {lookupResult ? (
-                    <>
-                      <h4 className="font-bold text-yellow-800 mb-1">Lead Found!</h4>
-                      <p className="text-sm text-yellow-700 mb-2">
-                        This phone number is already in the system:
-                      </p>
-                      <div className="bg-white rounded-lg p-3 text-sm">
-                        <p className="font-semibold text-gray-900">{lookupResult.name || "No Name"}</p>
-                        <p className="text-gray-600">{lookupResult.email || "No Email"}</p>
-                        <p className="text-gray-600">{lookupResult.phone}</p>
-                        <p className="text-gray-600">Status: <span className="font-medium">{lookupResult.status}</span></p>
-                      </div>
-                      <p className="text-sm text-yellow-700 mt-2">
-                        Click <strong>Continue</strong> to edit this existing lead.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <h4 className="font-bold text-green-800 mb-1">No Match Found</h4>
-                      <p className="text-sm text-green-700">
-                        This phone number is not in the system. Click <strong>Continue</strong> to create a new lead.
-                      </p>
-                    </>
-                  )}
-                </div>
+        <input
+          type="text"
+          value={phoneInput}
+          placeholder="Enter phone number"
+          onChange={(e) => setPhoneInput(formatPhoneNumber(e.target.value))}
+          className="w-full border rounded-lg p-3 shadow-inner mb-4"
+        />
+
+        <button
+          onClick={handleSearch}
+          disabled={loading}
+          className="w-full bg-emerald-600 text-white py-2 rounded-lg shadow hover:bg-emerald-700"
+        >
+          {loading ? "Searching..." : "Search"}
+        </button>
+
+        {hasSearched && (
+          <div className="mt-6 space-y-4">
+            <h3 className="font-semibold text-lg">Results</h3>
+
+            {/* Local Results */}
+            {lookupResult?.localMatches?.length > 0 ? (
+              <div className="p-3 border rounded-lg bg-emerald-50">
+                <p className="font-semibold">Existing Lead Found</p>
+                <p>{lookupResult.localMatches[0].first_name} {lookupResult.localMatches[0].last_name}</p>
+                <p>{lookupResult.localMatches[0].phone_number}</p>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="p-3 border rounded-lg bg-gray-50">
+                <p>No existing leads found.</p>
+              </div>
+            )}
 
-          <div className="flex gap-3 pt-4">
+            {/* GHL Result */}
+            {lookupResult?.ghlMatch ? (
+              <div className="p-3 border rounded-lg bg-indigo-50">
+                <p className="font-semibold">GHL Contact Found</p>
+                <p>{lookupResult.ghlMatch.firstName} {lookupResult.ghlMatch.lastName}</p>
+                <p>{lookupResult.ghlMatch.phone}</p>
+                <p>{lookupResult.ghlMatch.email}</p>
+              </div>
+            ) : (
+              <div className="p-3 border rounded-lg bg-gray-50">
+                <p>No GHL contact found.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {hasSearched && (
+          <div className="mt-6 flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-6 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95"
+              className="flex-1 bg-gray-200 text-gray-700 py-2 rounded shadow hover:bg-gray-300"
             >
               Cancel
             </button>
-            
-            {!hasSearched ? (
-              <button
-                onClick={handleLookup}
-                disabled={!phoneInput || normalizePhone(phoneInput).length < 10}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Search
-              </button>
-            ) : (
-              <button
-                onClick={handleProceed}
-                className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-6 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95"
-              >
-                Continue
-              </button>
-            )}
+            <button
+              onClick={handleProceed}
+              className="flex-1 bg-emerald-600 text-white py-2 rounded shadow hover:bg-emerald-700"
+            >
+              Continue
+            </button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

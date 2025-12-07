@@ -1,7 +1,7 @@
 // =============================================================================
 // API Configuration
 // =============================================================================
-// FORCE REBUILD - Cache bust v1.0
+// FORCE REBUILD - Cache bust v1.1
 
 const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com/api';
 
@@ -15,61 +15,118 @@ export const apiRequest = async (endpoint, options = {}) => {
       ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
+    ...options,
   };
 
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...defaultOptions,
-      ...options,
-    });
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, defaultOptions);
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'API Error');
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Unknown error');
+    throw new Error(errorText || 'API request failed');
   }
+
+  return response.json().catch(() => ({}));
 };
 
-// Auth API calls
-export const authAPI = {
-  login: async (email, password) =>
+// =============================================================================
+// AUTH
+// =============================================================================
+
+export const AuthAPI = {
+  login: (email, password) =>
     apiRequest('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+};
 
-  getCurrentUser: async () => apiRequest('/auth/verify'),
+// =============================================================================
+// USERS
+// =============================================================================
 
-  logout: async () =>
-    apiRequest('/auth/logout', {
-      method: 'POST',
+export const UsersAPI = {
+  getAll: () => apiRequest('/users'),
+  get: (id) => apiRequest(`/users/${id}`),
+  update: (id, data) =>
+    apiRequest(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
     }),
 };
 
-// Leads API calls
-export const leadsAPI = {
-  getAll: async () => apiRequest('/leads'),
+// =============================================================================
+// COMPANIES
+// =============================================================================
 
-  create: async (leadData) =>
+export const CompaniesAPI = {
+  create: (data) =>
+    apiRequest('/companies', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  get: (id) => apiRequest(`/companies/${id}`),
+
+  update: (id, data) =>
+    apiRequest(`/companies/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+};
+
+// =============================================================================
+// LEADS
+// =============================================================================
+
+export const LeadsAPI = {
+  getAll: () => apiRequest('/leads'),
+  get: (id) => apiRequest(`/leads/${id}`),
+
+  create: (leadData) =>
     apiRequest('/leads', {
       method: 'POST',
       body: JSON.stringify(leadData),
     }),
 
-  update: async (id, leadData) =>
+  update: (id, leadData) =>
     apiRequest(`/leads/${id}`, {
       method: 'PUT',
       body: JSON.stringify(leadData),
     }),
 
-  delete: async (id) =>
+  delete: (id) =>
     apiRequest(`/leads/${id}`, {
       method: 'DELETE',
+    }),
+};
+
+// =============================================================================
+// GHL (NEW)
+// =============================================================================
+
+export const GHLAPI = {
+  searchByPhone: (phone, companyId) =>
+    apiRequest(`/ghl/search-by-phone?phone=${encodeURIComponent(phone)}`, {
+      method: 'GET',
+      headers: {
+        'x-company-id': companyId,
+      },
+    }),
+
+  syncLead: (leadData, companyId) =>
+    apiRequest('/ghl/sync-lead', {
+      method: 'POST',
+      headers: {
+        'x-company-id': companyId,
+      },
+      body: JSON.stringify(leadData),
+    }),
+
+  getContact: (contactId, companyId) =>
+    apiRequest(`/ghl/contact/${contactId}`, {
+      method: 'GET',
+      headers: {
+        'x-company-id': companyId,
+      },
     }),
 };

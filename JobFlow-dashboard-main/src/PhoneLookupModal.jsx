@@ -13,6 +13,7 @@ export default function PhoneLookupModal({
   const [lookupResult, setLookupResult] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedResult, setSelectedResult] = useState(null); // NEW
 
   const formatPhoneNumber = (value) => {
     if (!value) return value;
@@ -35,12 +36,10 @@ export default function PhoneLookupModal({
     setLoading(true);
     setHasSearched(true);
 
-    // Local search of existing JobFlow leads
     const localMatches = leads.filter((lead) =>
       lead.phone_number?.replace(/[^\d]/g, "").includes(cleaned)
     );
 
-    // If no local result, call GHL API
     let ghlMatch = null;
     try {
       if (activeCompany?.id) {
@@ -49,28 +48,25 @@ export default function PhoneLookupModal({
           ghlMatch = response.contacts[0];
         }
       }
-    } catch (_) {
-      // silent fail — UI still works
-    }
+    } catch (_) {}
 
     setLookupResult({
       localMatches,
       ghlMatch,
     });
 
+    setSelectedResult(null);
     setLoading(false);
   };
 
   const handleProceed = () => {
     if (!lookupResult) return;
 
-    // Prefer local match first
     if (lookupResult.localMatches?.length > 0) {
       onEditExisting(lookupResult.localMatches[0]);
       return;
     }
 
-    // GHL match → prefill new lead
     if (lookupResult.ghlMatch) {
       const c = lookupResult.ghlMatch;
       const newLeadData = {
@@ -78,14 +74,49 @@ export default function PhoneLookupModal({
         last_name: c.lastName || "",
         phone_number: c.phone || "",
         email: c.email || "",
+        address: c.address1 || "",
+        city: c.city || "",
+        state: c.state || "",
+        zip: c.postalCode || "",
         source: "Imported from GHL",
       };
       onCreateNew(newLeadData);
       return;
     }
 
-    // No match anywhere → new blank lead
     onCreateNew({ phone_number: phoneInput });
+  };
+
+  const renderGHLPreview = (c) => {
+    if (!selectedResult) return null;
+
+    return (
+      <div className="mt-3 p-3 border rounded-lg bg-white shadow-inner animate-fade-in">
+        <p className="font-bold text-gray-800 mb-2">Details</p>
+
+        {c.email && <p className="text-sm"><span className="font-semibold">Email:</span> {c.email}</p>}
+        {c.address1 && <p className="text-sm"><span className="font-semibold">Address:</span> {c.address1}</p>}
+        {c.city && <p className="text-sm"><span className="font-semibold">City:</span> {c.city}</p>}
+        {c.state && <p className="text-sm"><span className="font-semibold">State:</span> {c.state}</p>}
+        {c.postalCode && <p className="text-sm"><span className="font-semibold">ZIP:</span> {c.postalCode}</p>}
+
+        {Array.isArray(c.tags) && c.tags.length > 0 && (
+          <div className="mt-2">
+            <p className="font-semibold text-sm mb-1">Tags:</p>
+            <div className="flex flex-wrap gap-2">
+              {c.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -122,9 +153,17 @@ export default function PhoneLookupModal({
 
             {/* Local Results */}
             {lookupResult?.localMatches?.length > 0 ? (
-              <div className="p-3 border rounded-lg bg-emerald-50">
+              <div
+                className="p-3 border rounded-lg bg-emerald-50 cursor-pointer"
+                onClick={() => {
+                  setSelectedResult(null);
+                }}
+              >
                 <p className="font-semibold">Existing Lead Found</p>
-                <p>{lookupResult.localMatches[0].first_name} {lookupResult.localMatches[0].last_name}</p>
+                <p>
+                  {lookupResult.localMatches[0].first_name}{" "}
+                  {lookupResult.localMatches[0].last_name}
+                </p>
                 <p>{lookupResult.localMatches[0].phone_number}</p>
               </div>
             ) : (
@@ -135,11 +174,27 @@ export default function PhoneLookupModal({
 
             {/* GHL Result */}
             {lookupResult?.ghlMatch ? (
-              <div className="p-3 border rounded-lg bg-indigo-50">
+              <div
+                className="p-3 border rounded-lg bg-indigo-50 cursor-pointer"
+                onClick={() =>
+                  setSelectedResult(
+                    selectedResult ? null : lookupResult.ghlMatch
+                  )
+                }
+              >
                 <p className="font-semibold">GHL Contact Found</p>
-                <p>{lookupResult.ghlMatch.firstName} {lookupResult.ghlMatch.lastName}</p>
+                <p>
+                  {lookupResult.ghlMatch.firstName}{" "}
+                  {lookupResult.ghlMatch.lastName}
+                </p>
                 <p>{lookupResult.ghlMatch.phone}</p>
-                <p>{lookupResult.ghlMatch.email}</p>
+                {lookupResult.ghlMatch.email && (
+                  <p className="text-sm text-gray-700">
+                    {lookupResult.ghlMatch.email}
+                  </p>
+                )}
+
+                {selectedResult && renderGHLPreview(lookupResult.ghlMatch)}
               </div>
             ) : (
               <div className="p-3 border rounded-lg bg-gray-50">

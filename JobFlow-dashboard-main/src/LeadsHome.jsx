@@ -37,6 +37,7 @@ const convertLeadFromBackend = (lead) => {
 
 export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   const { currentCompany } = useCompany();
+
   const [leads, setLeads] = useState([]);
   const [activeTab, setActiveTab] = useState("Leads");
   const [selectedLead, setSelectedLead] = useState(null);
@@ -49,19 +50,13 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   const lastFetchedCompanyId = useRef(null);
   const isFetching = useRef(false);
 
-  // Fetch leads from backend on mount
+  // Fetch leads from backend
   useEffect(() => {
     const fetchLeads = async () => {
       try {
         setLoading(true);
-        console.log('Fetching leads from backend...');
         const response = await apiRequest('/leads');
-        console.log('Raw backend response:', response);
-        
-        // Convert all leads from snake_case to camelCase
         const convertedLeads = (response.leads || []).map(convertLeadFromBackend);
-        console.log('Converted leads:', convertedLeads);
-        
         setLeads(convertedLeads);
       } catch (error) {
         console.error('Error fetching leads:', error);
@@ -84,6 +79,34 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     setIsNewLead(true);
   };
 
+  const handleCreateNewFromLookup = (newLeadData) => {
+    // Map GHL → LeadModal format
+    const mapped = {
+      id: null,
+      name: `${newLeadData.first_name || ""} ${newLeadData.last_name || ""}`.trim(),
+      phone: newLeadData.phone_number || "",
+      email: newLeadData.email || "",
+      address: newLeadData.address || "",
+      city: newLeadData.city || "",
+      state: newLeadData.state || "",
+      zip: newLeadData.zip || "",
+      buyerType: "",
+      companyName: "",
+      projectType: "",
+      leadSource: newLeadData.source || "Imported",
+      status: "Lead",
+      notSoldReason: "",
+      contractPrice: "",
+      apptDate: "",
+      preferredContact: "",
+      notes: ""
+    };
+
+    setSelectedLead(mapped);
+    setIsNewLead(true);
+    setShowPhoneLookup(false);
+  };
+
   const handleCloseModal = () => {
     setSelectedLead(null);
     setIsNewLead(false);
@@ -91,9 +114,6 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
 
   const handleSaveLead = async (updatedLead) => {
     try {
-      console.log('Frontend lead data (camelCase):', updatedLead);
-      
-      // Convert camelCase to snake_case for backend
       const backendLead = {
         name: updatedLead.name || '',
         phone: updatedLead.phone || '',
@@ -108,46 +128,34 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         lead_source: updatedLead.leadSource || '',
         status: (updatedLead.status || 'Lead').toLowerCase().replace(/\s+/g, '_'),
         not_sold_reason: updatedLead.notSoldReason || '',
-        contract_price: updatedLead.contractPrice && !isNaN(parseFloat(updatedLead.contractPrice)) 
-          ? parseFloat(updatedLead.contractPrice) 
+        contract_price: updatedLead.contractPrice && !isNaN(parseFloat(updatedLead.contractPrice))
+          ? parseFloat(updatedLead.contractPrice)
           : null,
         appointment_date: updatedLead.apptDate || null,
         preferred_contact: updatedLead.preferredContact || '',
         notes: updatedLead.notes || ''
       };
 
-      console.log('Backend format (snake_case):', backendLead);
-
       if (isNewLead) {
-        // Create new lead
         const response = await apiRequest('/leads', {
           method: 'POST',
           body: JSON.stringify(backendLead),
         });
-        console.log('Backend response:', response.lead);
-        
-        // Convert backend response to camelCase and add to state
-        const convertedLead = convertLeadFromBackend(response.lead);
-        console.log('Converted new lead:', convertedLead);
-        setLeads(prevLeads => [...prevLeads, convertedLead]);
+
+        const converted = convertLeadFromBackend(response.lead);
+        setLeads(prev => [...prev, converted]);
       } else {
-        // Update existing lead
         const response = await apiRequest(`/leads/${updatedLead.id}`, {
           method: 'PUT',
           body: JSON.stringify(backendLead),
         });
-        console.log('Backend response:', response.lead);
-        
-        // Convert backend response to camelCase and update state
-        const convertedLead = convertLeadFromBackend(response.lead);
-        console.log('Converted updated lead:', convertedLead);
-        setLeads(prevLeads =>
-          prevLeads.map(lead =>
-            lead.id === updatedLead.id ? convertedLead : lead
-          )
+
+        const converted = convertLeadFromBackend(response.lead);
+        setLeads(prev =>
+          prev.map(lead => lead.id === updatedLead.id ? converted : lead)
         );
       }
-      
+
       handleCloseModal();
     } catch (error) {
       console.error('Error saving lead:', error);
@@ -157,11 +165,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
 
   const handleDeleteLead = async (leadToDelete) => {
     try {
-      await apiRequest(`/leads/${leadToDelete.id}`, {
-        method: 'DELETE',
-      });
-      
-      setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadToDelete.id));
+      await apiRequest(`/leads/${leadToDelete.id}`, { method: 'DELETE' });
+
+      setLeads(prev => prev.filter(l => l.id !== leadToDelete.id));
       handleCloseModal();
     } catch (error) {
       console.error('Error deleting lead:', error);
@@ -269,6 +275,16 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                     transition-all duration-200 shadow-sm"
                 />
               </div>
+
+              <button
+                onClick={() => setShowPhoneLookup(true)}
+                className="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 
+                  text-white rounded-xl font-semibold shadow-lg hover:shadow-xl 
+                  transform hover:scale-105 transition-all duration-200"
+              >
+                Phone Lookup
+              </button>
+
               <button
                 onClick={handleAddLead}
                 className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 
@@ -304,7 +320,10 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                   >
                     <h3 className="text-lg font-bold text-gray-900">{lead.name}</h3>
                     <p className="text-gray-600 mt-1">{lead.phone}</p>
-                    {lead.email && <p className="text-gray-500 text-sm">{lead.email}</p>}
+                    {lead.email && (
+                      <p className="text-gray-500 text-sm">{lead.email}</p>
+                    )}
+
                     {lead.projectType && (
                       <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 
                         rounded-full text-xs font-medium">
@@ -332,6 +351,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
       {showPhoneLookup && (
         <PhoneLookupModal
           onClose={() => setShowPhoneLookup(false)}
+          onCreateNew={handleCreateNewFromLookup}
           onSelectLead={handleLeadClick}
         />
       )}

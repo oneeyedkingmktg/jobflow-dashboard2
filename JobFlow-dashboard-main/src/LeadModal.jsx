@@ -13,92 +13,50 @@ export default function LeadModal({
   onSave,
   onDelete,
   fromView,
-  leadSource,
 }) {
   const { user } = useAuth();
   const { currentCompany } = useCompany();
 
-  /* =========================================================================
-     FORM MODEL — MATCHES DATABASE 1:1
-     ========================================================================= */
+  // ===============================================================
+  // STATE
+  // ===============================================================
   const [form, setForm] = useState({
     id: lead?.id || null,
-    company_id: lead?.company_id || currentCompany?.id || null,
-    created_by_user_id: lead?.created_by_user_id || user?.id || null,
-
-    // Core identity
     name: lead?.name || "",
-    full_name: lead?.full_name || "",
     first_name: lead?.first_name || "",
     last_name: lead?.last_name || "",
-
-    // Contact info
+    full_name: lead?.full_name || "",
     phone: lead?.phone || "",
     email: lead?.email || "",
-
-    // Address
     address: lead?.address || "",
     city: lead?.city || "",
     state: lead?.state || "",
     zip: lead?.zip || "",
-
-    // Buyer/company
     buyer_type: lead?.buyer_type || "",
     company_name: lead?.company_name || "",
     project_type: lead?.project_type || "",
-
-    lead_source: lead?.lead_source || leadSource || "",
+    lead_source: lead?.lead_source || "",
     referral_source: lead?.referral_source || "",
-
-    // Status
     status: lead?.status || "Lead",
     not_sold_reason: lead?.not_sold_reason || "",
     contract_price: lead?.contract_price || "",
     preferred_contact: lead?.preferred_contact || "",
     notes: lead?.notes || "",
-
-    // Appointment (split into date + time for UI)
-    apptDate: lead?.appointment_date
-      ? lead.appointment_date.split("T")[0]
-      : "",
-    apptTime: lead?.appointment_date
-      ? lead.appointment_date.split("T")[1]?.substring(0, 5)
-      : "",
-
-    // Install fields
+    appointment_date: lead?.appointment_date || "",
     install_date: lead?.install_date || "",
     install_tentative: lead?.install_tentative || false,
   });
 
-  /* =========================================================================
-     STATE
-     ========================================================================= */
-  const [isEditing, setIsEditing] = useState(lead?.isNew || false);
+  const [isEditing, setIsEditing] = useState(lead?.id ? false : true);
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
-  const [showValidationModal, setShowValidationModal] = useState(false);
   const [showNotSoldModal, setShowNotSoldModal] = useState(false);
   const [previousStatus, setPreviousStatus] = useState(lead?.status || "Lead");
 
-  /* =========================================================================
-     EFFECTS
-     ========================================================================= */
-  useEffect(() => {
-    if (form.status !== previousStatus) {
-      if (form.status === "Appointment Set" && previousStatus !== "Appointment Set") {
-        setShowApptModal(true);
-      } else if (form.status === "Sold" && previousStatus !== "Sold") {
-        setShowDateModal("install_date");
-      }
-      setPreviousStatus(form.status);
-    }
-  }, [form.status, previousStatus]);
-
-  /* =========================================================================
-     STATIC VALUES
-     ========================================================================= */
+  // ===============================================================
+  // STATUS HANDLING
+  // ===============================================================
   const statuses = ["Lead", "Appointment Set", "Sold", "Not Sold", "Completed"];
   const statusColors = {
     Lead: "bg-slate-500",
@@ -115,179 +73,158 @@ export default function LeadModal({
     "Going with Another Contractor",
   ];
 
-  /* =========================================================================
-     HELPERS
-     ========================================================================= */
+  const getNextProgression = () => {
+    switch (form.status) {
+      case "Lead":
+        return "Appointment Set";
+      case "Appointment Set":
+        return "Sold";
+      case "Sold":
+        return "Completed";
+      default:
+        return null;
+    }
+  };
+
+  // Show appointment modal when status changes to Appointment Set
+  useEffect(() => {
+    if (form.status !== previousStatus) {
+      if (form.status === "Appointment Set" && previousStatus !== "Appointment Set") {
+        setShowApptModal(true);
+      }
+      if (form.status === "Sold" && previousStatus !== "Sold") {
+        setShowDateModal("install_date");
+      }
+      setPreviousStatus(form.status);
+    }
+  }, [form.status, previousStatus]);
+
+  // ===============================================================
+  // UTILITIES
+  // ===============================================================
+  const parseName = (fullName) => {
+    if (!fullName) return { first_name: "", last_name: "" };
+    const parts = fullName.trim().split(" ");
+    const first_name = parts.shift() || "";
+    const last_name = parts.join(" ");
+    return { first_name, last_name };
+  };
+
+  const formatPhoneNumber = (value) => {
+    if (!value) return value;
+    const digits = value.replace(/[^\d]/g, "");
+    if (digits.length < 4) return digits;
+    if (digits.length < 7)
+      return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  };
+
+  const handlePhoneChange = (value) => {
+    const formatted = formatPhoneNumber(value);
+    handleChange("phone", formatted);
+  };
+
   const handleChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const formatDate = (value) => {
     if (!value) return "Not Set";
-    const d = new Date(value + "T00:00:00");
+    const d = new Date(value);
     if (isNaN(d)) return "Not Set";
-    return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-      d.getDate()
-    ).padStart(2, "0")}-${d.getFullYear()}`;
+    return d.toLocaleDateString("en-US");
   };
 
   const formatTime = (value) => {
     if (!value) return "Not Set";
     const [h, m] = value.split(":");
-    let hour = Number(h);
-    if (isNaN(hour)) return value;
+    const hour = parseInt(h, 10);
     const ampm = hour >= 12 ? "PM" : "AM";
-    if (hour > 12) hour -= 12;
-    if (hour === 0) hour = 12;
-    return `${hour}:${m} ${ampm}`;
+    const newHour = hour % 12 || 12;
+    return `${newHour}:${m} ${ampm}`;
   };
 
-  const parseName = (fullName) => {
-    if (!fullName) return { first_name: "", last_name: "" };
-    const parts = fullName.trim().split(" ");
-    return {
-      first_name: parts.shift() || "",
-      last_name: parts.join(" "),
-    };
-  };
-
-  /* =========================================================================
-     SAVE → DB ONLY
-     ========================================================================= */
+  // ===============================================================
+  // SAVE (DB ONLY)
+  // ===============================================================
   const handleSave = async () => {
-    if (!form.name || !form.phone) {
-      setShowValidationModal(true);
-      return;
-    }
-
-    // Build appointment timestamp
-    let appointment_date = null;
-    if (form.apptDate) {
-      appointment_date =
-        form.apptDate + (form.apptTime ? `T${form.apptTime}:00` : "T00:00:00");
-    }
-
     const parsed = parseName(form.name);
+    const cleanForm = { ...form, ...parsed };
 
-    const outgoing = {
-      ...form,
-      ...parsed,
-      appointment_date,
-      install_date: form.install_date || null,
-    };
-
-    await onSave(outgoing);
-    setIsEditing(false);
+    try {
+      let saved;
+      if (form.id) {
+        saved = await LeadsAPI.update(form.id, cleanForm);
+      } else {
+        saved = await LeadsAPI.create(cleanForm);
+      }
+      onSave(saved);
+      setIsEditing(false);
+    } catch (err) {
+      alert("Error saving lead.");
+    }
   };
 
-  /* =========================================================================
-     EXIT
-     ========================================================================= */
+  // Save on exit if valid
   const handleExit = async () => {
     if (form.name && form.phone) {
-      await handleSave();
+      try {
+        const parsed = parseName(form.name);
+        const cleanForm = { ...form, ...parsed };
+
+        if (form.id) {
+          await LeadsAPI.update(form.id, cleanForm);
+        } else {
+          await LeadsAPI.create(cleanForm);
+        }
+      } catch (_) {}
     }
     onClose({ view: "home" });
   };
 
-  /* =========================================================================
-     RENDER
-     ========================================================================= */
-  const nextProgression =
-    form.status === "Lead"
-      ? "Appointment Set"
-      : form.status === "Appointment Set"
-      ? "Sold"
-      : form.status === "Sold"
-      ? "Completed"
-      : null;
+  // ===============================================================
+  // DELETE
+  // ===============================================================
+  const handleDelete = async () => {
+    await LeadsAPI.delete(form.id);
+    onDelete(form);
+  };
+
+  // ===============================================================
+  // RENDER
+  // ===============================================================
+  const nextProgress = getNextProgression();
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8 relative animate-slide-up">
-        
+
         {/* HEADER */}
         <div className={`${statusColors[form.status]} rounded-t-2xl p-5 text-white`}>
-          <div className="flex flex-col gap-3">
-            <h2 className="text-2xl font-bold break-words">
-              {form.name || "New Lead"}
-            </h2>
-
-            {form.company_name && form.buyer_type !== "Residential" && (
-              <p className="text-lg font-semibold text-white/90">
-                {form.company_name}
-              </p>
-            )}
-
-            <div className="flex gap-2">
-              <a
-                href={`tel:${form.phone}`}
-                className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold shadow flex-1 text-center"
-              >
-                Call
-              </a>
-              <a
-                href={`sms:${form.phone}`}
-                className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold shadow flex-1 text-center"
-              >
-                Text
-              </a>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                  `${form.address}, ${form.city}, ${form.state} ${form.zip}`
-                )}`}
-                target="_blank"
-                className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold shadow flex-1 text-center"
-              >
-                Maps
-              </a>
-            </div>
-          </div>
+          <h2 className="text-2xl font-bold">{form.name || "New Lead"}</h2>
+          {form.company_name && (
+            <p className="text-white/90 text-lg">{form.company_name}</p>
+          )}
         </div>
 
         {/* BODY */}
         <div className="p-6 space-y-6">
-          
+
           {/* STATUS */}
           <div className="flex justify-between items-center pb-4 border-b border-gray-200">
-            <div className="relative">
-              <button
-                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                className={`${statusColors[form.status]} text-white px-5 py-2 rounded-full font-bold text-sm`}
-              >
-                {form.status}
-              </button>
+            <button
+              className={`${statusColors[form.status]} text-white px-5 py-2 rounded-full font-bold uppercase tracking-wide`}
+              onClick={() => setShowNotSoldModal(false)}
+            >
+              {form.status}
+            </button>
 
-              {statusDropdownOpen && (
-                <div className="absolute bg-white shadow rounded-xl mt-2 overflow-hidden">
-                  {statuses.map((s) => (
-                    <div
-                      key={s}
-                      className="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        if (s === "Not Sold") {
-                          setShowNotSoldModal(true);
-                        } else {
-                          setForm((prev) => ({ ...prev, status: s }));
-                        }
-                        setStatusDropdownOpen(false);
-                      }}
-                    >
-                      {s}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {nextProgression && (
+            {nextProgress && (
               <button
-                onClick={() =>
-                  setForm((prev) => ({ ...prev, status: nextProgression }))
-                }
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full font-bold"
+                onClick={() => handleChange("status", nextProgress)}
+                className="bg-blue-600 text-white px-5 py-2 rounded-full font-bold uppercase tracking-wide"
               >
-                {nextProgression}
+                {nextProgress}
               </button>
             )}
           </div>
@@ -302,145 +239,104 @@ export default function LeadModal({
             setShowDateModal={setShowDateModal}
           />
 
-          {/* EDIT MODE */}
-          {isEditing && (
-            <div className="space-y-4">
-              <InputRow label="Name" value={form.name} onChange={(v) => handleChange("name", v)} />
-              <InputRow label="Phone" value={form.phone} onChange={(v) => handleChange("phone", v)} />
-              <InputRow label="Email" value={form.email} onChange={(v) => handleChange("email", v)} />
-              <InputRow label="Address" value={form.address} onChange={(v) => handleChange("address", v)} />
-              <InputRow label="City" value={form.city} onChange={(v) => handleChange("city", v)} />
-              <InputRow label="State" value={form.state} onChange={(v) => handleChange("state", v)} />
-              <InputRow label="Zip" value={form.zip} onChange={(v) => handleChange("zip", v)} />
-              <InputRow label="Buyer Type" value={form.buyer_type} onChange={(v) => handleChange("buyer_type", v)} />
-              <InputRow label="Company Name" value={form.company_name} onChange={(v) => handleChange("company_name", v)} />
-              <InputRow label="Project Type" value={form.project_type} onChange={(v) => handleChange("project_type", v)} />
-              <InputRow label="Lead Source" value={form.lead_source} onChange={(v) => handleChange("lead_source", v)} />
-              <InputRow label="Referral Source" value={form.referral_source} onChange={(v) => handleChange("referral_source", v)} />
-              <InputRow label="Contract Price" value={form.contract_price} onChange={(v) => handleChange("contract_price", v)} />
-              <InputRow label="Preferred Contact" value={form.preferred_contact} onChange={(v) => handleChange("preferred_contact", v)} />
-              <InputRow label="Notes" value={form.notes} onChange={(v) => handleChange("notes", v)} />
-            </div>
-          )}
-
-          {/* ACTION BUTTONS */}
+          {/* SAVE / EDIT */}
           <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-            <button
-              onClick={handleExit}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-bold"
-            >
+            <button onClick={handleExit} className="btn-gray">
               Exit
             </button>
 
-            {isEditing ? (
-              <button
-                onClick={handleSave}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-bold"
-              >
-                Save
+            {!isEditing ? (
+              <button onClick={() => setIsEditing(true)} className="btn-blue">
+                Edit
               </button>
             ) : (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold"
-              >
-                Edit
+              <button onClick={handleSave} className="btn-green">
+                Save
               </button>
             )}
           </div>
 
           {/* DELETE */}
-          <div className="text-center pt-4">
+          <div className="text-center pt-4 border-t border-gray-100">
             {!deleteConfirm ? (
               <button
                 onClick={() => setDeleteConfirm(true)}
-                className="text-red-600 hover:text-red-700"
+                className="text-red-600 text-sm hover:underline"
               >
                 Delete Contact
               </button>
             ) : (
               <div className="flex justify-center gap-4">
-                <button
-                  onClick={() => onDelete(form)}
-                  className="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-bold"
-                >
+                <button onClick={handleDelete} className="text-red-600 font-bold">
                   Yes, Delete
                 </button>
-                <button
-                  onClick={() => setDeleteConfirm(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg"
-                >
-                  Cancel
-                </button>
+                <button onClick={() => setDeleteConfirm(false)}>Cancel</button>
               </div>
             )}
           </div>
-
         </div>
       </div>
 
-      {/* MODALS */}
+      {/* DATE MODALS */}
       {showDateModal && (
         <DateModal
           initialDate={form[showDateModal]}
           initialTentative={showDateModal === "install_date" ? form.install_tentative : false}
           allowTentative={showDateModal === "install_date"}
           label={showDateModal === "install_date" ? "Set Install Date" : "Select Date"}
-          onConfirm={(d, t) => handleChange(showDateModal, d)}
-          onRemove={() => handleChange(showDateModal, "")}
+          onConfirm={(date, tentative) =>
+            setForm((prev) => ({
+              ...prev,
+              [showDateModal]: date,
+              install_tentative: tentative,
+            }))
+          }
+          onRemove={() =>
+            setForm((prev) => ({
+              ...prev,
+              [showDateModal]: "",
+              install_tentative: false,
+            }))
+          }
           onClose={() => setShowDateModal(null)}
         />
       )}
 
       {showApptModal && (
         <ApptDateTimeModal
-          apptDate={form.apptDate}
-          apptTime={form.apptTime}
-          onConfirm={(d, t) => {
-            setForm((prev) => ({
-              ...prev,
-              apptDate: d,
-              apptTime: t,
-            }));
-          }}
-          onRemove={() => {
-            setForm((prev) => ({
-              ...prev,
-              apptDate: "",
-              apptTime: "",
-            }));
-          }}
+          apptDate={form.appointment_date}
+          apptTime={form.appointment_time}
+          onConfirm={(date, time) =>
+            setForm((prev) => ({ ...prev, appointment_date: date, appointment_time: time }))
+          }
+          onRemove={() =>
+            setForm((prev) => ({ ...prev, appointment_date: "", appointment_time: "" }))
+          }
           onClose={() => setShowApptModal(false)}
         />
       )}
 
+      {/* NOT SOLD MODAL */}
       {showNotSoldModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[999]">
-          <div className="bg-white p-6 rounded-xl max-w-md w-full shadow-xl">
-            <h3 className="text-lg font-bold mb-2">Reason Not Sold</h3>
-
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-2">Reason Not Sold</h3>
             <div className="space-y-2">
               {notSoldReasons.map((r) => (
                 <button
                   key={r}
-                  onClick={() => {
-                    setForm((prev) => ({
-                      ...prev,
-                      not_sold_reason: r,
-                      status: "Not Sold",
-                    }));
-                    setShowNotSoldModal(false);
-                  }}
-                  className="w-full px-4 py-3 bg-gray-100 rounded-lg text-left hover:bg-gray-200"
+                  onClick={() =>
+                    setForm((p) => ({ ...p, status: "Not Sold", not_sold_reason: r }))
+                  }
+                  className="block w-full px-4 py-3 bg-gray-100 rounded-xl text-left"
                 >
                   {r}
                 </button>
               ))}
             </div>
-
             <button
               onClick={() => setShowNotSoldModal(false)}
-              className="mt-4 w-full text-gray-600 text-sm"
+              className="mt-4 w-full text-center text-sm text-gray-700"
             >
               Cancel
             </button>

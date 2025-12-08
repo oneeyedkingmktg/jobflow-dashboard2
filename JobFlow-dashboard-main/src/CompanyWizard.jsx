@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useCompany } from './CompanyContext';
-import { CompaniesAPI } from './api';
 import { useAuth } from './AuthContext';
 
 export default function CompanyWizard({ onComplete, onCancel }) {
@@ -19,6 +18,7 @@ export default function CompanyWizard({ onComplete, onCancel }) {
 
   const [error, setError] = useState('');
 
+  // Only Master can create a company
   if (user?.role !== 'master') {
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -44,12 +44,10 @@ export default function CompanyWizard({ onComplete, onCancel }) {
   };
 
   const nextStep = () => {
-    // Validation for step 1
     if (step === 1 && !formData.name.trim()) {
       setError('Company name is required');
       return;
     }
-
     setError('');
     setStep(step + 1);
   };
@@ -58,19 +56,19 @@ export default function CompanyWizard({ onComplete, onCancel }) {
     setStep(step - 1);
   };
 
+  // CREATE COMPANY USING BACKEND
   const handleCreate = async () => {
     setSaving(true);
     setError('');
 
     try {
-      // Create company in backend
       const result = await createCompany(formData);
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to create company');
       }
 
-      // Switch to new company
+      // Switch to new company automatically
       await switchCompany(result.company.id);
 
       onComplete();
@@ -84,7 +82,7 @@ export default function CompanyWizard({ onComplete, onCancel }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl my-8">
-        
+
         {/* HEADER */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-t-2xl">
           <h2 className="text-2xl font-bold text-white">New Company Setup</h2>
@@ -101,7 +99,7 @@ export default function CompanyWizard({ onComplete, onCancel }) {
             </div>
           )}
 
-          {/* STEP 1 — Basic Info */}
+          {/* STEP 1 */}
           {step === 1 && (
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-gray-900 mb-2">
@@ -149,7 +147,7 @@ export default function CompanyWizard({ onComplete, onCancel }) {
             </div>
           )}
 
-          {/* STEP 2 — Address */}
+          {/* STEP 2 */}
           {step === 2 && (
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-gray-900 mb-2">
@@ -172,8 +170,7 @@ export default function CompanyWizard({ onComplete, onCancel }) {
 
           {/* ACTION BUTTONS */}
           <div className="flex gap-3 pt-6 border-t">
-            
-            {/* Back Button */}
+
             {step > 1 && (
               <button
                 onClick={prevStep}
@@ -183,7 +180,6 @@ export default function CompanyWizard({ onComplete, onCancel }) {
               </button>
             )}
 
-            {/* Cancel */}
             <button
               onClick={onCancel}
               className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-xl"
@@ -191,7 +187,6 @@ export default function CompanyWizard({ onComplete, onCancel }) {
               Cancel
             </button>
 
-            {/* Next or Create */}
             {step === 1 ? (
               <button
                 onClick={nextStep}
@@ -210,7 +205,6 @@ export default function CompanyWizard({ onComplete, onCancel }) {
             )}
 
           </div>
-
         </div>
       </div>
     </div>

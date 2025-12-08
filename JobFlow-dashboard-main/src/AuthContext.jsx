@@ -5,7 +5,9 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { AuthAPI } from './api';
 
-export const AuthContext = createContext();
+// IMPORTANT: export AuthContext so other files can import it
+const AuthContext = createContext();
+export { AuthContext };
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);

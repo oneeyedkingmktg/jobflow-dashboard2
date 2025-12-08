@@ -1,4 +1,3 @@
-// === BACKEND API INTEGRATION - Connected to PostgreSQL ===
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { apiRequest } from "./api";
 import LeadModal from "./LeadModal.jsx";
@@ -17,52 +16,42 @@ const convertLeadFromBackend = (lead) => {
     companyId: lead.company_id,
     createdByUserId: lead.created_by_user_id,
 
-    // Names
     name: lead.full_name || lead.name || "",
     firstName: lead.first_name || "",
     lastName: lead.last_name || "",
 
-    // Contact
     phone: lead.phone,
     email: lead.email,
     preferredContact: lead.preferred_contact,
 
-    // Address
     address: lead.address,
     city: lead.city,
     state: lead.state,
     zip: lead.zip,
 
-    // Project / Company
     buyerType: lead.buyer_type,
     companyName: lead.company_name,
     projectType: lead.project_type,
 
-    // Lead Source / Referral
     leadSource: lead.lead_source,
     referralSource: lead.referral_source,
 
-    // Status + Reasons
     status: lead.status,
     notSoldReason: lead.not_sold_reason,
     notes: lead.notes,
 
-    // Pricing
     contractPrice: lead.contract_price,
 
-    // Dates
     apptDate: lead.appointment_date,
     apptTime: lead.appointment_time,
     installDate: lead.install_date,
     installTentative: lead.install_tentative,
 
-    // GHL (stored but not used)
     ghlContactId: lead.ghl_contact_id,
     ghlAppointmentId: lead.ghl_appointment_id,
     ghlLastSynced: lead.ghl_last_synced,
     ghlSyncStatus: lead.ghl_sync_status,
 
-    // System
     createdAt: lead.created_at,
     updatedAt: lead.updated_at,
     needsSync: lead.needs_sync
@@ -80,12 +69,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   const [isNewLead, setIsNewLead] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showPhoneLookup, setShowPhoneLookup] = useState(false);
-  const [leadSource, setLeadSource] = useState("");
 
-  const lastFetchedCompanyId = useRef(null);
-  const isFetching = useRef(false);
-
-  // Fetch leads from backend
   useEffect(() => {
     const fetchLeads = async () => {
       try {
@@ -114,22 +98,22 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     setIsNewLead(true);
   };
 
-  const handleCreateNewFromLookup = (newLeadData) => {
+  const handleCreateNewFromLookup = (d) => {
     const mapped = {
       id: null,
-      name: `${newLeadData.first_name || ""} ${newLeadData.last_name || ""}`.trim(),
-      phone: newLeadData.phone_number || "",
-      email: newLeadData.email || "",
-      address: newLeadData.address || "",
-      city: newLeadData.city || "",
-      state: newLeadData.state || "",
-      zip: newLeadData.zip || "",
+      name: `${d.first_name || ""} ${d.last_name || ""}`.trim(),
+      phone: d.phone_number || "",
+      email: d.email || "",
+      address: d.address || "",
+      city: d.city || "",
+      state: d.state || "",
+      zip: d.zip || "",
       buyerType: "",
       companyName: "",
       projectType: "",
-      leadSource: newLeadData.source || "Imported",
-      referralSource: "",
-      status: "Lead",
+      leadSource: d.source || "",
+      referralSource: d.referral_source || "",
+      status: "lead",
       notSoldReason: "",
       contractPrice: "",
       apptDate: "",
@@ -150,77 +134,88 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     setIsNewLead(false);
   };
 
-  const handleSaveLead = async (updatedLead) => {
+  const handleSaveLead = async (lead) => {
     try {
       const backendLead = {
-        name: updatedLead.name || '',
-        first_name: updatedLead.firstName || '',
-        last_name: updatedLead.lastName || '',
-        full_name: updatedLead.name || '',
-        phone: updatedLead.phone || '',
-        email: updatedLead.email || '',
-        address: updatedLead.address || '',
-        city: updatedLead.city || '',
-        state: updatedLead.state || '',
-        zip: updatedLead.zip || '',
-        buyer_type: updatedLead.buyerType || '',
-        company_name: updatedLead.companyName || '',
-        project_type: updatedLead.projectType || '',
-        lead_source: updatedLead.leadSource || '',
-        referral_source: updatedLead.referralSource || '',
-        status: updatedLead.status || 'lead',
-        not_sold_reason: updatedLead.notSoldReason || '',
-        contract_price: updatedLead.contractPrice || null,
-        appointment_date: updatedLead.apptDate || null,
-        appointment_time: updatedLead.apptTime || null,
-        install_date: updatedLead.installDate || null,
-        install_tentative: updatedLead.installTentative || false,
-        preferred_contact: updatedLead.preferredContact || '',
-        notes: updatedLead.notes || ''
+        name: lead.name || "",
+        first_name: lead.firstName || "",
+        last_name: lead.lastName || "",
+        full_name: lead.name || "",
+
+        phone: lead.phone || "",
+        email: lead.email || "",
+        address: lead.address || "",
+        city: lead.city || "",
+        state: lead.state || "",
+        zip: lead.zip || "",
+
+        buyer_type: lead.buyerType || "",
+        company_name: lead.companyName || "",
+        project_type: lead.projectType || "",
+
+        // B2 RULE:
+        lead_source:
+          lead.leadSource && lead.leadSource.trim() !== ""
+            ? lead.leadSource
+            : null,
+
+        referral_source: lead.referralSource || "",
+
+        status: lead.status || "lead",
+        not_sold_reason: lead.notSoldReason || "",
+
+        contract_price: lead.contractPrice || null,
+
+        appointment_date: lead.apptDate || null,
+        appointment_time: lead.apptTime || null,
+        install_date: lead.installDate || null,
+        install_tentative: lead.installTentative || false,
+
+        preferred_contact: lead.preferredContact || "",
+        notes: lead.notes || ""
       };
 
+      let response;
+
       if (isNewLead) {
-        const response = await apiRequest('/leads', {
-          method: 'POST',
+        response = await apiRequest("/leads", {
+          method: "POST",
           body: JSON.stringify(backendLead),
         });
-
-        const converted = convertLeadFromBackend(response.lead);
-        setLeads(prev => [...prev, converted]);
       } else {
-        const response = await apiRequest(`/leads/${updatedLead.id}`, {
-          method: 'PUT',
+        response = await apiRequest(`/leads/${lead.id}`, {
+          method: "PUT",
           body: JSON.stringify(backendLead),
         });
-
-        const converted = convertLeadFromBackend(response.lead);
-        setLeads(prev =>
-          prev.map(lead => lead.id === updatedLead.id ? converted : lead)
-        );
       }
+
+      const converted = convertLeadFromBackend(response.lead);
+
+      setLeads((prev) =>
+        isNewLead ? [...prev, converted] : prev.map((l) => (l.id === converted.id ? converted : l))
+      );
 
       handleCloseModal();
     } catch (error) {
-      console.error('Error saving lead:', error);
-      alert('Failed to save lead: ' + error.message);
+      console.error("Error saving lead:", error);
+      alert("Failed to save lead: " + error.message);
     }
   };
 
   const handleDeleteLead = async (leadToDelete) => {
     try {
-      await apiRequest(`/leads/${leadToDelete.id}`, { method: 'DELETE' });
-
-      setLeads(prev => prev.filter(l => l.id !== leadToDelete.id));
+      await apiRequest(`/leads/${leadToDelete.id}`, { method: "DELETE" });
+      setLeads((prev) => prev.filter((l) => l.id !== leadToDelete.id));
       handleCloseModal();
     } catch (error) {
-      console.error('Error deleting lead:', error);
-      alert('Failed to delete lead: ' + error.message);
+      console.error("Error deleting lead:", error);
+      alert("Failed to delete lead: " + error.message);
     }
   };
 
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
-      const matchesTab =
+      const tabMatch =
         activeTab === "Leads"
           ? lead.status === "lead"
           : activeTab === "Appointment Set"
@@ -233,13 +228,13 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
           ? lead.status === "complete"
           : true;
 
-      const matchesSearch =
+      const searchMatch =
         !searchTerm ||
         lead.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.phone?.includes(searchTerm) ||
         lead.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      return matchesTab && matchesSearch;
+      return tabMatch && searchMatch;
     });
   }, [leads, activeTab, searchTerm]);
 
@@ -345,9 +340,6 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
               </div>
             ) : filteredLeads.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl shadow-md">
-                <svg className="w-24 h-24 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
                 <h3 className="mt-4 text-xl font-semibold text-gray-700">No leads yet</h3>
                 <p className="mt-2 text-gray-500">Click "Add Lead" to create your first lead</p>
               </div>
@@ -366,7 +358,6 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                     {lead.email && (
                       <p className="text-gray-500 text-sm">{lead.email}</p>
                     )}
-
                     {lead.projectType && (
                       <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 
                         rounded-full text-xs font-medium">

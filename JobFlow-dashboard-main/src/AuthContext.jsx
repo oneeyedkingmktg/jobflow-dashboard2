@@ -1,8 +1,9 @@
 // ============================================================================
-// AuthContext - Fully Updated for Backend Auth + User Management
+// AuthContext – Fully Updated for Backend JWT Auth (v2.0)
 // ============================================================================
+
 import { createContext, useContext, useState, useEffect } from 'react';
-import { AuthAPI, UsersAPI } from './api';
+import { AuthAPI } from './api';
 
 const AuthContext = createContext();
 
@@ -18,90 +19,63 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load token + user on mount
+  // Load token + fetch user profile
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (!token) {
+      setIsAuthenticated(false);
       setIsLoading(false);
       return;
     }
 
-    // We no longer have /auth/me — simplify by trusting token
-    setIsAuthenticated(true);
-    setIsLoading(false);
+    const loadUser = async () => {
+      try {
+        const me = await AuthAPI.me();
+        setUser(me.user || null);
+        setIsAuthenticated(true);
+      } catch {
+        localStorage.removeItem('authToken');
+        setUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUser();
   }, []);
 
-  // LOGIN
+  // Login (JWT + user object)
   const login = async (email, password) => {
     try {
       setError(null);
       setIsLoading(true);
 
-      const response = await AuthAPI.login(email, password);
+      const res = await AuthAPI.login(email, password);
 
-      localStorage.setItem('authToken', response.token);
-      setUser(response.user || null);
+      // Save token
+      localStorage.setItem('authToken', res.token);
+
+      // Set user
+      setUser(res.user || null);
       setIsAuthenticated(true);
 
       return { success: true };
     } catch (err) {
-      setError(err.message || 'Login failed');
-      return { success: false, error: err.message };
+      const message = err.message || 'Login failed';
+      setError(message);
+      return { success: false, error: message };
     } finally {
       setIsLoading(false);
     }
   };
 
-  // LOGOUT
+  // Logout
   const logout = () => {
     localStorage.removeItem('authToken');
     setUser(null);
     setIsAuthenticated(false);
   };
-
-  // ============================
-  // USER MANAGEMENT (BACKEND)
-  // ============================
-
-  const createUser = async (payload) => {
-    try {
-      const response = await UsersAPI.create(payload);
-      return { success: true, user: response.user };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
-  };
-
-  const updateUser = async (id, updates) => {
-    try {
-      const response = await UsersAPI.update(id, updates);
-      if (user && user.id === id) setUser(response.user);
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
-  };
-
-  const deleteUser = async (id) => {
-    try {
-      await UsersAPI.delete(id);
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
-  };
-
-  const getUsersByCompany = async (companyId) => {
-    try {
-      const response = await UsersAPI.getAll();
-      return response.users.filter(u => u.company_id === companyId);
-    } catch (err) {
-      return [];
-    }
-  };
-
-  // MASTER FLAG (user.role === 'master')
-  const isMaster = user?.role === 'master';
 
   const value = {
     user,
@@ -110,12 +84,6 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     logout,
-
-    createUser,
-    updateUser,
-    deleteUser,
-    getUsersByCompany,
-    isMaster,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

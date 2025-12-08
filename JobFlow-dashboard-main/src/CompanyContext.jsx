@@ -1,5 +1,5 @@
 // ============================================================================
-// CompanyContext – Updated for Real Backend Companies (v2.0)
+// CompanyContext – Fully Backend-Integrated (v3.0)
 // ============================================================================
 
 import { createContext, useContext, useState, useEffect } from 'react';
@@ -21,7 +21,9 @@ export const CompanyProvider = ({ children }) => {
   const [currentCompany, setCurrentCompany] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // ----------------------------------------------------------------------------
   // Load companies on login
+  // ----------------------------------------------------------------------------
   useEffect(() => {
     if (!isAuthenticated || !user) {
       setCompanies([]);
@@ -33,13 +35,17 @@ export const CompanyProvider = ({ children }) => {
     loadCompanies();
   }, [isAuthenticated, user]);
 
+  // ----------------------------------------------------------------------------
   // Load from backend
+  // ----------------------------------------------------------------------------
   const loadCompanies = async () => {
     try {
       setLoading(true);
 
-      // This will eventually change when you add a /companies list endpoint
-      // For now, each user only belongs to ONE company (req.user.company_id)
+      // If future version has multi-company membership, switch to:
+      // const list = await CompaniesAPI.getAll();
+      // setCompanies(list);
+
       if (user?.company_id) {
         const company = await CompaniesAPI.get(user.company_id);
         setCompanies([company]);
@@ -57,17 +63,21 @@ export const CompanyProvider = ({ children }) => {
     }
   };
 
-  // Switch company (future multi-company support)
+  // ----------------------------------------------------------------------------
+  // Switch company (future multi-company admin support)
+  // ----------------------------------------------------------------------------
   const switchCompany = async (companyId) => {
     try {
       const company = await CompaniesAPI.get(companyId);
       setCurrentCompany(company);
     } catch (err) {
-      console.error('Switch company failed:', err);
+      console.error('Failed to switch company:', err);
     }
   };
 
-  // Create company
+  // ----------------------------------------------------------------------------
+  // Create company (master/admin only)
+  // ----------------------------------------------------------------------------
   const createCompany = async (data) => {
     try {
       const created = await CompaniesAPI.create(data);
@@ -79,7 +89,9 @@ export const CompanyProvider = ({ children }) => {
     }
   };
 
+  // ----------------------------------------------------------------------------
   // Update company
+  // ----------------------------------------------------------------------------
   const updateCompany = async (companyId, updates) => {
     try {
       const updated = await CompaniesAPI.update(companyId, updates);
@@ -92,15 +104,17 @@ export const CompanyProvider = ({ children }) => {
         setCurrentCompany(updated);
       }
 
-      return { success: true };
+      return { success: true, company: updated };
     } catch (err) {
       return { success: false, error: err.message };
     }
   };
 
-  // Delete company (future support)
+  // ----------------------------------------------------------------------------
+  // Delete company (future expansion)
+  // ----------------------------------------------------------------------------
   const deleteCompany = async () => {
-    console.warn('Company deletion not supported yet.');
+    console.warn('Company deletion not implemented.');
     return { success: false, error: 'Delete not implemented' };
   };
 

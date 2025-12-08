@@ -8,11 +8,22 @@ import { formatPhoneNumber } from "./utils/formatting";
 
 export default function LeadModal({
   lead,
+  currentUser,
   onClose,
   onSave,
   onDelete,
 }) {
   const { currentCompany } = useCompany();
+
+  // Initialize referralSource correctly:
+  // - Use DB/GHL value if exists
+  // - Else default to logged-in user's name
+  const referralDefault =
+    lead?.referralSource ||
+    lead?.referral_source ||
+    currentUser?.name ||
+    currentUser?.email ||
+    "";
 
   const [form, setForm] = useState({
     name: "",
@@ -25,8 +36,7 @@ export default function LeadModal({
     buyerType: "",
     companyName: "",
     projectType: "",
-    leadSource: "",
-    referralSource: "",
+    referralSource: referralDefault,
     preferredContact: "",
     notes: "",
     contractPrice: "",
@@ -71,7 +81,12 @@ export default function LeadModal({
     onClose({ view: "home" });
   };
 
-  const buyerTypes = ["Residential", "Small Business", "Buyer not Owner", "Competitive Bid"];
+  const buyerTypes = [
+    "Residential",
+    "Small Business",
+    "Buyer not Owner",
+    "Competitive Bid",
+  ];
 
   const projectTypes = [
     "Garage Floor",
@@ -95,7 +110,7 @@ export default function LeadModal({
 
         <div className="p-6 space-y-6">
 
-          {/* STATUS + QUICK ACTION ROW */}
+          {/* STATUS & EDIT BUTTON */}
           <div className="flex justify-between items-center pb-4 border-b border-gray-200">
             <span className="px-4 py-2 rounded-full bg-gray-200 text-gray-800 font-semibold capitalize">
               {form.status}
@@ -134,9 +149,7 @@ export default function LeadModal({
           {isEditing && (
             <div className="space-y-6">
 
-              {/* =============================== */}
-              {/* CONTACT SECTION */}
-              {/* =============================== */}
+              {/* CONTACT INFO */}
               <div className="bg-gray-50 p-4 rounded-xl border">
                 <h3 className="font-bold mb-3">Contact Information</h3>
 
@@ -192,9 +205,7 @@ export default function LeadModal({
                 </div>
               </div>
 
-              {/* =============================== */}
               {/* LEAD DETAILS */}
-              {/* =============================== */}
               <div className="bg-gray-50 p-4 rounded-xl border">
                 <h3 className="font-bold mb-3">Lead Details</h3>
 
@@ -232,27 +243,23 @@ export default function LeadModal({
                   ))}
                 </select>
 
-                {/* Lead Source */}
-                <input
-                  className="input mt-3"
-                  placeholder="Lead Source"
-                  value={form.leadSource}
-                  onChange={(e) => handleChange("leadSource", e.target.value)}
-                />
-
-                {/* Referral Source */}
+                {/* Referral Source (only field we show) */}
                 <input
                   className="input mt-3"
                   placeholder="Referral Source"
                   value={form.referralSource}
-                  onChange={(e) => handleChange("referralSource", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("referralSource", e.target.value)
+                  }
                 />
 
                 {/* Preferred Contact */}
                 <select
                   className="input mt-3"
                   value={form.preferredContact}
-                  onChange={(e) => handleChange("preferredContact", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("preferredContact", e.target.value)
+                  }
                 >
                   <option value="">Preferred Contact</option>
                   {preferredContacts.map((x) => (
@@ -265,9 +272,10 @@ export default function LeadModal({
                   className="input mt-3"
                   placeholder="Contract Price"
                   value={form.contractPrice}
-                  onChange={(e) => handleChange("contractPrice", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("contractPrice", e.target.value)
+                  }
                 />
-
               </div>
 
               {/* Notes */}
@@ -331,9 +339,15 @@ export default function LeadModal({
       {showDateModal && (
         <DateModal
           initialDate={form[showDateModal]}
-          initialTentative={showDateModal === "installDate" ? form.installTentative : false}
+          initialTentative={
+            showDateModal === "installDate" ? form.installTentative : false
+          }
           allowTentative={showDateModal === "installDate"}
-          label={showDateModal === "installDate" ? "Set Install Date" : "Select Date"}
+          label={
+            showDateModal === "installDate"
+              ? "Set Install Date"
+              : "Select Date"
+          }
           onConfirm={(date, tentative) => {
             setForm((p) => ({
               ...p,

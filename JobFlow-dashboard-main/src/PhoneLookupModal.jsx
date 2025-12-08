@@ -1,6 +1,6 @@
 import React, { useState, useContext } from "react";
 import { GHLAPI } from "./api";
-import { AuthContext } from "./AuthContext";
+import { AuthContext } from "./AuthContext.jsx";
 
 export default function PhoneLookupModal({
   leads,

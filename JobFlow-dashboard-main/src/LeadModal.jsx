@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import LeadDetails from "./LeadDetails.jsx";
 import DateModal from "./DateModal.jsx";
 import ApptDateTimeModal from "./ApptDateTimeModal.jsx";
@@ -10,6 +10,7 @@ export default function LeadModal({
   onClose,
   onSave,
   onDelete,
+  presetPhone,   // NEW
 }) {
   const { currentCompany } = useCompany();
 
@@ -38,7 +39,17 @@ export default function LeadModal({
     ...lead,
   });
 
-  const [isEditing, setIsEditing] = useState(lead?.isNew || false);
+  // PREFILL PHONE ONLY WHEN CREATING NEW LEAD
+  useEffect(() => {
+    if (!lead?.id && presetPhone) {
+      setForm((prev) => ({
+        ...prev,
+        phone: formatPhoneNumber(presetPhone),
+      }));
+    }
+  }, [presetPhone, lead]);
+
+  const [isEditing, setIsEditing] = useState(!lead?.id);
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -87,14 +98,12 @@ export default function LeadModal({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8 relative">
 
-        {/* HEADER */}
         <div className="bg-blue-700 text-white rounded-t-2xl p-5">
           <h2 className="text-2xl font-bold">{form.name || "New Lead"}</h2>
         </div>
 
         <div className="p-6 space-y-6">
 
-          {/* STATUS + ACTION BUTTON */}
           <div className="flex justify-between items-center pb-4 border-b border-gray-200">
             <span className="px-4 py-2 rounded-full bg-gray-200 text-gray-800 font-semibold capitalize">
               {form.status}
@@ -117,7 +126,6 @@ export default function LeadModal({
             )}
           </div>
 
-          {/* VIEW MODE */}
           {!isEditing && (
             <LeadDetails
               form={form}
@@ -129,7 +137,6 @@ export default function LeadModal({
             />
           )}
 
-          {/* EDIT MODE */}
           {isEditing && (
             <div className="space-y-6">
 
@@ -193,7 +200,6 @@ export default function LeadModal({
               <div className="bg-gray-50 p-4 rounded-xl border">
                 <h3 className="font-bold mb-3">Lead Details</h3>
 
-                {/* Buyer Type */}
                 <select
                   className="input"
                   value={form.buyerType}
@@ -205,7 +211,6 @@ export default function LeadModal({
                   ))}
                 </select>
 
-                {/* Company Name */}
                 {form.buyerType !== "Residential" && (
                   <input
                     className="input mt-3"
@@ -215,7 +220,6 @@ export default function LeadModal({
                   />
                 )}
 
-                {/* Project Type */}
                 <select
                   className="input mt-3"
                   value={form.projectType}
@@ -227,7 +231,6 @@ export default function LeadModal({
                   ))}
                 </select>
 
-                {/* Lead Source — only editable if empty */}
                 <input
                   className={`input mt-3 ${form.leadSource ? "bg-gray-200 cursor-not-allowed" : ""}`}
                   placeholder="Lead Source"
@@ -238,7 +241,6 @@ export default function LeadModal({
                   disabled={!!form.leadSource}
                 />
 
-                {/* Referral Source */}
                 <input
                   className="input mt-3"
                   placeholder="Referral Source"
@@ -246,7 +248,6 @@ export default function LeadModal({
                   onChange={(e) => handleChange("referralSource", e.target.value)}
                 />
 
-                {/* Preferred Contact */}
                 <select
                   className="input mt-3"
                   value={form.preferredContact}
@@ -258,7 +259,6 @@ export default function LeadModal({
                   ))}
                 </select>
 
-                {/* Contract Price */}
                 <input
                   className="input mt-3"
                   placeholder="Contract Price"
@@ -267,7 +267,6 @@ export default function LeadModal({
                 />
               </div>
 
-              {/* Notes */}
               <div className="bg-gray-50 p-4 rounded-xl border">
                 <h3 className="font-bold mb-2">Notes</h3>
                 <textarea
@@ -279,7 +278,6 @@ export default function LeadModal({
             </div>
           )}
 
-          {/* FOOTER */}
           <div className="flex justify-between items-center pt-4 border-t">
             <button
               onClick={handleExit}
@@ -298,7 +296,6 @@ export default function LeadModal({
             )}
           </div>
 
-          {/* DELETE CONFIRM */}
           {deleteConfirm && (
             <div className="bg-red-50 border border-red-300 rounded-xl p-4 mt-4">
               <p className="font-semibold text-red-700 mb-3">
@@ -324,7 +321,6 @@ export default function LeadModal({
         </div>
       </div>
 
-      {/* INSTALL / DATE MODALS */}
       {showDateModal && (
         <DateModal
           initialDate={form[showDateModal]}
@@ -351,7 +347,6 @@ export default function LeadModal({
         />
       )}
 
-      {/* APPOINTMENT MODAL */}
       {showApptModal && (
         <ApptDateTimeModal
           apptDate={form.apptDate}

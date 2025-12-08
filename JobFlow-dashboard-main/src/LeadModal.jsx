@@ -14,16 +14,18 @@ const STATUS_LABELS = {
 
 const STATUS_COLORS = {
   lead: "#59687d",
-  appointment_set: "#225ce5", // booked Appt
+  appointment_set: "#225ce5",
   sold: "#048c63",
   not_sold: "#c72020",
   complete: "#ea8e09",
 };
 
+// STATUS PROGRESSION LOGIC (updated per your instruction)
 const STATUS_PROGRESS = {
   lead: "appointment_set",
   appointment_set: "sold",
   sold: "complete",
+  not_sold: "sold", // you requested this
 };
 
 export default function LeadModal({
@@ -36,36 +38,41 @@ export default function LeadModal({
   const { currentCompany } = useCompany();
 
   const [form, setForm] = useState({
-    id: null,
-    name: "",
-    phone: "",
-    email: "",
-    address: "",
-    city: "",
-    state: "",
-    zip: "",
-    buyerType: "",
-    companyName: "",
-    projectType: "",
-    leadSource: "",
-    referralSource: "",
-    preferredContact: "",
-    notes: "",
-    contractPrice: "",
-    apptDate: "",
-    apptTime: "",
-    installDate: "",
-    installTentative: false,
-    notSoldReason: "",
-    status: "lead",
-    ...lead,
+    id: lead?.id || null,
+    name: lead?.name || "",
+    phone: lead?.phone || "",
+    email: lead?.email || "",
+    address: lead?.address || "",
+    city: lead?.city || "",
+    state: lead?.state || "",
+    zip: lead?.zip || "",
+    buyerType: lead?.buyerType || "",
+    companyName: lead?.companyName || "",
+    projectType: lead?.projectType || "",
+    leadSource: lead?.leadSource || "",
+    referralSource: lead?.referralSource || "",
+    preferredContact: lead?.preferredContact || "",
+    notes: lead?.notes || "",
+    contractPrice: lead?.contractPrice || "",
+    apptDate: lead?.apptDate || "",
+    apptTime: lead?.apptTime || "",
+    installDate: lead?.installDate || "",
+    installTentative: lead?.installTentative || false,
+    notSoldReason: lead?.notSoldReason || "",
+    status: lead?.status || "lead",
   });
 
+  // EDIT MODE
   const [isEditing, setIsEditing] = useState(!lead?.id);
+
+  // DATE MODALS
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
+
+  // DELETE CONFIRM
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+  // PREFILL PHONE
   useEffect(() => {
     if (!lead?.id && presetPhone) {
       setForm((prev) => ({
@@ -75,76 +82,82 @@ export default function LeadModal({
     }
   }, [presetPhone, lead]);
 
+  // Helpers
   const formatDate = (value) => {
     if (!value) return "Not Set";
     const d = new Date(value);
     if (isNaN(d)) return "Not Set";
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    return `${mm}-${dd}-${yyyy}`;
+    return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate()
+    ).padStart(2, "0")}-${d.getFullYear()}`;
   };
 
   const formatTime = (value) => {
-    if (!value) return "Not Set";
-    // value might be "14:00" or "14:00:00"
+    if (!value) return "";
     const parts = String(value).split(":");
-    let hours = parseInt(parts[0], 10);
+    let hour = parseInt(parts[0], 10);
     const minutes = parts[1] || "00";
-    if (isNaN(hours)) return "Not Set";
-    const ampm = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12;
-    if (hours === 0) hours = 12;
-    return `${hours}:${minutes.padStart(2, "0")} ${ampm}`;
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12 || 12;
+    return `${hour}:${minutes.padStart(2, "0")} ${ampm}`;
   };
 
-  const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handlePhoneChange = (value) => {
-    const formatted = formatPhoneNumber(value);
-    handleChange("phone", formatted);
+  const handlePhoneChange = (val) => {
+    handleChange("phone", formatPhoneNumber(val));
   };
 
+  // SAVE
   const handleSave = () => {
-    onSave(form);
+    onSave({ ...form });
     setIsEditing(false);
   };
 
+  // EXIT (save then close)
   const handleExit = () => {
+    onSave({ ...form });
     onClose({ view: "home" });
   };
 
-  const handleCall = () => {
+  // CALL / TEXT / MAPS
+  const call = () => {
     if (!form.phone) return;
-    const digits = form.phone.replace(/[^\d+]/g, "");
-    window.open(`tel:${digits}`);
+    window.open(`tel:${form.phone.replace(/[^\d]/g, "")}`);
   };
 
-  const handleText = () => {
+  const text = () => {
     if (!form.phone) return;
-    const digits = form.phone.replace(/[^\d+]/g, "");
-    window.open(`sms:${digits}`);
+    window.open(`sms:${form.phone.replace(/[^\d]/g, "")}`);
   };
 
-  const handleMaps = () => {
-    if (!form.address) return;
-    const query = `${form.address}, ${form.city || ""}, ${form.state || ""} ${
-      form.zip || ""
-    }`;
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      query
-    )}`;
-    window.open(url, "_blank");
+  const maps = () => {
+    const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        query
+      )}`,
+      "_blank"
+    );
   };
 
-  const currentStatus = form.status || "lead";
-  const headerColor = STATUS_COLORS[currentStatus] || STATUS_COLORS.lead;
-
+  // STATUS & PROGRESSION
+  const currentStatus = form.status;
   const nextStatus = STATUS_PROGRESS[currentStatus] || null;
+
   const nextStatusLabel = nextStatus ? STATUS_LABELS[nextStatus] : null;
-  const nextStatusColor = nextStatus ? STATUS_COLORS[nextStatus] : "#cccccc";
+  const nextStatusColor = nextStatus ? STATUS_COLORS[nextStatus] : "#ccc";
+
+  // DROPDOWN OPTIONS
+  const statusOptions = [
+    "lead",
+    "appointment_set",
+    "sold",
+    "not_sold",
+    "complete",
+  ];
 
   const buyerTypes = [
     "Residential",
@@ -152,6 +165,8 @@ export default function LeadModal({
     "Buyer not Owner",
     "Competitive Bid",
   ];
+
+  const preferredContacts = ["Phone", "SMS", "Email"];
 
   const projectTypes = [
     "Garage Floor",
@@ -162,51 +177,35 @@ export default function LeadModal({
     "Commercial",
   ];
 
-  const preferredContacts = ["Phone", "SMS", "Email"];
-
-  const handleProgressStatus = () => {
-    if (!nextStatus) return;
-    setForm((prev) => ({ ...prev, status: nextStatus }));
-  };
-
-  const statusOptions = [
-    "lead",
-    "appointment_set",
-    "sold",
-    "not_sold",
-    "complete",
-  ];
-
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-auto">
-      <div className="bg-[#f4f5f7] rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
-        {/* HEADER BAR */}
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-auto">
+      <div className="bg-[#f5f6f7] rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
+
+        {/* HEADER */}
         <div
           className="px-6 pt-4 pb-5"
-          style={{ backgroundColor: headerColor }}
+          style={{ backgroundColor: STATUS_COLORS[currentStatus] }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-white truncate">
-              {form.name || "New Lead"}
-            </h2>
-          </div>
+          <h2 className="text-2xl font-bold text-white mb-4">
+            {form.name || "New Lead"}
+          </h2>
 
-          <div className="flex gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <button
-              onClick={handleCall}
-              className="flex-1 bg-white text-gray-800 rounded-lg py-2 font-semibold shadow-sm hover:shadow-md"
+              onClick={call}
+              className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md"
             >
               Call
             </button>
             <button
-              onClick={handleText}
-              className="flex-1 bg-white text-gray-800 rounded-lg py-2 font-semibold shadow-sm hover:shadow-md"
+              onClick={text}
+              className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md"
             >
               Text
             </button>
             <button
-              onClick={handleMaps}
-              className="flex-1 bg-white text-gray-800 rounded-lg py-2 font-semibold shadow-sm hover:shadow-md"
+              onClick={maps}
+              className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md"
             >
               Maps
             </button>
@@ -215,14 +214,14 @@ export default function LeadModal({
 
         {/* BODY */}
         <div className="px-6 py-6 space-y-5">
-          {/* STATUS ROW */}
+
+          {/* STATUS / PROGRESS */}
           <div className="flex items-center justify-between">
-            {/* Status dropdown */}
             <div className="relative">
               <select
                 value={currentStatus}
                 onChange={(e) => handleChange("status", e.target.value)}
-                className="appearance-none bg-[#59687d] text-white text-sm font-semibold px-4 py-2 rounded-full pr-8 shadow-sm cursor-pointer"
+                className="appearance-none bg-[#59687d] text-white text-sm font-semibold px-4 py-2 rounded-full pr-8 shadow cursor-pointer"
               >
                 {statusOptions.map((s) => (
                   <option key={s} value={s}>
@@ -230,19 +229,16 @@ export default function LeadModal({
                   </option>
                 ))}
               </select>
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white text-xs">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white text-sm pointer-events-none">
                 ▼
               </span>
             </div>
 
-            {/* Progress button */}
             <button
+              onClick={() => nextStatus && handleChange("status", nextStatus)}
               disabled={!nextStatus}
-              onClick={handleProgressStatus}
-              className={`px-6 py-2 rounded-full text-sm font-bold shadow-md ${
-                nextStatus
-                  ? "text-white"
-                  : "text-gray-500 bg-gray-300 cursor-not-allowed"
+              className={`px-6 py-2 rounded-full text-sm font-bold shadow ${
+                nextStatus ? "text-white" : "text-gray-600 bg-gray-300"
               }`}
               style={nextStatus ? { backgroundColor: nextStatusColor } : {}}
             >
@@ -250,164 +246,134 @@ export default function LeadModal({
             </button>
           </div>
 
-          {/* ADDRESS CARD */}
+          {/* ADDRESS BOX */}
           <div
-            className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-400 transition"
-            onClick={handleMaps}
+            onClick={maps}
+            className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
           >
-            <div className="text-xs text-gray-500 mb-1">
-              📍 Tap to open in Maps
+            <div className="text-xs text-gray-500">📍 Tap to open in Maps</div>
+            <div className="text-blue-700 font-semibold">{form.address}</div>
+            <div className="text-gray-700 text-sm">
+              {[form.city, form.state, form.zip].filter(Boolean).join(", ")}
             </div>
-            <div className="text-blue-700 font-semibold">
-              {form.address || "No address entered"}
-            </div>
-            {(form.city || form.state || form.zip) && (
-              <div className="text-gray-700 text-sm">
-                {[form.city, form.state, form.zip].filter(Boolean).join(", ")}
-              </div>
-            )}
           </div>
 
           {/* PHONE + LEAD SOURCE */}
           <div className="space-y-2">
-            {form.phone && (
-              <div className="text-gray-900 font-semibold text-sm">
-                {form.phone}
-              </div>
-            )}
+            <div className="text-gray-900 font-semibold">{form.phone}</div>
 
             {form.leadSource && (
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">
-                <span className="mr-1">🧷</span>
-                <span>Lead Source: {form.leadSource}</span>
+              <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                Lead Source: {form.leadSource}
               </div>
             )}
           </div>
 
           {/* APPOINTMENT + INSTALL */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Appointment */}
             <div
               onClick={() => setShowApptModal(true)}
-              className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-400 transition"
+              className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
             >
-              <div className="text-xs text-gray-500 mb-1">Appointment</div>
-              <div className="text-blue-700 font-semibold text-sm">
-                {form.apptDate ? formatDate(form.apptDate) : "Not Set"}
+              <div className="text-xs text-gray-500">Appointment</div>
+              <div className="text-blue-700 font-semibold">
+                {formatDate(form.apptDate)}
               </div>
-              <div className="text-gray-700 text-xs mt-1">
-                {form.apptTime ? formatTime(form.apptTime) : ""}
-              </div>
+              <div className="text-gray-700 text-xs">{formatTime(form.apptTime)}</div>
             </div>
 
-            {/* Install */}
             <div
               onClick={() => setShowDateModal("installDate")}
-              className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-400 transition"
+              className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
             >
-              <div className="text-xs text-gray-500 mb-1">Install Date</div>
-              <div className="text-blue-700 font-semibold text-sm">
-                {form.installDate ? formatDate(form.installDate) : "Not Set"}
+              <div className="text-xs text-gray-500">Install Date</div>
+              <div className="text-blue-700 font-semibold">
+                {formatDate(form.installDate)}
               </div>
             </div>
           </div>
 
-          {/* EDIT / VIEW AREA */}
+          {/* EDIT MODE */}
           {isEditing ? (
             <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm space-y-4">
-              {/* Name */}
+
+              {/* NAME */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Name <span className="text-red-500">*</span>
-                </label>
+                <label className="text-xs font-semibold text-gray-600">Name *</label>
                 <input
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={form.name}
                   onChange={(e) => handleChange("name", e.target.value)}
+                  className="input w-full border px-3 py-2 rounded-lg"
                 />
               </div>
 
-              {/* Address */}
+              {/* ADDRESS */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Address
-                </label>
+                <label className="text-xs font-semibold text-gray-600">Address</label>
                 <input
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={form.address}
                   onChange={(e) => handleChange("address", e.target.value)}
+                  className="input w-full border px-3 py-2 rounded-lg"
                 />
               </div>
 
-              {/* City / State / Zip */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* CITY / STATE / ZIP */}
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">
-                    City
-                  </label>
+                  <label className="text-xs font-semibold text-gray-600">City</label>
                   <input
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     value={form.city}
                     onChange={(e) => handleChange("city", e.target.value)}
+                    className="w-full border px-3 py-2 rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">
-                    State
-                  </label>
+                  <label className="text-xs font-semibold text-gray-600">State</label>
                   <input
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     value={form.state}
                     onChange={(e) => handleChange("state", e.target.value)}
+                    className="w-full border px-3 py-2 rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">
-                    Zip
-                  </label>
+                  <label className="text-xs font-semibold text-gray-600">Zip</label>
                   <input
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     value={form.zip}
                     onChange={(e) => handleChange("zip", e.target.value)}
+                    className="w-full border px-3 py-2 rounded-lg"
                   />
                 </div>
               </div>
 
-              {/* Phone */}
+              {/* PHONE */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Phone <span className="text-red-500">*</span>
-                </label>
+                <label className="text-xs font-semibold text-gray-600">Phone *</label>
                 <input
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={form.phone}
                   onChange={(e) => handlePhoneChange(e.target.value)}
+                  className="w-full border px-3 py-2 rounded-lg"
                 />
               </div>
 
-              {/* Email */}
+              {/* EMAIL */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Email
-                </label>
+                <label className="text-xs font-semibold text-gray-600">Email</label>
                 <input
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={form.email}
                   onChange={(e) => handleChange("email", e.target.value)}
+                  className="w-full border px-3 py-2 rounded-lg"
                 />
               </div>
 
-              {/* Buyer Type */}
+              {/* BUYER TYPE */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Buyer Type
-                </label>
+                <label className="text-xs font-semibold text-gray-600">Buyer Type</label>
                 <select
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={form.buyerType}
                   onChange={(e) => handleChange("buyerType", e.target.value)}
+                  className="w-full border px-3 py-2 rounded-lg"
                 >
-                  <option value="">Select Buyer Type</option>
+                  <option value="">Select Type</option>
                   {buyerTypes.map((t) => (
                     <option key={t} value={t}>
                       {t}
@@ -416,65 +382,70 @@ export default function LeadModal({
                 </select>
               </div>
 
-              {/* Company Name */}
-              {form.buyerType && form.buyerType !== "Residential" && (
+              {/* COMPANY NAME */}
+              {form.buyerType !== "Residential" && form.buyerType !== "" && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">
+                  <label className="text-xs font-semibold text-gray-600">
                     Company Name
                   </label>
                   <input
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     value={form.companyName}
                     onChange={(e) =>
                       handleChange("companyName", e.target.value)
                     }
+                    className="w-full border px-3 py-2 rounded-lg"
                   />
                 </div>
               )}
 
-              {/* Project Type */}
+              {/* PROJECT TYPE */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                <label className="text-xs font-semibold text-gray-600">
                   Project Type
                 </label>
-                <input
-                  list="project-types"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                <select
                   value={form.projectType}
-                  onChange={(e) => handleChange("projectType", e.target.value)}
-                />
-                <datalist id="project-types">
+                  onChange={(e) =>
+                    handleChange("projectType", e.target.value)
+                  }
+                  className="w-full border px-3 py-2 rounded-lg"
+                >
+                  <option value="">Choose Project</option>
                   {projectTypes.map((p) => (
-                    <option key={p} value={p} />
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
                   ))}
-                </datalist>
+                </select>
               </div>
 
-              {/* Contract Price */}
+              {/* CONTRACT PRICE */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                <label className="text-xs font-semibold text-gray-600">
                   Contract Price
                 </label>
                 <input
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={form.contractPrice}
-                  onChange={(e) => handleChange("contractPrice", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("contractPrice", e.target.value)
+                  }
+                  className="w-full border px-3 py-2 rounded-lg"
                 />
               </div>
 
-              {/* Preferred Contact */}
+              {/* PREFERRED CONTACT */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                <label className="text-xs font-semibold text-gray-600">
                   Preferred Contact
                 </label>
                 <select
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={form.preferredContact}
                   onChange={(e) =>
                     handleChange("preferredContact", e.target.value)
                   }
+                  className="w-full border px-3 py-2 rounded-lg"
                 >
-                  <option value="">Select Preferred Contact</option>
+                  <option value="">Choose Contact</option>
                   {preferredContacts.map((p) => (
                     <option key={p} value={p}>
                       {p}
@@ -483,88 +454,88 @@ export default function LeadModal({
                 </select>
               </div>
 
-              {/* Notes */}
+              {/* NOTES */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Notes
-                </label>
+                <label className="text-xs font-semibold text-gray-600">Notes</label>
                 <textarea
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm h-24 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={form.notes}
                   onChange={(e) => handleChange("notes", e.target.value)}
+                  className="w-full border px-3 py-2 rounded-lg h-24 resize-none"
                 />
               </div>
             </div>
           ) : (
-            // VIEW MODE DETAILS BLOCK
-            <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm text-sm text-gray-800">
-              <div className="space-y-1 border-b border-gray-200 pb-3 mb-3">
+            // VIEW MODE DETAILS
+            <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm text-sm text-gray-800 space-y-2">
+
+              <div className="flex justify-between">
+                <span className="text-gray-500">Email</span>
+                <span className="font-semibold">{form.email || "Not Set"}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-500">Buyer Type</span>
+                <span className="font-semibold">
+                  {form.buyerType || "Not Set"}
+                </span>
+              </div>
+
+              {form.companyName && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Email</span>
-                  <span className="font-medium">
-                    {form.email || "Not Set"}
-                  </span>
+                  <span className="text-gray-500">Company</span>
+                  <span className="font-semibold">{form.companyName}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Buyer Type</span>
-                  <span className="font-medium">
-                    {form.buyerType || "Not Set"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Project Type</span>
-                  <span className="font-medium">
-                    {form.projectType || "Not Set"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Contract Price</span>
-                  <span className="font-medium">
-                    {form.contractPrice ? `$${form.contractPrice}` : "Not Set"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Preferred Contact</span>
-                  <span className="font-medium">
-                    {form.preferredContact || "Not Set"}
-                  </span>
-                </div>
+              )}
+
+              <div className="flex justify-between">
+                <span className="text-gray-500">Project Type</span>
+                <span className="font-semibold">
+                  {form.projectType || "Not Set"}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-500">Contract Price</span>
+                <span className="font-semibold">
+                  {form.contractPrice ? `$${form.contractPrice}` : "Not Set"}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-500">Preferred Contact</span>
+                <span className="font-semibold">
+                  {form.preferredContact || "Not Set"}
+                </span>
               </div>
 
               <div>
-                <div className="text-gray-500 mb-1">Notes</div>
-                <div className="font-medium">
-                  {form.notes && form.notes.trim() !== ""
-                    ? form.notes
-                    : "No notes"}
-                </div>
-              </div>
-
-              <div className="mt-4 text-center text-xs text-gray-400">
-                ✏️ Click Edit below to modify details
+                <span className="text-gray-500 block">Notes</span>
+                <p className="font-semibold whitespace-pre-line mt-1">
+                  {form.notes?.trim() ? form.notes : "No notes added"}
+                </p>
               </div>
             </div>
           )}
 
           {/* FOOTER BUTTONS */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+          <div className="flex justify-between items-center pt-4 border-t border-gray-200">
             <button
               onClick={handleExit}
-              className="bg-[#3b4250] text-white px-8 py-2 rounded-xl font-semibold shadow-sm hover:shadow-md"
+              className="bg-[#3b4250] text-white px-8 py-2 rounded-xl font-semibold shadow hover:shadow-md"
             >
               Exit
             </button>
 
             <button
               onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-              className="bg-[#048c63] text-white px-8 py-2 rounded-xl font-semibold shadow-sm hover:shadow-md"
+              className="bg-[#048c63] text-white px-8 py-2 rounded-xl font-semibold shadow hover:shadow-md"
             >
               {isEditing ? "Save" : "Edit"}
             </button>
           </div>
 
           {/* DELETE CONTACT */}
-          <div className="pt-3 text-center">
+          <div className="text-center pt-3">
             {!deleteConfirm ? (
               <button
                 onClick={() => setDeleteConfirm(true)}
@@ -573,20 +544,20 @@ export default function LeadModal({
                 Delete Contact
               </button>
             ) : (
-              <div className="bg-red-50 border border-red-300 rounded-xl p-3 inline-block">
+              <div className="inline-block bg-red-50 border border-red-300 rounded-xl p-3">
                 <p className="text-red-700 text-sm font-semibold mb-2">
                   Are you sure you want to delete this contact?
                 </p>
-                <div className="flex gap-3 justify-center">
+                <div className="flex gap-3 justify-center text-sm font-semibold">
                   <button
                     onClick={() => onDelete(form)}
-                    className="bg-red-600 text-white px-4 py-1 rounded-lg text-sm font-semibold"
+                    className="bg-red-600 text-white px-4 py-1 rounded"
                   >
                     Yes, Delete
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(false)}
-                    className="bg-gray-200 px-4 py-1 rounded-lg text-sm font-semibold"
+                    className="bg-gray-200 px-4 py-1 rounded"
                   >
                     Cancel
                   </button>
@@ -597,7 +568,7 @@ export default function LeadModal({
         </div>
       </div>
 
-      {/* INSTALL / DATE MODALS */}
+      {/* DATE MODALS */}
       {showDateModal && (
         <DateModal
           initialDate={form[showDateModal]}
@@ -626,7 +597,7 @@ export default function LeadModal({
         />
       )}
 
-      {/* APPOINTMENT MODAL */}
+      {/* APPOINTMENT DATE/TIME MODAL */}
       {showApptModal && (
         <ApptDateTimeModal
           apptDate={form.apptDate}

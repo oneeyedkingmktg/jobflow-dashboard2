@@ -2,119 +2,112 @@ import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const { login, error: authError, isLoading } = useAuth();
+
+  const [form, setForm] = useState({
+    email: '',
+    password: ''
+  });
+
+  const [localError, setLocalError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const { login } = useAuth();
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setLocalError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
-    if (!email || !password) {
-      setError('Please enter both email and password');
+    setLocalError('');
+
+    if (!form.email.trim() || !form.password.trim()) {
+      setLocalError('Email and password are required.');
       return;
     }
 
-    setIsLoggingIn(true);
-    
-    try {
-      const result = await login(email, password);
-      
-      if (!result.success) {
-        setError(result.error || 'Login failed');
-      }
-      // If success, AuthContext will handle the redirect via isAuthenticated change
-    } catch (err) {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoggingIn(false);
+    const res = await login(form.email.trim(), form.password.trim());
+
+    if (!res.success) {
+      setLocalError(res.error || 'Login failed');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-emerald-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-        {/* Logo/Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">JobFlow Dashboard</h1>
-          <p className="text-gray-600">Sign in to your account</p>
-        </div>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+      <div className="bg-white shadow-2xl rounded-2xl p-10 w-full max-w-md">
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 bg-red-50 border-2 border-red-500 rounded-lg p-4 animate-fade-in">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">⚠️</span>
-              <p className="text-red-700 font-medium">{error}</p>
-            </div>
+        {/* HEADER */}
+        <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">
+          JobFlow Login
+        </h2>
+
+        {/* ERROR MESSAGE */}
+        {(localError || authError) && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-600 p-3 rounded">
+            <p className="text-red-700 text-sm font-semibold">
+              {localError || authError}
+            </p>
           </div>
         )}
 
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email Field */}
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* EMAIL */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Email Address
+              Email
             </label>
             <input
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base"
-              placeholder="you@example.com"
-              autoComplete="email"
-              disabled={isLoggingIn}
+              value={form.email}
+              onChange={(e) => handleChange('email', e.target.value)}
+              placeholder="you@email.com"
+              className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 bg-gray-50 
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white 
+                         transition-all"
             />
           </div>
 
-          {/* Password Field */}
+          {/* PASSWORD */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Password
             </label>
+
             <div className="relative">
               <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base pr-12"
-                placeholder="••••••••"
-                autoComplete="current-password"
-                disabled={isLoggingIn}
+                type={showPassword ? 'text' : 'password'}
+                value={form.password}
+                onChange={(e) => handleChange('password', e.target.value)}
+                placeholder="Enter password"
+                className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 bg-gray-50 
+                           focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white 
+                           transition-all"
               />
+
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                disabled={isLoggingIn}
+                onClick={() => setShowPassword((p) => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
-                {showPassword ? (
-                  <span className="text-xl">👁️</span>
-                ) : (
-                  <span className="text-xl">👁️‍🗨️</span>
-                )}
+                {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
           </div>
 
-          {/* Submit Button */}
+          {/* SUBMIT BUTTON */}
           <button
             type="submit"
-            disabled={isLoggingIn}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg active:scale-95 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
+            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold 
+                       rounded-xl transition-all shadow-lg hover:shadow-xl disabled:bg-gray-400"
           >
-            {isLoggingIn ? 'Signing In...' : 'Sign In'}
+            {isLoading ? 'Signing in...' : 'Login'}
           </button>
         </form>
-
-        {/* Help Text */}
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Contact your administrator for account access</p>
-        </div>
       </div>
     </div>
   );

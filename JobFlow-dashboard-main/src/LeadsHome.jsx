@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+// === BACKEND API INTEGRATION - Connected to PostgreSQL ===
+import React, { useState, useMemo, useEffect } from "react";
 import { apiRequest } from "./api";
 import LeadModal from "./LeadModal.jsx";
 import CalendarView from "./CalendarView.jsx";
@@ -47,14 +48,8 @@ const convertLeadFromBackend = (lead) => {
     installDate: lead.install_date,
     installTentative: lead.install_tentative,
 
-    ghlContactId: lead.ghl_contact_id,
-    ghlAppointmentId: lead.ghl_appointment_id,
-    ghlLastSynced: lead.ghl_last_synced,
-    ghlSyncStatus: lead.ghl_sync_status,
-
     createdAt: lead.created_at,
     updatedAt: lead.updated_at,
-    needsSync: lead.needs_sync,
   };
 };
 
@@ -70,6 +65,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   const [loading, setLoading] = useState(true);
   const [showPhoneLookup, setShowPhoneLookup] = useState(false);
 
+  // ===============================
+  // LOAD LEADS FROM BACKEND
+  // ===============================
   useEffect(() => {
     const fetchLeads = async () => {
       try {
@@ -88,24 +86,30 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     fetchLeads();
   }, []);
 
+  // ===============================
+  // OPEN EXISTING LEAD
+  // ===============================
   const handleLeadClick = (lead) => {
     setSelectedLead(lead);
     setIsNewLead(false);
   };
 
-  // Always start new lead creation with phone lookup
+  // ===============================
+  // START ADD NEW → always phone lookup
+  // ===============================
   const handleAddLead = () => {
     setSelectedLead(null);
     setIsNewLead(false);
     setShowPhoneLookup(true);
   };
 
-  // Called when phone lookup finds NO existing lead
-  // Opens LeadModal with phone prefilled for a brand new lead
+  // ===============================
+  // PHONE LOOKUP: No match found → New lead
+  // ===============================
   const handlePhoneLookupCreateNew = (phone) => {
     const mapped = {
       id: null,
-      companyId: null,
+      companyId: currentCompany?.id || null,
       createdByUserId: user?.id || null,
 
       name: "",
@@ -138,15 +142,6 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
       apptTime: null,
       installDate: null,
       installTentative: false,
-
-      ghlContactId: null,
-      ghlAppointmentId: null,
-      ghlLastSynced: null,
-      ghlSyncStatus: null,
-
-      createdAt: null,
-      updatedAt: null,
-      needsSync: false,
     };
 
     setSelectedLead(mapped);
@@ -154,8 +149,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     setShowPhoneLookup(false);
   };
 
-  // Called when phone lookup finds an existing lead
-  // Opens existing lead in view mode
+  // ===============================
+  // PHONE LOOKUP: Match → open existing
+  // ===============================
   const handlePhoneLookupSelectExisting = (lead) => {
     if (!lead) return;
     setSelectedLead(lead);
@@ -163,18 +159,23 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     setShowPhoneLookup(false);
   };
 
+  // ===============================
+  // CLOSE MODAL ONLY — no saving
+  // ===============================
   const handleCloseModal = () => {
     setSelectedLead(null);
     setIsNewLead(false);
   };
 
+  // ===============================
+  // SAVE LEAD
+  // ===============================
   const handleSaveLead = async (lead) => {
     try {
       const backendLead = {
-        name: lead.name || "",
+        full_name: lead.name || "",
         first_name: lead.firstName || "",
         last_name: lead.lastName || "",
-        full_name: lead.name || "",
 
         phone: lead.phone || "",
         email: lead.email || "",
@@ -187,13 +188,11 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         company_name: lead.companyName || "",
         project_type: lead.projectType || "",
 
-        // B2 RULE:
-        lead_source:
-          lead.leadSource && lead.leadSource.trim() !== ""
-            ? lead.leadSource
-            : null,
-
+        lead_source: lead.leadSource || "",
         referral_source: lead.referralSource || "",
+
+        preferred_contact: lead.preferredContact || "",
+        notes: lead.notes || "",
 
         status: lead.status || "lead",
         not_sold_reason: lead.notSoldReason || "",
@@ -204,9 +203,6 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         appointment_time: lead.apptTime || null,
         install_date: lead.installDate || null,
         install_tentative: lead.installTentative || false,
-
-        preferred_contact: lead.preferredContact || "",
-        notes: lead.notes || "",
       };
 
       let response;
@@ -231,13 +227,19 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
           : prev.map((l) => (l.id === converted.id ? converted : l))
       );
 
-      handleCloseModal();
+      // DO NOT CLOSE MODAL ON SAVE
+      setSelectedLead(converted);
+      setIsNewLead(false);
+
     } catch (error) {
       console.error("Error saving lead:", error);
       alert("Failed to save lead: " + error.message);
     }
   };
 
+  // ===============================
+  // DELETE LEAD
+  // ===============================
   const handleDeleteLead = async (leadToDelete) => {
     try {
       await apiRequest(`/leads/${leadToDelete.id}`, { method: "DELETE" });
@@ -249,6 +251,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     }
   };
 
+  // ===============================
+  // FILTERING + TAB COUNTS
+  // ===============================
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       const tabMatch =
@@ -275,13 +280,14 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   }, [leads, activeTab, searchTerm]);
 
   const leadCount = leads.filter((l) => l.status === "lead").length;
-  const appointmentCount = leads.filter(
-    (l) => l.status === "appointment_set"
-  ).length;
+  const appointmentCount = leads.filter((l) => l.status === "appointment_set").length;
   const soldCount = leads.filter((l) => l.status === "sold").length;
   const notSoldCount = leads.filter((l) => l.status === "not_sold").length;
   const completeCount = leads.filter((l) => l.status === "complete").length;
 
+  // ===============================
+  // UI
+  // ===============================
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xl">
@@ -298,6 +304,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         </div>
       </div>
 
+      {/* STATUS TABS */}
       <div className="bg-white shadow-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-1 overflow-x-auto py-2">
@@ -312,15 +319,13 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
               <button
                 key={tab.name}
                 onClick={() => setActiveTab(tab.name)}
-                className={`
-                  px-6 py-3 rounded-lg font-semibold text-sm whitespace-nowrap
-                  transition-all duration-200 transform hover:scale-105
-                  ${
-                    activeTab === tab.name
-                      ? `bg-gradient-to-r from-${tab.color}-500 to-${tab.color}-600 text-white shadow-lg`
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }
-                `}
+                className={`px-6 py-3 rounded-lg font-semibold text-sm whitespace-nowrap
+                transition-all duration-200 transform hover:scale-105
+                ${
+                  activeTab === tab.name
+                    ? `bg-gradient-to-r from-${tab.color}-500 to-${tab.color}-600 text-white shadow-lg`
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
               >
                 {tab.name}
                 {tab.count !== null && (
@@ -334,11 +339,13 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         </div>
       </div>
 
+      {/* MAIN CONTENT */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === "Calendar" ? (
           <CalendarView leads={leads} onLeadClick={handleLeadClick} />
         ) : (
           <>
+            {/* SEARCH + BUTTONS */}
             <div className="mb-6 flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <input
@@ -347,16 +354,16 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 
-                    focus:border-blue-500 focus:ring-4 focus:ring-blue-100 
-                    transition-all duration-200 shadow-sm"
+                  focus:border-blue-500 focus:ring-4 focus:ring-blue-100 
+                  transition-all duration-200 shadow-sm"
                 />
               </div>
 
               <button
                 onClick={() => setShowPhoneLookup(true)}
                 className="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 
-                  text-white rounded-xl font-semibold shadow-lg hover:shadow-xl 
-                  transform hover:scale-105 transition-all duration-200"
+                text-white rounded-xl font-semibold shadow-lg hover:shadow-xl 
+                transform hover:scale-105 transition-all duration-200"
               >
                 Phone Lookup
               </button>
@@ -364,13 +371,14 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
               <button
                 onClick={handleAddLead}
                 className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 
-                  text-white rounded-xl font-semibold shadow-lg hover:shadow-xl 
-                  transform hover:scale-105 transition-all duration-200"
+                text-white rounded-xl font-semibold shadow-lg hover:shadow-xl 
+                transform hover:scale-105 transition-all duration-200"
               >
                 + Add Lead
               </button>
             </div>
 
+            {/* LEAD LIST */}
             {loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
@@ -392,8 +400,8 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                     key={lead.id}
                     onClick={() => handleLeadClick(lead)}
                     className="bg-white rounded-xl shadow-md hover:shadow-xl 
-                      transform hover:scale-105 transition-all duration-200 
-                      cursor-pointer p-6 border-2 border-transparent hover:border-blue-300"
+                    transform hover:scale-105 transition-all duration-200 
+                    cursor-pointer p-6 border-2 border-transparent hover:border-blue-300"
                   >
                     <h3 className="text-lg font-bold text-gray-900">
                       {lead.name}
@@ -417,6 +425,10 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
           </>
         )}
       </div>
+
+      {/* ============================================== */}
+      {/* MODALS */}
+      {/* ============================================== */}
 
       {(selectedLead || isNewLead) && (
         <LeadModal

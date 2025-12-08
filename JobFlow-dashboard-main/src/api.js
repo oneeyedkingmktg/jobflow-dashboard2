@@ -1,12 +1,12 @@
 /* ============================================================================
    API Configuration
    ============================================================================
-   FORCE REBUILD - Cache bust v3.1
+   FORCE REBUILD - Cache bust v4.0
 ============================================================================ */
 
-const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com/api';
+const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com';
 
-// Generic API request handler
+/* Generic API request handler */
 export const apiRequest = async (endpoint, options = {}) => {
   const token = localStorage.getItem('authToken');
 
@@ -19,22 +19,22 @@ export const apiRequest = async (endpoint, options = {}) => {
     ...options,
   });
 
-  // ERROR PATH (safe parse)
+  // Error handling (safe)
   if (!response.ok) {
     let message = 'API request failed';
     try {
-      const cloned = response.clone();
-      const json = await cloned.json().catch(() => null);
+      const clone = response.clone();
+      const json = await clone.json().catch(() => null);
       if (json?.message) message = json.message;
       if (json?.error) message = json.error;
     } catch (_) {}
     throw new Error(message);
   }
 
-  // SUCCESS PATH (safe JSON parse)
+  // Success (safe JSON)
   try {
     return await response.json();
-  } catch (_) {
+  } catch {
     return {};
   }
 };
@@ -45,12 +45,12 @@ export const apiRequest = async (endpoint, options = {}) => {
 
 export const AuthAPI = {
   login: (email, password) =>
-    apiRequest('/login', {
+    apiRequest('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
 
-  me: () => apiRequest('/verify'),
+  me: () => apiRequest('/auth/verify'),
 };
 
 /* ============================================================================
@@ -59,7 +59,6 @@ export const AuthAPI = {
 
 export const UsersAPI = {
   getAll: () => apiRequest('/users'),
-
   get: (id) => apiRequest(`/users/${id}`),
 
   create: (data) =>
@@ -114,7 +113,6 @@ export const CompaniesAPI = {
 
 export const LeadsAPI = {
   getAll: () => apiRequest('/leads'),
-
   get: (id) => apiRequest(`/leads/${id}`),
 
   create: (leadData) =>
@@ -143,25 +141,19 @@ export const GHLAPI = {
   searchByPhone: (phone, companyId) =>
     apiRequest(`/ghl/search-by-phone?phone=${encodeURIComponent(phone)}`, {
       method: 'GET',
-      headers: {
-        'x-company-id': companyId,
-      },
+      headers: { 'x-company-id': companyId },
     }),
 
   syncLead: (leadData, companyId) =>
     apiRequest('/ghl/sync-lead', {
       method: 'POST',
-      headers: {
-        'x-company-id': companyId,
-      },
+      headers: { 'x-company-id': companyId },
       body: JSON.stringify(leadData),
     }),
 
   getContact: (contactId, companyId) =>
     apiRequest(`/ghl/contact/${contactId}`, {
       method: 'GET',
-      headers: {
-        'x-company-id': companyId,
-      },
+      headers: { 'x-company-id': companyId },
     }),
 };

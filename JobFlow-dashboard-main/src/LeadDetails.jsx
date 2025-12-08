@@ -1,4 +1,3 @@
-// LeadDetails.jsx
 import React from "react";
 
 export default function LeadDetails({
@@ -12,25 +11,29 @@ export default function LeadDetails({
   return (
     <div className="space-y-6">
 
-      {/* ============================ */}
-      {/* CONTACT INFORMATION SECTION */}
-      {/* ============================ */}
-      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-        <h3 className="text-lg font-bold mb-3 text-gray-900">Contact Info</h3>
+      {/* ================================= */}
+      {/* CONTACT INFORMATION SECTION       */}
+      {/* ================================= */}
+      <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold mb-3 text-gray-900">
+          Contact Information
+        </h3>
 
-        {form.name && (
-          <p className="text-gray-800 font-semibold text-base">{form.name}</p>
-        )}
+        <div className="space-y-1 text-sm">
+          {form.name && (
+            <p className="text-gray-900 font-medium">{form.name}</p>
+          )}
 
-        {form.phone && (
-          <p className="text-gray-700 text-sm mt-1">{form.phone}</p>
-        )}
+          {form.phone && (
+            <p className="text-gray-700">{form.phone}</p>
+          )}
 
-        {form.email && (
-          <p className="text-gray-600 text-sm">{form.email}</p>
-        )}
+          {form.email && (
+            <p className="text-gray-600">{form.email}</p>
+          )}
+        </div>
 
-        {/* Address (Clickable Maps) */}
+        {/* Address block */}
         {form.address && (
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -38,105 +41,108 @@ export default function LeadDetails({
             )}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block bg-white rounded-lg p-2.5 mt-3 border hover:border-blue-400 transition-all shadow-sm text-sm"
+            className="block mt-4 bg-gray-50 border rounded-lg p-3 hover:border-blue-400 transition shadow-sm"
           >
-            <div className="text-xs text-gray-500 mb-0.5">📍 Open in Maps</div>
-            <p className="text-gray-800 font-medium">{form.address}</p>
-            <p className="text-gray-600 text-sm">
+            <div className="text-xs text-gray-500">📍 Open in Maps</div>
+            <p className="text-gray-900 font-medium">{form.address}</p>
+            <p className="text-gray-700 text-sm">
               {form.city}, {form.state} {form.zip}
             </p>
           </a>
         )}
       </div>
 
-      {/* ============================ */}
-      {/* LEAD DETAILS SECTION */}
-      {/* ============================ */}
-      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-        <h3 className="text-lg font-bold mb-3 text-gray-900">Lead Details</h3>
+      {/* ================================= */}
+      {/* LEAD DETAILS SECTION              */}
+      {/* ================================= */}
+      <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold mb-3 text-gray-900">
+          Lead Details
+        </h3>
 
-        <div className="space-y-2 text-sm">
+        <div className="space-y-2 text-sm text-gray-700">
+
           {form.buyerType && (
             <p>
-              <span className="font-semibold text-gray-700">Buyer Type: </span>
-              {form.buyerType}
+              <span className="font-semibold">Buyer Type:</span> {form.buyerType}
             </p>
           )}
 
           {form.companyName && (
             <p>
-              <span className="font-semibold text-gray-700">Company Name: </span>
-              {form.companyName}
+              <span className="font-semibold">Company Name:</span> {form.companyName}
             </p>
           )}
 
           {form.projectType && (
             <p>
-              <span className="font-semibold text-gray-700">Project Type: </span>
-              {form.projectType}
+              <span className="font-semibold">Project Type:</span> {form.projectType}
             </p>
           )}
 
-          {/* ONLY SHOW REFERRAL SOURCE */}
+          {form.leadSource && (
+            <p>
+              <span className="font-semibold">Lead Source:</span> {form.leadSource}
+            </p>
+          )}
+
           {form.referralSource && (
             <p>
-              <span className="font-semibold text-gray-700">Referred By: </span>
-              {form.referralSource}
+              <span className="font-semibold">Referral Source:</span> {form.referralSource}
             </p>
           )}
 
           {form.preferredContact && (
             <p>
-              <span className="font-semibold text-gray-700">Preferred Contact: </span>
+              <span className="font-semibold">Preferred Contact:</span>{" "}
               {form.preferredContact}
             </p>
           )}
 
           {form.contractPrice && (
             <p>
-              <span className="font-semibold text-gray-700">Contract Price: </span>
+              <span className="font-semibold">Contract Price:</span>{" "}
               ${form.contractPrice}
             </p>
           )}
 
           {form.notSoldReason && (
-            <p className="text-red-700 font-medium">
-              <span className="font-semibold">Not Sold Reason: </span>
-              {form.notSoldReason}
+            <p className="text-red-700 font-semibold">
+              Not Sold Reason: {form.notSoldReason}
             </p>
           )}
         </div>
       </div>
 
-      {/* ============================ */}
-      {/* DATE INFORMATION SECTION */}
-      {/* ============================ */}
-      <div className="grid grid-cols-2 gap-3 text-sm">
+      {/* ================================= */}
+      {/* APPOINTMENT & INSTALL SECTION     */}
+      {/* ================================= */}
+      <div className="grid grid-cols-2 gap-4">
 
-        {/* APPOINTMENT DATE */}
+        {/* Appointment */}
         <div
           onClick={() => setShowApptModal(true)}
-          className="bg-gray-50 rounded-lg p-3 cursor-pointer transition-colors border hover:bg-blue-50 hover:border-blue-300"
+          className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:border-blue-400 cursor-pointer transition"
         >
           <div className="text-xs text-gray-500 mb-1">Appointment</div>
 
-          <div className="font-semibold text-gray-900">
+          <div className="text-gray-900 font-semibold">
             {formatDate(form.apptDate)}
           </div>
 
-          <div className="text-xs text-gray-600">
+          <div className="text-gray-600 text-sm">
             {formatTime(form.apptTime)}
           </div>
         </div>
 
-        {/* INSTALL DATE */}
+        {/* Install Date */}
         <div
           onClick={() => setShowDateModal("installDate")}
-          className="bg-gray-50 rounded-lg p-3 cursor-pointer transition-colors border hover:bg-blue-50 hover:border-blue-300"
+          className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:border-blue-400 cursor-pointer transition"
         >
           <div className="text-xs text-gray-500 mb-1">Install Date</div>
 
-          <div className="font-semibold text-gray-900">
+          <div className="text-gray-900 font-semibold">
             {form.installTentative && form.installDate && (
               <span className="text-xs mr-1">Week of</span>
             )}
@@ -145,13 +151,17 @@ export default function LeadDetails({
         </div>
       </div>
 
-      {/* ============================ */}
-      {/* NOTES SECTION */}
-      {/* ============================ */}
+      {/* ================================= */}
+      {/* NOTES                             */}
+      {/* ================================= */}
       {form.notes && (
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-          <h3 className="text-lg font-bold mb-2 text-gray-900">Notes</h3>
-          <p className="text-gray-700 text-sm whitespace-pre-line">{form.notes}</p>
+        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2 text-gray-900">
+            Notes
+          </h3>
+          <p className="text-gray-700 text-sm whitespace-pre-line">
+            {form.notes}
+          </p>
         </div>
       )}
     </div>

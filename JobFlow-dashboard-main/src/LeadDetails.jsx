@@ -11,21 +11,23 @@ export default function LeadDetails({
   return (
     <div className="space-y-6">
 
-      {/* ================================= */}
-      {/* CONTACT INFORMATION SECTION       */}
-      {/* ================================= */}
+      {/* CONTACT INFORMATION */}
       <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
         <h3 className="text-lg font-semibold mb-3 text-gray-900">
           Contact Information
         </h3>
 
         <div className="space-y-1 text-sm">
-          {form.name && (
+          {form.name ? (
             <p className="text-gray-900 font-medium">{form.name}</p>
+          ) : (
+            <p className="text-gray-400 italic">No name entered</p>
           )}
 
-          {form.phone && (
+          {form.phone ? (
             <p className="text-gray-700">{form.phone}</p>
+          ) : (
+            <p className="text-gray-400 italic">No phone entered</p>
           )}
 
           {form.email && (
@@ -33,7 +35,6 @@ export default function LeadDetails({
           )}
         </div>
 
-        {/* Address block */}
         {form.address && (
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -52,9 +53,7 @@ export default function LeadDetails({
         )}
       </div>
 
-      {/* ================================= */}
-      {/* LEAD DETAILS SECTION              */}
-      {/* ================================= */}
+      {/* LEAD DETAILS */}
       <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
         <h3 className="text-lg font-semibold mb-3 text-gray-900">
           Lead Details
@@ -64,31 +63,36 @@ export default function LeadDetails({
 
           {form.buyerType && (
             <p>
-              <span className="font-semibold">Buyer Type:</span> {form.buyerType}
+              <span className="font-semibold">Buyer Type:</span>{" "}
+              {form.buyerType}
             </p>
           )}
 
           {form.companyName && (
             <p>
-              <span className="font-semibold">Company Name:</span> {form.companyName}
+              <span className="font-semibold">Company Name:</span>{" "}
+              {form.companyName}
             </p>
           )}
 
           {form.projectType && (
             <p>
-              <span className="font-semibold">Project Type:</span> {form.projectType}
+              <span className="font-semibold">Project Type:</span>{" "}
+              {form.projectType}
             </p>
           )}
 
           {form.leadSource && (
             <p>
-              <span className="font-semibold">Lead Source:</span> {form.leadSource}
+              <span className="font-semibold">Lead Source:</span>{" "}
+              {form.leadSource}
             </p>
           )}
 
           {form.referralSource && (
             <p>
-              <span className="font-semibold">Referral Source:</span> {form.referralSource}
+              <span className="font-semibold">Referral Source:</span>{" "}
+              {form.referralSource}
             </p>
           )}
 
@@ -114,9 +118,7 @@ export default function LeadDetails({
         </div>
       </div>
 
-      {/* ================================= */}
-      {/* APPOINTMENT & INSTALL SECTION     */}
-      {/* ================================= */}
+      {/* APPOINTMENT & INSTALL */}
       <div className="grid grid-cols-2 gap-4">
 
         {/* Appointment */}
@@ -127,11 +129,11 @@ export default function LeadDetails({
           <div className="text-xs text-gray-500 mb-1">Appointment</div>
 
           <div className="text-gray-900 font-semibold">
-            {formatDate(form.apptDate)}
+            {form.apptDate ? formatDate(form.apptDate) : "Not Set"}
           </div>
 
           <div className="text-gray-600 text-sm">
-            {formatTime(form.apptTime)}
+            {form.apptTime ? formatTime(form.apptTime) : "Not Set"}
           </div>
         </div>
 
@@ -143,18 +145,19 @@ export default function LeadDetails({
           <div className="text-xs text-gray-500 mb-1">Install Date</div>
 
           <div className="text-gray-900 font-semibold">
-            {form.installTentative && form.installDate && (
-              <span className="text-xs mr-1">Week of</span>
-            )}
-            {formatDate(form.installDate)}
+            {form.installDate
+              ? formatDate(form.installDate)
+              : "Not Set"}
           </div>
+
+          {form.installTentative && (
+            <p className="text-xs text-gray-500 mt-1">Week of</p>
+          )}
         </div>
       </div>
 
-      {/* ================================= */}
-      {/* NOTES                             */}
-      {/* ================================= */}
-      {form.notes && (
+      {/* NOTES */}
+      {form.notes ? (
         <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold mb-2 text-gray-900">
             Notes
@@ -162,6 +165,13 @@ export default function LeadDetails({
           <p className="text-gray-700 text-sm whitespace-pre-line">
             {form.notes}
           </p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold mb-2 text-gray-900">
+            Notes
+          </h3>
+          <p className="text-gray-400 text-sm italic">No notes added</p>
         </div>
       )}
     </div>

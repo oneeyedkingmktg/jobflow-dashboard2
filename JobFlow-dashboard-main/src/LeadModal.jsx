@@ -1,5 +1,4 @@
-// LeadModal.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import LeadDetails from "./LeadDetails.jsx";
 import DateModal from "./DateModal.jsx";
 import ApptDateTimeModal from "./ApptDateTimeModal.jsx";
@@ -8,22 +7,11 @@ import { formatPhoneNumber } from "./utils/formatting";
 
 export default function LeadModal({
   lead,
-  currentUser,
   onClose,
   onSave,
   onDelete,
 }) {
   const { currentCompany } = useCompany();
-
-  // Initialize referralSource correctly:
-  // - Use DB/GHL value if exists
-  // - Else default to logged-in user's name
-  const referralDefault =
-    lead?.referralSource ||
-    lead?.referral_source ||
-    currentUser?.name ||
-    currentUser?.email ||
-    "";
 
   const [form, setForm] = useState({
     name: "",
@@ -36,7 +24,8 @@ export default function LeadModal({
     buyerType: "",
     companyName: "",
     projectType: "",
-    referralSource: referralDefault,
+    leadSource: "",
+    referralSource: "",
     preferredContact: "",
     notes: "",
     contractPrice: "",
@@ -45,7 +34,7 @@ export default function LeadModal({
     installDate: "",
     installTentative: false,
     notSoldReason: "",
-    status: "Lead",
+    status: "lead",
     ...lead,
   });
 
@@ -81,12 +70,7 @@ export default function LeadModal({
     onClose({ view: "home" });
   };
 
-  const buyerTypes = [
-    "Residential",
-    "Small Business",
-    "Buyer not Owner",
-    "Competitive Bid",
-  ];
+  const buyerTypes = ["Residential", "Small Business", "Buyer not Owner", "Competitive Bid"];
 
   const projectTypes = [
     "Garage Floor",
@@ -110,7 +94,7 @@ export default function LeadModal({
 
         <div className="p-6 space-y-6">
 
-          {/* STATUS & EDIT BUTTON */}
+          {/* STATUS + ACTION BUTTON */}
           <div className="flex justify-between items-center pb-4 border-b border-gray-200">
             <span className="px-4 py-2 rounded-full bg-gray-200 text-gray-800 font-semibold capitalize">
               {form.status}
@@ -149,7 +133,7 @@ export default function LeadModal({
           {isEditing && (
             <div className="space-y-6">
 
-              {/* CONTACT INFO */}
+              {/* CONTACT INFORMATION */}
               <div className="bg-gray-50 p-4 rounded-xl border">
                 <h3 className="font-bold mb-3">Contact Information</h3>
 
@@ -243,27 +227,34 @@ export default function LeadModal({
                   ))}
                 </select>
 
-                {/* Referral Source (only field we show) */}
+                {/* Lead Source — only editable if empty */}
+                <input
+                  className={`input mt-3 ${form.leadSource ? "bg-gray-200 cursor-not-allowed" : ""}`}
+                  placeholder="Lead Source"
+                  value={form.leadSource}
+                  onChange={(e) => {
+                    if (!form.leadSource) handleChange("leadSource", e.target.value);
+                  }}
+                  disabled={!!form.leadSource}
+                />
+
+                {/* Referral Source */}
                 <input
                   className="input mt-3"
                   placeholder="Referral Source"
                   value={form.referralSource}
-                  onChange={(e) =>
-                    handleChange("referralSource", e.target.value)
-                  }
+                  onChange={(e) => handleChange("referralSource", e.target.value)}
                 />
 
                 {/* Preferred Contact */}
                 <select
                   className="input mt-3"
                   value={form.preferredContact}
-                  onChange={(e) =>
-                    handleChange("preferredContact", e.target.value)
-                  }
+                  onChange={(e) => handleChange("preferredContact", e.target.value)}
                 >
                   <option value="">Preferred Contact</option>
-                  {preferredContacts.map((x) => (
-                    <option key={x}>{x}</option>
+                  {preferredContacts.map((p) => (
+                    <option key={p}>{p}</option>
                   ))}
                 </select>
 
@@ -272,26 +263,23 @@ export default function LeadModal({
                   className="input mt-3"
                   placeholder="Contract Price"
                   value={form.contractPrice}
-                  onChange={(e) =>
-                    handleChange("contractPrice", e.target.value)
-                  }
+                  onChange={(e) => handleChange("contractPrice", e.target.value)}
                 />
               </div>
 
               {/* Notes */}
               <div className="bg-gray-50 p-4 rounded-xl border">
-                <h3 className="font-bold mb-3">Notes</h3>
+                <h3 className="font-bold mb-2">Notes</h3>
                 <textarea
                   className="input h-28"
                   value={form.notes}
                   onChange={(e) => handleChange("notes", e.target.value)}
                 />
               </div>
-
             </div>
           )}
 
-          {/* FOOTER BUTTONS */}
+          {/* FOOTER */}
           <div className="flex justify-between items-center pt-4 border-t">
             <button
               onClick={handleExit}
@@ -310,6 +298,7 @@ export default function LeadModal({
             )}
           </div>
 
+          {/* DELETE CONFIRM */}
           {deleteConfirm && (
             <div className="bg-red-50 border border-red-300 rounded-xl p-4 mt-4">
               <p className="font-semibold text-red-700 mb-3">
@@ -335,19 +324,13 @@ export default function LeadModal({
         </div>
       </div>
 
-      {/* DATE MODALS */}
+      {/* INSTALL / DATE MODALS */}
       {showDateModal && (
         <DateModal
           initialDate={form[showDateModal]}
-          initialTentative={
-            showDateModal === "installDate" ? form.installTentative : false
-          }
+          initialTentative={showDateModal === "installDate" ? form.installTentative : false}
           allowTentative={showDateModal === "installDate"}
-          label={
-            showDateModal === "installDate"
-              ? "Set Install Date"
-              : "Select Date"
-          }
+          label={showDateModal === "installDate" ? "Set Install Date" : "Select Date"}
           onConfirm={(date, tentative) => {
             setForm((p) => ({
               ...p,

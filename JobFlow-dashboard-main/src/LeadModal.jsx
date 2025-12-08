@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import DateModal from "./DateModal.jsx";
 import ApptDateTimeModal from "./ApptDateTimeModal.jsx";
-import ReasonNotSoldModal from "./ReasonNotSoldModal.jsx";
 import { useCompany } from "./CompanyContext";
 import { formatPhoneNumber } from "./utils/formatting";
 
@@ -21,13 +20,25 @@ const STATUS_COLORS = {
   complete: "#ea8e09",
 };
 
-// Main linear progression (Appointment Set handled separately)
 const STATUS_PROGRESS = {
   lead: "appointment_set",
+  appointment_set: "sold",
   sold: "complete",
   not_sold: "sold",
-  complete: null,
-  appointment_set: null,
+};
+
+// Split "full name" into first + last
+const splitName = (full) => {
+  if (!full) return { first: "", last: "" };
+
+  const parts = full.trim().split(" ");
+  if (parts.length === 1) {
+    return { first: parts[0], last: "" };
+  }
+  return {
+    first: parts[0],
+    last: parts.slice(1).join(" "),
+  };
 };
 
 export default function LeadModal({
@@ -42,6 +53,8 @@ export default function LeadModal({
   const [form, setForm] = useState({
     id: lead?.id || null,
     name: lead?.name || "",
+    firstName: lead?.firstName || "",
+    lastName: lead?.lastName || "",
     phone: lead?.phone || "",
     email: lead?.email || "",
     address: lead?.address || "",
@@ -68,9 +81,7 @@ export default function LeadModal({
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [showNotSoldModal, setShowNotSoldModal] = useState(false);
 
-  // PREFILL PHONE WHEN CREATING NEW FROM LOOKUP
   useEffect(() => {
     if (!lead?.id && presetPhone) {
       setForm((prev) => ({
@@ -80,7 +91,6 @@ export default function LeadModal({
     }
   }, [presetPhone, lead]);
 
-  // Helpers
   const formatDate = (value) => {
     if (!value) return "Not Set";
     const d = new Date(value);
@@ -92,12 +102,11 @@ export default function LeadModal({
 
   const formatTime = (value) => {
     if (!value) return "";
-    const parts = String(value).split(":");
-    let hour = parseInt(parts[0], 10);
-    const minutes = parts[1] || "00";
+    const [h, m] = value.split(":");
+    let hour = parseInt(h, 10);
     const ampm = hour >= 12 ? "PM" : "AM";
     hour = hour % 12 || 12;
-    return `${hour}:${minutes.padStart(2, "0")} ${ampm}`;
+    return `${hour}:${(m || "00").padStart(2, "0")} ${ampm}`;
   };
 
   const handleChange = (key, value) => {
@@ -108,22 +117,33 @@ export default function LeadModal({
     handleChange("phone", formatPhoneNumber(val));
   };
 
-  // SAVE (stay on screen, go back to view mode)
+  // SAVE (stays on screen)
   const handleSave = () => {
-    const updated = { ...form };
-    onSave(updated);
-    setForm(updated);
+    const { first, last } = splitName(form.name);
+
+    onSave({
+      ...form,
+      firstName: first,
+      lastName: last,
+    });
+
     setIsEditing(false);
   };
 
-  // EXIT (save then close)
+  // EXIT (save + close)
   const handleExit = () => {
-    const updated = { ...form };
-    onSave(updated);
+    const { first, last } = splitName(form.name);
+
+    onSave({
+      ...form,
+      firstName: first,
+      lastName: last,
+    });
+
     onClose({ view: "home" });
   };
 
-  // CALL / TEXT / MAPS
+  // CALL TEXT MAPS
   const call = () => {
     if (!form.phone) return;
     window.open(`tel:${form.phone.replace(/[^\d]/g, "")}`);
@@ -175,43 +195,6 @@ export default function LeadModal({
     "Commercial",
   ];
 
-  // Progress helpers
-  const saveWithUpdates = (updates) => {
-    const updated = { ...form, ...updates };
-    setForm(updated);
-    onSave(updated);
-  };
-
-  const handleProgressNext = () => {
-    if (!nextStatus) return;
-
-    if (currentStatus === "not_sold" && nextStatus === "sold") {
-      // Clear not_sold_reason when converting to sold
-      saveWithUpdates({ status: "sold", notSoldReason: "" });
-    } else {
-      saveWithUpdates({ status: nextStatus });
-    }
-  };
-
-  const handleProgressSoldFromAppt = () => {
-    // Appointment Set → Sold
-    saveWithUpdates({ status: "sold", notSoldReason: "" });
-  };
-
-  const handleProgressNotSoldFromAppt = () => {
-    // Appointment Set → open reason modal
-    setShowNotSoldModal(true);
-  };
-
-  const handleNotSoldReasonSelected = (reason) => {
-    saveWithUpdates({ status: "not_sold", notSoldReason: reason });
-    setShowNotSoldModal(false);
-  };
-
-  const handleNotSoldCancel = () => {
-    setShowNotSoldModal(false);
-  };
-
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-auto">
       <div className="bg-[#f5f6f7] rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
@@ -219,29 +202,20 @@ export default function LeadModal({
         {/* HEADER */}
         <div
           className="px-6 pt-4 pb-5"
-          style={{ backgroundColor: STATUS_COLORS[currentStatus] || "#59687d" }}
+          style={{ backgroundColor: STATUS_COLORS[currentStatus] }}
         >
           <h2 className="text-2xl font-bold text-white mb-4">
             {form.name || "New Lead"}
           </h2>
 
           <div className="grid grid-cols-3 gap-3">
-            <button
-              onClick={call}
-              className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md"
-            >
+            <button onClick={call} className="bg-white rounded-lg py-2 font-semibold">
               Call
             </button>
-            <button
-              onClick={text}
-              className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md"
-            >
+            <button onClick={text} className="bg-white rounded-lg py-2 font-semibold">
               Text
             </button>
-            <button
-              onClick={maps}
-              className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md"
-            >
+            <button onClick={maps} className="bg-white rounded-lg py-2 font-semibold">
               Maps
             </button>
           </div>
@@ -250,13 +224,13 @@ export default function LeadModal({
         {/* BODY */}
         <div className="px-6 py-6 space-y-5">
 
-          {/* STATUS + PROGRESSION */}
-          <div className="flex items-center justify-between gap-4">
+          {/* STATUS ROW */}
+          <div className="flex items-center justify-between">
             <div className="relative">
               <select
                 value={currentStatus}
                 onChange={(e) => handleChange("status", e.target.value)}
-                className="appearance-none bg-[#59687d] text-white text-sm font-semibold px-4 py-2 rounded-full pr-8 shadow cursor-pointer"
+                className="appearance-none bg-[#59687d] text-white text-sm font-semibold px-4 py-2 rounded-full pr-8"
               >
                 {statusOptions.map((s) => (
                   <option key={s} value={s}>
@@ -264,55 +238,31 @@ export default function LeadModal({
                   </option>
                 ))}
               </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white text-sm pointer-events-none">
+
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white text-sm">
                 ▼
               </span>
             </div>
 
-            {/* Progression buttons */}
-            {currentStatus === "appointment_set" ? (
-              <div className="flex gap-3">
-                <button
-                  onClick={handleProgressSoldFromAppt}
-                  className="px-5 py-2 rounded-full text-sm font-bold shadow text-white flex items-center"
-                  style={{ backgroundColor: STATUS_COLORS["sold"] }}
-                >
-                  <span className="mr-1">»»</span> SOLD
-                </button>
-
-                <button
-                  onClick={handleProgressNotSoldFromAppt}
-                  className="px-5 py-2 rounded-full text-sm font-bold shadow text-white flex items-center"
-                  style={{ backgroundColor: STATUS_COLORS["not_sold"] }}
-                >
-                  <span className="mr-1">»»</span> NOT SOLD
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleProgressNext}
-                disabled={!nextStatus}
-                className={`px-6 py-2 rounded-full text-sm font-bold shadow flex items-center ${
-                  nextStatus ? "text-white" : "text-gray-600 bg-gray-300"
-                }`}
-                style={nextStatus ? { backgroundColor: nextStatusColor } : {}}
-              >
-                {nextStatusLabel ? (
-                  <>
-                    <span className="mr-1">»»</span>
-                    {nextStatusLabel.toUpperCase()}
-                  </>
-                ) : (
-                  "NO NEXT STEP"
-                )}
-              </button>
-            )}
+            {/* STATUS PROGRESS BUTTON */}
+            <button
+              onClick={() => nextStatus && handleChange("status", nextStatus)}
+              disabled={!nextStatus}
+              className="px-6 py-2 rounded-full text-sm font-bold text-white"
+              style={
+                nextStatus
+                  ? { backgroundColor: nextStatusColor }
+                  : { backgroundColor: "#ccc", color: "#444" }
+              }
+            >
+              {nextStatusLabel ? nextStatusLabel.toUpperCase() : "NO NEXT STEP"}
+            </button>
           </div>
 
           {/* ADDRESS BOX */}
           <div
             onClick={maps}
-            className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
+            className="bg-white rounded-xl border px-4 py-3 cursor-pointer hover:border-blue-500"
           >
             <div className="text-xs text-gray-500">📍 Tap to open in Maps</div>
             <div className="text-blue-700 font-semibold">{form.address}</div>
@@ -333,10 +283,10 @@ export default function LeadModal({
           </div>
 
           {/* APPOINTMENT + INSTALL */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div
               onClick={() => setShowApptModal(true)}
-              className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
+              className="bg-white rounded-xl border px-4 py-3 cursor-pointer hover:border-blue-500"
             >
               <div className="text-xs text-gray-500">Appointment</div>
               <div className="text-blue-700 font-semibold">
@@ -349,7 +299,7 @@ export default function LeadModal({
 
             <div
               onClick={() => setShowDateModal("installDate")}
-              className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
+              className="bg-white rounded-xl border px-4 py-3 cursor-pointer hover:border-blue-500"
             >
               <div className="text-xs text-gray-500">Install Date</div>
               <div className="text-blue-700 font-semibold">
@@ -360,11 +310,10 @@ export default function LeadModal({
 
           {/* EDIT MODE */}
           {isEditing ? (
-            <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm space-y-4">
+            <div className="bg-white rounded-2xl border px-5 py-5 space-y-4">
 
-              {/* NAME */}
               <div>
-                <label className="text-xs font-semibold text-gray-600">Name *</label>
+                <label className="text-xs text-gray-600">Name *</label>
                 <input
                   value={form.name}
                   onChange={(e) => handleChange("name", e.target.value)}
@@ -372,9 +321,8 @@ export default function LeadModal({
                 />
               </div>
 
-              {/* ADDRESS */}
               <div>
-                <label className="text-xs font-semibold text-gray-600">Address</label>
+                <label className="text-xs text-gray-600">Address</label>
                 <input
                   value={form.address}
                   onChange={(e) => handleChange("address", e.target.value)}
@@ -382,10 +330,9 @@ export default function LeadModal({
                 />
               </div>
 
-              {/* CITY / STATE / ZIP */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-gray-600">City</label>
+                  <label className="text-xs text-gray-600">City</label>
                   <input
                     value={form.city}
                     onChange={(e) => handleChange("city", e.target.value)}
@@ -393,7 +340,7 @@ export default function LeadModal({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-600">State</label>
+                  <label className="text-xs text-gray-600">State</label>
                   <input
                     value={form.state}
                     onChange={(e) => handleChange("state", e.target.value)}
@@ -401,7 +348,7 @@ export default function LeadModal({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-600">Zip</label>
+                  <label className="text-xs text-gray-600">Zip</label>
                   <input
                     value={form.zip}
                     onChange={(e) => handleChange("zip", e.target.value)}
@@ -410,9 +357,8 @@ export default function LeadModal({
                 </div>
               </div>
 
-              {/* PHONE */}
               <div>
-                <label className="text-xs font-semibold text-gray-600">Phone *</label>
+                <label className="text-xs text-gray-600">Phone *</label>
                 <input
                   value={form.phone}
                   onChange={(e) => handlePhoneChange(e.target.value)}
@@ -420,9 +366,8 @@ export default function LeadModal({
                 />
               </div>
 
-              {/* EMAIL */}
               <div>
-                <label className="text-xs font-semibold text-gray-600">Email</label>
+                <label className="text-xs text-gray-600">Email</label>
                 <input
                   value={form.email}
                   onChange={(e) => handleChange("email", e.target.value)}
@@ -430,9 +375,8 @@ export default function LeadModal({
                 />
               </div>
 
-              {/* BUYER TYPE */}
               <div>
-                <label className="text-xs font-semibold text-gray-600">Buyer Type</label>
+                <label className="text-xs text-gray-600">Buyer Type</label>
                 <select
                   value={form.buyerType}
                   onChange={(e) => handleChange("buyerType", e.target.value)}
@@ -440,19 +384,14 @@ export default function LeadModal({
                 >
                   <option value="">Select Type</option>
                   {buyerTypes.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
+                    <option key={t}>{t}</option>
                   ))}
                 </select>
               </div>
 
-              {/* COMPANY NAME */}
               {form.buyerType !== "Residential" && form.buyerType !== "" && (
                 <div>
-                  <label className="text-xs font-semibold text-gray-600">
-                    Company Name
-                  </label>
+                  <label className="text-xs text-gray-600">Company Name</label>
                   <input
                     value={form.companyName}
                     onChange={(e) =>
@@ -463,32 +402,22 @@ export default function LeadModal({
                 </div>
               )}
 
-              {/* PROJECT TYPE */}
               <div>
-                <label className="text-xs font-semibold text-gray-600">
-                  Project Type
-                </label>
+                <label className="text-xs text-gray-600">Project Type</label>
                 <select
                   value={form.projectType}
-                  onChange={(e) =>
-                    handleChange("projectType", e.target.value)
-                  }
+                  onChange={(e) => handleChange("projectType", e.target.value)}
                   className="w-full border px-3 py-2 rounded-lg"
                 >
                   <option value="">Choose Project</option>
                   {projectTypes.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
+                    <option key={p}>{p}</option>
                   ))}
                 </select>
               </div>
 
-              {/* CONTRACT PRICE */}
               <div>
-                <label className="text-xs font-semibold text-gray-600">
-                  Contract Price
-                </label>
+                <label className="text-xs text-gray-600">Contract Price</label>
                 <input
                   value={form.contractPrice}
                   onChange={(e) =>
@@ -498,9 +427,8 @@ export default function LeadModal({
                 />
               </div>
 
-              {/* PREFERRED CONTACT */}
               <div>
-                <label className="text-xs font-semibold text-gray-600">
+                <label className="text-xs text-gray-600">
                   Preferred Contact
                 </label>
                 <select
@@ -512,16 +440,13 @@ export default function LeadModal({
                 >
                   <option value="">Choose Contact</option>
                   {preferredContacts.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
+                    <option key={p}>{p}</option>
                   ))}
                 </select>
               </div>
 
-              {/* NOTES */}
               <div>
-                <label className="text-xs font-semibold text-gray-600">Notes</label>
+                <label className="text-xs text-gray-600">Notes</label>
                 <textarea
                   value={form.notes}
                   onChange={(e) => handleChange("notes", e.target.value)}
@@ -530,9 +455,7 @@ export default function LeadModal({
               </div>
             </div>
           ) : (
-            // VIEW MODE DETAILS
-            <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm text-sm text-gray-800 space-y-2">
-
+            <div className="bg-white rounded-2xl border px-5 py-5 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Email</span>
                 <span className="font-semibold">{form.email || "Not Set"}</span>
@@ -540,9 +463,7 @@ export default function LeadModal({
 
               <div className="flex justify-between">
                 <span className="text-gray-500">Buyer Type</span>
-                <span className="font-semibold">
-                  {form.buyerType || "Not Set"}
-                </span>
+                <span className="font-semibold">{form.buyerType || "Not Set"}</span>
               </div>
 
               {form.companyName && (
@@ -554,9 +475,7 @@ export default function LeadModal({
 
               <div className="flex justify-between">
                 <span className="text-gray-500">Project Type</span>
-                <span className="font-semibold">
-                  {form.projectType || "Not Set"}
-                </span>
+                <span className="font-semibold">{form.projectType || "Not Set"}</span>
               </div>
 
               <div className="flex justify-between">
@@ -574,7 +493,7 @@ export default function LeadModal({
               </div>
 
               <div>
-                <span className="text-gray-500 block">Notes</span>
+                <span className="text-gray-500">Notes</span>
                 <p className="font-semibold whitespace-pre-line mt-1">
                   {form.notes?.trim() ? form.notes : "No notes added"}
                 </p>
@@ -582,24 +501,23 @@ export default function LeadModal({
             </div>
           )}
 
-          {/* FOOTER BUTTONS */}
-          <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+          {/* FOOTER */}
+          <div className="flex justify-between items-center pt-4 border-t">
             <button
               onClick={handleExit}
-              className="bg-[#3b4250] text-white px-8 py-2 rounded-xl font-semibold shadow hover:shadow-md"
+              className="bg-[#3b4250] text-white px-8 py-2 rounded-xl font-semibold"
             >
               Exit
             </button>
 
             <button
               onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-              className="bg-[#048c63] text-white px-8 py-2 rounded-xl font-semibold shadow hover:shadow-md"
+              className="bg-[#048c63] text-white px-8 py-2 rounded-xl font-semibold"
             >
               {isEditing ? "Save" : "Edit"}
             </button>
           </div>
 
-          {/* DELETE CONTACT */}
           <div className="text-center pt-3">
             {!deleteConfirm ? (
               <button
@@ -662,7 +580,7 @@ export default function LeadModal({
         />
       )}
 
-      {/* APPOINTMENT DATE/TIME MODAL */}
+      {/* APPOINTMENT MODAL */}
       {showApptModal && (
         <ApptDateTimeModal
           apptDate={form.apptDate}
@@ -676,14 +594,6 @@ export default function LeadModal({
             setShowApptModal(false);
           }}
           onClose={() => setShowApptModal(false)}
-        />
-      )}
-
-      {/* NOT SOLD REASON MODAL */}
-      {showNotSoldModal && (
-        <ReasonNotSoldModal
-          onSelect={handleNotSoldReasonSelected}
-          onCancel={handleNotSoldCancel}
         />
       )}
     </div>

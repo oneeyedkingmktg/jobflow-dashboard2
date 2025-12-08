@@ -1,10 +1,10 @@
 /* ============================================================================
    API Configuration
    ============================================================================
-   FORCE REBUILD - Cache bust v3.0
+   FORCE REBUILD - Cache bust v3.1
 ============================================================================ */
 
-const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com';
+const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com/api';
 
 // Generic API request handler
 export const apiRequest = async (endpoint, options = {}) => {
@@ -27,9 +27,7 @@ export const apiRequest = async (endpoint, options = {}) => {
       const json = await cloned.json().catch(() => null);
       if (json?.message) message = json.message;
       if (json?.error) message = json.error;
-    } catch (_) {
-      // no-op
-    }
+    } catch (_) {}
     throw new Error(message);
   }
 

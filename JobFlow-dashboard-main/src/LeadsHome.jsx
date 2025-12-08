@@ -8,35 +8,70 @@ import SettingsMenu from "./SettingsMenu.jsx";
 import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
-// Convert backend snake_case to frontend camelCase
+// Convert backend snake_case → frontend camelCase
 const convertLeadFromBackend = (lead) => {
   if (!lead) return null;
+
   return {
     id: lead.id,
-    name: lead.name,
+    companyId: lead.company_id,
+    createdByUserId: lead.created_by_user_id,
+
+    // Names
+    name: lead.full_name || lead.name || "",
+    firstName: lead.first_name || "",
+    lastName: lead.last_name || "",
+
+    // Contact
     phone: lead.phone,
     email: lead.email,
+    preferredContact: lead.preferred_contact,
+
+    // Address
     address: lead.address,
     city: lead.city,
     state: lead.state,
     zip: lead.zip,
+
+    // Project / Company
     buyerType: lead.buyer_type,
     companyName: lead.company_name,
     projectType: lead.project_type,
+
+    // Lead Source / Referral
     leadSource: lead.lead_source,
+    referralSource: lead.referral_source,
+
+    // Status + Reasons
     status: lead.status,
     notSoldReason: lead.not_sold_reason,
-    contractPrice: lead.contract_price,
-    apptDate: lead.appointment_date,
-    preferredContact: lead.preferred_contact,
     notes: lead.notes,
+
+    // Pricing
+    contractPrice: lead.contract_price,
+
+    // Dates
+    apptDate: lead.appointment_date,
+    apptTime: lead.appointment_time,
+    installDate: lead.install_date,
+    installTentative: lead.install_tentative,
+
+    // GHL (stored but not used)
+    ghlContactId: lead.ghl_contact_id,
+    ghlAppointmentId: lead.ghl_appointment_id,
+    ghlLastSynced: lead.ghl_last_synced,
+    ghlSyncStatus: lead.ghl_sync_status,
+
+    // System
     createdAt: lead.created_at,
-    updatedAt: lead.updated_at
+    updatedAt: lead.updated_at,
+    needsSync: lead.needs_sync
   };
 };
 
 export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   const { currentCompany } = useCompany();
+  const { user } = useAuth();
 
   const [leads, setLeads] = useState([]);
   const [activeTab, setActiveTab] = useState("Leads");
@@ -80,7 +115,6 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   };
 
   const handleCreateNewFromLookup = (newLeadData) => {
-    // Map GHL → LeadModal format
     const mapped = {
       id: null,
       name: `${newLeadData.first_name || ""} ${newLeadData.last_name || ""}`.trim(),
@@ -94,10 +128,14 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
       companyName: "",
       projectType: "",
       leadSource: newLeadData.source || "Imported",
+      referralSource: "",
       status: "Lead",
       notSoldReason: "",
       contractPrice: "",
       apptDate: "",
+      apptTime: "",
+      installDate: "",
+      installTentative: false,
       preferredContact: "",
       notes: ""
     };
@@ -116,6 +154,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     try {
       const backendLead = {
         name: updatedLead.name || '',
+        first_name: updatedLead.firstName || '',
+        last_name: updatedLead.lastName || '',
+        full_name: updatedLead.name || '',
         phone: updatedLead.phone || '',
         email: updatedLead.email || '',
         address: updatedLead.address || '',
@@ -126,12 +167,14 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         company_name: updatedLead.companyName || '',
         project_type: updatedLead.projectType || '',
         lead_source: updatedLead.leadSource || '',
-        status: (updatedLead.status || 'Lead').toLowerCase().replace(/\s+/g, '_'),
+        referral_source: updatedLead.referralSource || '',
+        status: updatedLead.status || 'lead',
         not_sold_reason: updatedLead.notSoldReason || '',
-        contract_price: updatedLead.contractPrice && !isNaN(parseFloat(updatedLead.contractPrice))
-          ? parseFloat(updatedLead.contractPrice)
-          : null,
+        contract_price: updatedLead.contractPrice || null,
         appointment_date: updatedLead.apptDate || null,
+        appointment_time: updatedLead.apptTime || null,
+        install_date: updatedLead.installDate || null,
+        install_tentative: updatedLead.installTentative || false,
         preferred_contact: updatedLead.preferredContact || '',
         notes: updatedLead.notes || ''
       };

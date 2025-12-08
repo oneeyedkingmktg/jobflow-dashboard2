@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DateModal from "./DateModal.jsx";
 import ApptDateTimeModal from "./ApptDateTimeModal.jsx";
+import ReasonNotSoldModal from "./ReasonNotSoldModal.jsx";
 import { useCompany } from "./CompanyContext";
 import { formatPhoneNumber } from "./utils/formatting";
 
@@ -20,12 +21,13 @@ const STATUS_COLORS = {
   complete: "#ea8e09",
 };
 
-// STATUS PROGRESSION LOGIC (updated per your instruction)
+// Main linear progression (Appointment Set handled separately)
 const STATUS_PROGRESS = {
   lead: "appointment_set",
-  appointment_set: "sold",
   sold: "complete",
-  not_sold: "sold", // you requested this
+  not_sold: "sold",
+  complete: null,
+  appointment_set: null,
 };
 
 export default function LeadModal({
@@ -62,17 +64,13 @@ export default function LeadModal({
     status: lead?.status || "lead",
   });
 
-  // EDIT MODE
   const [isEditing, setIsEditing] = useState(!lead?.id);
-
-  // DATE MODALS
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
-
-  // DELETE CONFIRM
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [showNotSoldModal, setShowNotSoldModal] = useState(false);
 
-  // PREFILL PHONE
+  // PREFILL PHONE WHEN CREATING NEW FROM LOOKUP
   useEffect(() => {
     if (!lead?.id && presetPhone) {
       setForm((prev) => ({
@@ -110,15 +108,18 @@ export default function LeadModal({
     handleChange("phone", formatPhoneNumber(val));
   };
 
-  // SAVE
+  // SAVE (stay on screen, go back to view mode)
   const handleSave = () => {
-    onSave({ ...form });
+    const updated = { ...form };
+    onSave(updated);
+    setForm(updated);
     setIsEditing(false);
   };
 
   // EXIT (save then close)
   const handleExit = () => {
-    onSave({ ...form });
+    const updated = { ...form };
+    onSave(updated);
     onClose({ view: "home" });
   };
 
@@ -143,14 +144,11 @@ export default function LeadModal({
     );
   };
 
-  // STATUS & PROGRESSION
   const currentStatus = form.status;
   const nextStatus = STATUS_PROGRESS[currentStatus] || null;
-
   const nextStatusLabel = nextStatus ? STATUS_LABELS[nextStatus] : null;
   const nextStatusColor = nextStatus ? STATUS_COLORS[nextStatus] : "#ccc";
 
-  // DROPDOWN OPTIONS
   const statusOptions = [
     "lead",
     "appointment_set",
@@ -177,6 +175,43 @@ export default function LeadModal({
     "Commercial",
   ];
 
+  // Progress helpers
+  const saveWithUpdates = (updates) => {
+    const updated = { ...form, ...updates };
+    setForm(updated);
+    onSave(updated);
+  };
+
+  const handleProgressNext = () => {
+    if (!nextStatus) return;
+
+    if (currentStatus === "not_sold" && nextStatus === "sold") {
+      // Clear not_sold_reason when converting to sold
+      saveWithUpdates({ status: "sold", notSoldReason: "" });
+    } else {
+      saveWithUpdates({ status: nextStatus });
+    }
+  };
+
+  const handleProgressSoldFromAppt = () => {
+    // Appointment Set → Sold
+    saveWithUpdates({ status: "sold", notSoldReason: "" });
+  };
+
+  const handleProgressNotSoldFromAppt = () => {
+    // Appointment Set → open reason modal
+    setShowNotSoldModal(true);
+  };
+
+  const handleNotSoldReasonSelected = (reason) => {
+    saveWithUpdates({ status: "not_sold", notSoldReason: reason });
+    setShowNotSoldModal(false);
+  };
+
+  const handleNotSoldCancel = () => {
+    setShowNotSoldModal(false);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-auto">
       <div className="bg-[#f5f6f7] rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
@@ -184,7 +219,7 @@ export default function LeadModal({
         {/* HEADER */}
         <div
           className="px-6 pt-4 pb-5"
-          style={{ backgroundColor: STATUS_COLORS[currentStatus] }}
+          style={{ backgroundColor: STATUS_COLORS[currentStatus] || "#59687d" }}
         >
           <h2 className="text-2xl font-bold text-white mb-4">
             {form.name || "New Lead"}
@@ -215,8 +250,8 @@ export default function LeadModal({
         {/* BODY */}
         <div className="px-6 py-6 space-y-5">
 
-          {/* STATUS / PROGRESS */}
-          <div className="flex items-center justify-between">
+          {/* STATUS + PROGRESSION */}
+          <div className="flex items-center justify-between gap-4">
             <div className="relative">
               <select
                 value={currentStatus}
@@ -234,16 +269,44 @@ export default function LeadModal({
               </span>
             </div>
 
-            <button
-              onClick={() => nextStatus && handleChange("status", nextStatus)}
-              disabled={!nextStatus}
-              className={`px-6 py-2 rounded-full text-sm font-bold shadow ${
-                nextStatus ? "text-white" : "text-gray-600 bg-gray-300"
-              }`}
-              style={nextStatus ? { backgroundColor: nextStatusColor } : {}}
-            >
-              {nextStatusLabel ? nextStatusLabel.toUpperCase() : "NO NEXT STEP"}
-            </button>
+            {/* Progression buttons */}
+            {currentStatus === "appointment_set" ? (
+              <div className="flex gap-3">
+                <button
+                  onClick={handleProgressSoldFromAppt}
+                  className="px-5 py-2 rounded-full text-sm font-bold shadow text-white flex items-center"
+                  style={{ backgroundColor: STATUS_COLORS["sold"] }}
+                >
+                  <span className="mr-1">»»</span> SOLD
+                </button>
+
+                <button
+                  onClick={handleProgressNotSoldFromAppt}
+                  className="px-5 py-2 rounded-full text-sm font-bold shadow text-white flex items-center"
+                  style={{ backgroundColor: STATUS_COLORS["not_sold"] }}
+                >
+                  <span className="mr-1">»»</span> NOT SOLD
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleProgressNext}
+                disabled={!nextStatus}
+                className={`px-6 py-2 rounded-full text-sm font-bold shadow flex items-center ${
+                  nextStatus ? "text-white" : "text-gray-600 bg-gray-300"
+                }`}
+                style={nextStatus ? { backgroundColor: nextStatusColor } : {}}
+              >
+                {nextStatusLabel ? (
+                  <>
+                    <span className="mr-1">»»</span>
+                    {nextStatusLabel.toUpperCase()}
+                  </>
+                ) : (
+                  "NO NEXT STEP"
+                )}
+              </button>
+            )}
           </div>
 
           {/* ADDRESS BOX */}
@@ -279,7 +342,9 @@ export default function LeadModal({
               <div className="text-blue-700 font-semibold">
                 {formatDate(form.apptDate)}
               </div>
-              <div className="text-gray-700 text-xs">{formatTime(form.apptTime)}</div>
+              <div className="text-gray-700 text-xs">
+                {formatTime(form.apptTime)}
+              </div>
             </div>
 
             <div
@@ -303,7 +368,7 @@ export default function LeadModal({
                 <input
                   value={form.name}
                   onChange={(e) => handleChange("name", e.target.value)}
-                  className="input w-full border px-3 py-2 rounded-lg"
+                  className="w-full border px-3 py-2 rounded-lg"
                 />
               </div>
 
@@ -313,7 +378,7 @@ export default function LeadModal({
                 <input
                   value={form.address}
                   onChange={(e) => handleChange("address", e.target.value)}
-                  className="input w-full border px-3 py-2 rounded-lg"
+                  className="w-full border px-3 py-2 rounded-lg"
                 />
               </div>
 
@@ -611,6 +676,14 @@ export default function LeadModal({
             setShowApptModal(false);
           }}
           onClose={() => setShowApptModal(false)}
+        />
+      )}
+
+      {/* NOT SOLD REASON MODAL */}
+      {showNotSoldModal && (
+        <ReasonNotSoldModal
+          onSelect={handleNotSoldReasonSelected}
+          onCancel={handleNotSoldCancel}
         />
       )}
     </div>

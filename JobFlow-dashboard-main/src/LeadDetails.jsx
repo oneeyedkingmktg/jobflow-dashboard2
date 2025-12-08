@@ -77,16 +77,10 @@ export default function LeadDetails({
             </p>
           )}
 
-          {form.leadSource && (
-            <p>
-              <span className="font-semibold text-gray-700">Lead Source: </span>
-              {form.leadSource}
-            </p>
-          )}
-
+          {/* ONLY SHOW REFERRAL SOURCE */}
           {form.referralSource && (
             <p>
-              <span className="font-semibold text-gray-700">Referral Source: </span>
+              <span className="font-semibold text-gray-700">Referred By: </span>
               {form.referralSource}
             </p>
           )}

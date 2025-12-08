@@ -1,122 +1,52 @@
-import React, { useState, useContext } from "react";
-import { GHLAPI } from "./api";
-import { AuthContext } from "./AuthContext.jsx";
+import React, { useState } from "react";
 
 export default function PhoneLookupModal({
   leads,
-  onCreateNew,
-  onEditExisting,
+  onCreateNew,        // returns: onCreateNew(phone)
+  onSelectExisting,   // returns: onSelectExisting(lead)
   onClose,
 }) {
-  const { activeCompany } = useContext(AuthContext);
   const [phoneInput, setPhoneInput] = useState("");
   const [lookupResult, setLookupResult] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedResult, setSelectedResult] = useState(null); // NEW
 
   const formatPhoneNumber = (value) => {
     if (!value) return value;
-    const phoneNumber = value.replace(/[^\d]/g, "");
-    const len = phoneNumber.length;
-    if (len < 4) return phoneNumber;
-    if (len < 7) return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
-    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+    const digits = value.replace(/[^\d]/g, "");
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6)
+      return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
   };
 
-  const cleanPhone = (value) => {
-    if (!value) return "";
-    return value.replace(/[^\d]/g, "");
-  };
+  const cleanPhone = (v) => (v ? v.replace(/[^\d]/g, "") : "");
 
-  const handleSearch = async () => {
+  const handleSearch = () => {
     const cleaned = cleanPhone(phoneInput);
     if (!cleaned) return;
 
     setLoading(true);
     setHasSearched(true);
 
-    const localMatches = leads.filter((lead) =>
-      lead.phone_number?.replace(/[^\d]/g, "").includes(cleaned)
-    );
-
-    let ghlMatch = null;
-    try {
-      if (activeCompany?.id) {
-        const response = await GHLAPI.searchByPhone(cleaned, activeCompany.id);
-        if (response?.contacts?.length > 0) {
-          ghlMatch = response.contacts[0];
-        }
-      }
-    } catch (_) {}
-
-    setLookupResult({
-      localMatches,
-      ghlMatch,
+    const matches = leads.filter((lead) => {
+      const p = lead.phone?.replace(/[^\d]/g, "") || "";
+      return p.includes(cleaned);
     });
 
-    setSelectedResult(null);
+    setLookupResult({ matches });
     setLoading(false);
   };
 
   const handleProceed = () => {
     if (!lookupResult) return;
 
-    if (lookupResult.localMatches?.length > 0) {
-      onEditExisting(lookupResult.localMatches[0]);
+    if (lookupResult.matches?.length > 0) {
+      onSelectExisting(lookupResult.matches[0]);
       return;
     }
 
-    if (lookupResult.ghlMatch) {
-      const c = lookupResult.ghlMatch;
-      const newLeadData = {
-        first_name: c.firstName || "",
-        last_name: c.lastName || "",
-        phone_number: c.phone || "",
-        email: c.email || "",
-        address: c.address1 || "",
-        city: c.city || "",
-        state: c.state || "",
-        zip: c.postalCode || "",
-        source: "Imported from GHL",
-      };
-      onCreateNew(newLeadData);
-      return;
-    }
-
-    onCreateNew({ phone_number: phoneInput });
-  };
-
-  const renderGHLPreview = (c) => {
-    if (!selectedResult) return null;
-
-    return (
-      <div className="mt-3 p-3 border rounded-lg bg-white shadow-inner animate-fade-in">
-        <p className="font-bold text-gray-800 mb-2">Details</p>
-
-        {c.email && <p className="text-sm"><span className="font-semibold">Email:</span> {c.email}</p>}
-        {c.address1 && <p className="text-sm"><span className="font-semibold">Address:</span> {c.address1}</p>}
-        {c.city && <p className="text-sm"><span className="font-semibold">City:</span> {c.city}</p>}
-        {c.state && <p className="text-sm"><span className="font-semibold">State:</span> {c.state}</p>}
-        {c.postalCode && <p className="text-sm"><span className="font-semibold">ZIP:</span> {c.postalCode}</p>}
-
-        {Array.isArray(c.tags) && c.tags.length > 0 && (
-          <div className="mt-2">
-            <p className="font-semibold text-sm mb-1">Tags:</p>
-            <div className="flex flex-wrap gap-2">
-              {c.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
+    onCreateNew(cleanPhone(phoneInput));
   };
 
   return (
@@ -151,54 +81,15 @@ export default function PhoneLookupModal({
           <div className="mt-6 space-y-4">
             <h3 className="font-semibold text-lg">Results</h3>
 
-            {/* Local Results */}
-            {lookupResult?.localMatches?.length > 0 ? (
-              <div
-                className="p-3 border rounded-lg bg-emerald-50 cursor-pointer"
-                onClick={() => {
-                  setSelectedResult(null);
-                }}
-              >
+            {lookupResult?.matches?.length > 0 ? (
+              <div className="p-3 border rounded-lg bg-emerald-50">
                 <p className="font-semibold">Existing Lead Found</p>
-                <p>
-                  {lookupResult.localMatches[0].first_name}{" "}
-                  {lookupResult.localMatches[0].last_name}
-                </p>
-                <p>{lookupResult.localMatches[0].phone_number}</p>
+                <p>{lookupResult.matches[0].name}</p>
+                <p>{lookupResult.matches[0].phone}</p>
               </div>
             ) : (
               <div className="p-3 border rounded-lg bg-gray-50">
                 <p>No existing leads found.</p>
-              </div>
-            )}
-
-            {/* GHL Result */}
-            {lookupResult?.ghlMatch ? (
-              <div
-                className="p-3 border rounded-lg bg-indigo-50 cursor-pointer"
-                onClick={() =>
-                  setSelectedResult(
-                    selectedResult ? null : lookupResult.ghlMatch
-                  )
-                }
-              >
-                <p className="font-semibold">GHL Contact Found</p>
-                <p>
-                  {lookupResult.ghlMatch.firstName}{" "}
-                  {lookupResult.ghlMatch.lastName}
-                </p>
-                <p>{lookupResult.ghlMatch.phone}</p>
-                {lookupResult.ghlMatch.email && (
-                  <p className="text-sm text-gray-700">
-                    {lookupResult.ghlMatch.email}
-                  </p>
-                )}
-
-                {selectedResult && renderGHLPreview(lookupResult.ghlMatch)}
-              </div>
-            ) : (
-              <div className="p-3 border rounded-lg bg-gray-50">
-                <p>No GHL contact found.</p>
               </div>
             )}
           </div>

@@ -1,7 +1,8 @@
-// =============================================================================
-// API Configuration
-// =============================================================================
-// FORCE REBUILD - Cache bust v2.0
+/* ============================================================================
+   API Configuration
+   ============================================================================
+   FORCE REBUILD - Cache bust v3.0
+============================================================================ */
 
 const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com';
 
@@ -9,37 +10,40 @@ const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com';
 export const apiRequest = async (endpoint, options = {}) => {
   const token = localStorage.getItem('authToken');
 
-  const defaultOptions = {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers,
+      ...(options.headers || {}),
     },
     ...options,
-  };
+  });
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, defaultOptions);
-
+  // ERROR PATH (safe parse)
   if (!response.ok) {
-    let error;
+    let message = 'API request failed';
     try {
-      error = await response.json();
-    } catch {
-      error = { error: await response.text() };
+      const cloned = response.clone();
+      const json = await cloned.json().catch(() => null);
+      if (json?.message) message = json.message;
+      if (json?.error) message = json.error;
+    } catch (_) {
+      // no-op
     }
-    throw new Error(error.error || 'API request failed');
+    throw new Error(message);
   }
 
+  // SUCCESS PATH (safe JSON parse)
   try {
     return await response.json();
-  } catch {
+  } catch (_) {
     return {};
   }
 };
 
-// =============================================================================
-// AUTH
-// =============================================================================
+/* ============================================================================
+   AUTH
+============================================================================ */
 
 export const AuthAPI = {
   login: (email, password) =>
@@ -51,9 +55,9 @@ export const AuthAPI = {
   me: () => apiRequest('/verify'),
 };
 
-// =============================================================================
-// USERS
-// =============================================================================
+/* ============================================================================
+   USERS
+============================================================================ */
 
 export const UsersAPI = {
   getAll: () => apiRequest('/users'),
@@ -84,9 +88,9 @@ export const UsersAPI = {
     }),
 };
 
-// =============================================================================
-// COMPANIES
-// =============================================================================
+/* ============================================================================
+   COMPANIES
+============================================================================ */
 
 export const CompaniesAPI = {
   create: (data) =>
@@ -106,9 +110,9 @@ export const CompaniesAPI = {
   getAll: () => apiRequest('/companies'),
 };
 
-// =============================================================================
-// LEADS
-// =============================================================================
+/* ============================================================================
+   LEADS
+============================================================================ */
 
 export const LeadsAPI = {
   getAll: () => apiRequest('/leads'),
@@ -133,9 +137,9 @@ export const LeadsAPI = {
     }),
 };
 
-// =============================================================================
-// GHL ENDPOINTS
-// =============================================================================
+/* ============================================================================
+   GHL ENDPOINTS
+============================================================================ */
 
 export const GHLAPI = {
   searchByPhone: (phone, companyId) =>

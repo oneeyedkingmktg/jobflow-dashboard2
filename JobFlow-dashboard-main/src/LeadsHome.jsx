@@ -54,7 +54,7 @@ const convertLeadFromBackend = (lead) => {
 
     createdAt: lead.created_at,
     updatedAt: lead.updated_at,
-    needsSync: lead.needs_sync
+    needsSync: lead.needs_sync,
   };
 };
 
@@ -74,11 +74,11 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     const fetchLeads = async () => {
       try {
         setLoading(true);
-        const response = await apiRequest('/leads');
+        const response = await apiRequest("/leads");
         const convertedLeads = (response.leads || []).map(convertLeadFromBackend);
         setLeads(convertedLeads);
       } catch (error) {
-        console.error('Error fetching leads:', error);
+        console.error("Error fetching leads:", error);
         setLeads([]);
       } finally {
         setLoading(false);
@@ -93,39 +93,73 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     setIsNewLead(false);
   };
 
+  // Always start new lead creation with phone lookup
   const handleAddLead = () => {
     setSelectedLead(null);
-    setIsNewLead(true);
+    setIsNewLead(false);
+    setShowPhoneLookup(true);
   };
 
-  const handleCreateNewFromLookup = (d) => {
+  // Called when phone lookup finds NO existing lead
+  // Opens LeadModal with phone prefilled for a brand new lead
+  const handlePhoneLookupCreateNew = (phone) => {
     const mapped = {
       id: null,
-      name: `${d.first_name || ""} ${d.last_name || ""}`.trim(),
-      phone: d.phone_number || "",
-      email: d.email || "",
-      address: d.address || "",
-      city: d.city || "",
-      state: d.state || "",
-      zip: d.zip || "",
+      companyId: null,
+      createdByUserId: user?.id || null,
+
+      name: "",
+      firstName: "",
+      lastName: "",
+
+      phone: phone || "",
+      email: "",
+      preferredContact: "",
+
+      address: "",
+      city: "",
+      state: "",
+      zip: "",
+
       buyerType: "",
       companyName: "",
       projectType: "",
-      leadSource: d.source || "",
-      referralSource: d.referral_source || "",
+
+      leadSource: "",
+      referralSource: "",
+
       status: "lead",
       notSoldReason: "",
+      notes: "",
+
       contractPrice: "",
-      apptDate: "",
-      apptTime: "",
-      installDate: "",
+
+      apptDate: null,
+      apptTime: null,
+      installDate: null,
       installTentative: false,
-      preferredContact: "",
-      notes: ""
+
+      ghlContactId: null,
+      ghlAppointmentId: null,
+      ghlLastSynced: null,
+      ghlSyncStatus: null,
+
+      createdAt: null,
+      updatedAt: null,
+      needsSync: false,
     };
 
     setSelectedLead(mapped);
     setIsNewLead(true);
+    setShowPhoneLookup(false);
+  };
+
+  // Called when phone lookup finds an existing lead
+  // Opens existing lead in view mode
+  const handlePhoneLookupSelectExisting = (lead) => {
+    if (!lead) return;
+    setSelectedLead(lead);
+    setIsNewLead(false);
     setShowPhoneLookup(false);
   };
 
@@ -172,7 +206,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         install_tentative: lead.installTentative || false,
 
         preferred_contact: lead.preferredContact || "",
-        notes: lead.notes || ""
+        notes: lead.notes || "",
       };
 
       let response;
@@ -192,7 +226,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
       const converted = convertLeadFromBackend(response.lead);
 
       setLeads((prev) =>
-        isNewLead ? [...prev, converted] : prev.map((l) => (l.id === converted.id ? converted : l))
+        isNewLead
+          ? [...prev, converted]
+          : prev.map((l) => (l.id === converted.id ? converted : l))
       );
 
       handleCloseModal();
@@ -239,7 +275,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   }, [leads, activeTab, searchTerm]);
 
   const leadCount = leads.filter((l) => l.status === "lead").length;
-  const appointmentCount = leads.filter((l) => l.status === "appointment_set").length;
+  const appointmentCount = leads.filter(
+    (l) => l.status === "appointment_set"
+  ).length;
   const soldCount = leads.filter((l) => l.status === "sold").length;
   const notSoldCount = leads.filter((l) => l.status === "not_sold").length;
   const completeCount = leads.filter((l) => l.status === "complete").length;
@@ -340,8 +378,12 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
               </div>
             ) : filteredLeads.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl shadow-md">
-                <h3 className="mt-4 text-xl font-semibold text-gray-700">No leads yet</h3>
-                <p className="mt-2 text-gray-500">Click "Add Lead" to create your first lead</p>
+                <h3 className="mt-4 text-xl font-semibold text-gray-700">
+                  No leads yet
+                </h3>
+                <p className="mt-2 text-gray-500">
+                  Click "Add Lead" to create your first lead
+                </p>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -353,14 +395,18 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                       transform hover:scale-105 transition-all duration-200 
                       cursor-pointer p-6 border-2 border-transparent hover:border-blue-300"
                   >
-                    <h3 className="text-lg font-bold text-gray-900">{lead.name}</h3>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {lead.name}
+                    </h3>
                     <p className="text-gray-600 mt-1">{lead.phone}</p>
                     {lead.email && (
                       <p className="text-gray-500 text-sm">{lead.email}</p>
                     )}
                     {lead.projectType && (
-                      <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 
-                        rounded-full text-xs font-medium">
+                      <span
+                        className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 
+                        rounded-full text-xs font-medium"
+                      >
                         {lead.projectType}
                       </span>
                     )}
@@ -384,9 +430,10 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
 
       {showPhoneLookup && (
         <PhoneLookupModal
+          leads={leads}
           onClose={() => setShowPhoneLookup(false)}
-          onCreateNew={handleCreateNewFromLookup}
-          onSelectLead={handleLeadClick}
+          onCreateNew={handlePhoneLookupCreateNew}
+          onSelectExisting={handlePhoneLookupSelectExisting}
         />
       )}
     </div>

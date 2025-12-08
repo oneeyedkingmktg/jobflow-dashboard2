@@ -21,7 +21,6 @@ export const apiRequest = async (endpoint, options = {}) => {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, defaultOptions);
 
   if (!response.ok) {
-    // Try to parse error JSON, fall back to text, then fallback to generic
     let error;
     try {
       error = await response.json();
@@ -31,7 +30,6 @@ export const apiRequest = async (endpoint, options = {}) => {
     throw new Error(error.error || 'API request failed');
   }
 
-  // Parse JSON or return empty object
   try {
     return await response.json();
   } catch {

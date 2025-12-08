@@ -1,18 +1,18 @@
 // =============================================================================
 // API Configuration
 // =============================================================================
-// FORCE REBUILD - Cache bust v1.1
+// FORCE REBUILD - Cache bust v2.0
 
 const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com/api';
 
 // Generic API request handler
 export const apiRequest = async (endpoint, options = {}) => {
   const token = localStorage.getItem('authToken');
-  
+
   const defaultOptions = {
     headers: {
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     },
     ...options,
@@ -21,11 +21,22 @@ export const apiRequest = async (endpoint, options = {}) => {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, defaultOptions);
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Unknown error');
-    throw new Error(errorText || 'API request failed');
+    // Try to parse error JSON, fall back to text, then fallback to generic
+    let error;
+    try {
+      error = await response.json();
+    } catch {
+      error = { error: await response.text() };
+    }
+    throw new Error(error.error || 'API request failed');
   }
 
-  return response.json().catch(() => ({}));
+  // Parse JSON or return empty object
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
 };
 
 // =============================================================================
@@ -38,6 +49,8 @@ export const AuthAPI = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+
+  me: () => apiRequest('/auth/me'),
 };
 
 // =============================================================================
@@ -46,16 +59,35 @@ export const AuthAPI = {
 
 export const UsersAPI = {
   getAll: () => apiRequest('/users'),
+
   get: (id) => apiRequest(`/users/${id}`),
+
+  create: (data) =>
+    apiRequest('/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   update: (id, data) =>
     apiRequest(`/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+
+  delete: (id) =>
+    apiRequest(`/users/${id}`, {
+      method: 'DELETE',
+    }),
+
+  changePassword: (currentPassword, newPassword) =>
+    apiRequest('/users/me/password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
 };
 
 // =============================================================================
-// COMPANIES
+– COMPANIES
 // =============================================================================
 
 export const CompaniesAPI = {
@@ -72,6 +104,8 @@ export const CompaniesAPI = {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+
+  getAll: () => apiRequest('/companies'),
 };
 
 // =============================================================================
@@ -80,6 +114,7 @@ export const CompaniesAPI = {
 
 export const LeadsAPI = {
   getAll: () => apiRequest('/leads'),
+
   get: (id) => apiRequest(`/leads/${id}`),
 
   create: (leadData) =>
@@ -101,7 +136,7 @@ export const LeadsAPI = {
 };
 
 // =============================================================================
-// GHL (NEW)
+// GHL ENDPOINTS
 // =============================================================================
 
 export const GHLAPI = {

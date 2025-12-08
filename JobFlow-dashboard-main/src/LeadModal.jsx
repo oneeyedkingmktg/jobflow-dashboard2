@@ -4,9 +4,7 @@ import LeadDetails from "./LeadDetails.jsx";
 import DateModal from "./DateModal.jsx";
 import ApptDateTimeModal from "./ApptDateTimeModal.jsx";
 import { syncLeadToMailerLite } from "./mailerLiteAPI.js";
-import { GHLAPI } from "./api";
 import { useAuth } from "./AuthContext";
-import { useCompany } from "./CompanyContext";
 
 export default function LeadModal({
   lead,
@@ -16,8 +14,7 @@ export default function LeadModal({
   fromView,
   leadSource,
 }) {
-  const { user, isMaster } = useAuth();
-  const { currentCompany } = useCompany();
+  const { user } = useAuth();
 
   const [form, setForm] = useState({
     buyerType: "",
@@ -36,7 +33,6 @@ export default function LeadModal({
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [showNotSoldModal, setShowNotSoldModal] = useState(false);
   const [previousStatus, setPreviousStatus] = useState(lead?.status || "Lead");
-  const [syncLoading, setSyncLoading] = useState(false);
 
   useEffect(() => {
     if (form.status !== previousStatus) {
@@ -58,7 +54,6 @@ export default function LeadModal({
     Completed: "bg-amber-500",
   };
 
-  const buyerTypes = ["Residential", "Small Business", "Buyer not Owner", "Competitive Bid"];
   const notSoldReasons = [
     "Too Expensive",
     "Waiting for Another Bid",
@@ -107,18 +102,14 @@ export default function LeadModal({
 
   const handleDateConfirm = (field, date, tentative = false) => {
     const updates = { [field]: date };
-    if (field === "installDate") {
-      updates.installTentative = tentative;
-    }
+    if (field === "installDate") updates.installTentative = tentative;
     setForm((prev) => ({ ...prev, ...updates }));
     setShowDateModal(null);
   };
 
   const handleDateRemove = (field) => {
     const updates = { [field]: "" };
-    if (field === "installDate") {
-      updates.installTentative = false;
-    }
+    if (field === "installDate") updates.installTentative = false;
     setForm((prev) => ({ ...prev, ...updates }));
     setShowDateModal(null);
   };
@@ -140,23 +131,17 @@ export default function LeadModal({
 
   const getNextProgression = () => {
     switch (form.status) {
-      case "Lead":
-        return "Appointment Set";
-      case "Appointment Set":
-        return "Sold";
-      case "Sold":
-        return "Completed";
-      default:
-        return null;
+      case "Lead": return "Appointment Set";
+      case "Appointment Set": return "Sold";
+      case "Sold": return "Completed";
+      default: return null;
     }
   };
 
   const parseName = (fullName) => {
     if (!fullName) return { first_name: "", last_name: "" };
     const parts = fullName.trim().split(" ");
-    const first_name = parts.shift() || "";
-    const last_name = parts.join(" ");
-    return { first_name, last_name };
+    return { first_name: parts.shift(), last_name: parts.join(" ") };
   };
 
   const handleSave = async () => {
@@ -192,35 +177,10 @@ export default function LeadModal({
     }
 
     if (onClose) {
-      if (fromView && typeof fromView === "object" && fromView.view) {
-        onClose(fromView);
-      } else if (typeof fromView === "string") {
-        onClose({ view: fromView });
-      } else {
-        onClose({ view: "home" });
-      }
+      if (fromView && typeof fromView === "object" && fromView.view) onClose(fromView);
+      else if (typeof fromView === "string") onClose({ view: fromView });
+      else onClose({ view: "home" });
     }
-  };
-
-  const handleSyncToGHL = async () => {
-    if (!currentCompany?.id) {
-      alert("No active company ID.");
-      return;
-    }
-    setSyncLoading(true);
-
-    try {
-      const parsed = parseName(form.name);
-      const cleanForm = { ...form, ...parsed };
-
-      await GHLAPI.syncLead(cleanForm, currentCompany.id);
-
-      alert("Lead synced to GHL successfully.");
-    } catch (err) {
-      alert("Failed to sync lead to GHL.");
-    }
-
-    setSyncLoading(false);
   };
 
   const nextProgress = getNextProgression();
@@ -228,31 +188,22 @@ export default function LeadModal({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8 relative animate-slide-up">
+        
+        {/* HEADER */}
         <div className={`${statusColors[form.status]} rounded-t-2xl p-5 text-white`}>
           <div className="flex flex-col gap-3">
             <div>
-              <h2 className="text-2xl font-bold break-words">
-                {form.name || "New Lead"}
-              </h2>
-              {form.buyerType &&
-                form.buyerType !== "Residential" &&
-                form.companyName && (
-                  <p className="text-lg font-semibold mt-1 text-white/90">
-                    {form.companyName}
-                  </p>
-                )}
+              <h2 className="text-2xl font-bold break-words">{form.name || "New Lead"}</h2>
+              {form.buyerType !== "Residential" && form.companyName && (
+                <p className="text-lg font-semibold mt-1 text-white/90">{form.companyName}</p>
+              )}
             </div>
+
             <div className="flex gap-2">
-              <a
-                href={`tel:${form.phone || ""}`}
-                className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold transition-all shadow-sm hover:shadow flex-1 text-center"
-              >
+              <a href={`tel:${form.phone || ""}`} className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold shadow-sm flex-1 text-center">
                 Call
               </a>
-              <a
-                href={`sms:${form.phone || ""}`}
-                className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold transition-all shadow-sm hover:shadow flex-1 text-center"
-              >
+              <a href={`sms:${form.phone || ""}`} className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold shadow-sm flex-1 text-center">
                 Text
               </a>
               <a
@@ -261,7 +212,7 @@ export default function LeadModal({
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold transition-all shadow-sm hover:shadow flex-1 text-center"
+                className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold shadow-sm flex-1 text-center"
               >
                 Maps
               </a>
@@ -269,15 +220,17 @@ export default function LeadModal({
           </div>
         </div>
 
+        {/* BODY */}
         <div className="p-6 space-y-6">
-          <div className="flex flex-wrap justify-between items-center gap-3 pb-4 border-b border-gray-200">
+
+          {/* STATUS BAR */}
+          <div className="flex justify-between items-center gap-3 pb-4 border-b border-gray-200">
             <div className="relative">
               <button
                 onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                className={`${statusColors[form.status]} text-white px-5 py-2 rounded-full font-bold text-sm uppercase tracking-wide shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2`}
+                className={`${statusColors[form.status]} text-white px-5 py-2 rounded-full font-bold text-sm uppercase shadow-md flex items-center gap-2`}
               >
-                {form.status}
-                <span className="text-xs">▼</span>
+                {form.status} <span className="text-xs">▼</span>
               </button>
 
               {statusDropdownOpen && (
@@ -288,16 +241,15 @@ export default function LeadModal({
                       onClick={() => {
                         if (s === "Not Sold") {
                           setShowNotSoldModal(true);
-                          setStatusDropdownOpen(false);
                         } else {
                           setForm((prev) => ({ ...prev, status: s }));
-                          setStatusDropdownOpen(false);
                           if (s === "Appointment Set" && (!form.apptDate || !form.apptTime)) {
                             setTimeout(() => setShowApptModal(true), 300);
                           }
                         }
+                        setStatusDropdownOpen(false);
                       }}
-                      className="px-4 py-3 text-sm hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 font-medium text-gray-700"
+                      className="px-4 py-3 text-sm hover:bg-gray-50 cursor-pointer border-b last:border-b-0 text-gray-700"
                     >
                       {s}
                     </div>
@@ -311,14 +263,14 @@ export default function LeadModal({
                 <>
                   <button
                     onClick={() => setForm((prev) => ({ ...prev, status: "Sold" }))}
-                    className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-sm px-5 py-2 rounded-full font-bold uppercase tracking-wide shadow-md hover:shadow-lg transition-all active:scale-95"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-5 py-2 rounded-full font-bold"
                   >
                     Sold
                   </button>
 
                   <button
                     onClick={() => setShowNotSoldModal(true)}
-                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-sm px-5 py-2 rounded-full font-bold uppercase tracking-wide shadow-md hover:shadow-lg transition-all active:scale-95"
+                    className="bg-red-600 hover:bg-red-700 text-white text-sm px-5 py-2 rounded-full font-bold"
                   >
                     Not Sold
                   </button>
@@ -326,7 +278,7 @@ export default function LeadModal({
               ) : nextProgress ? (
                 <button
                   onClick={() => setForm((prev) => ({ ...prev, status: nextProgress }))}
-                  className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white text-sm px-5 py-2 rounded-full font-bold uppercase tracking-wide shadow-md hover:shadow-lg transition-all active:scale-95"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-5 py-2 rounded-full font-bold"
                 >
                   {nextProgress}
                 </button>
@@ -334,6 +286,7 @@ export default function LeadModal({
             </div>
           </div>
 
+          {/* CONTACT DETAILS + FIELDS */}
           <LeadDetails
             form={form}
             isEditing={isEditing}
@@ -345,22 +298,30 @@ export default function LeadModal({
 
           {isEditing ? (
             <div className="space-y-4 pt-4">
+              <InputRow label="Name" value={form.name || ""} onChange={(v) => handleChange("name", v)} isEditing={isEditing} />
+              <InputRow label="Email" value={form.email || ""} onChange={(v) => handleChange("email", v)} isEditing={isEditing} />
+              <InputRow label="Phone" value={form.phone || ""} onChange={handlePhoneChange} isEditing={isEditing} />
+              <InputRow label="Address" value={form.address || ""} onChange={(v) => handleChange("address", v)} isEditing={isEditing} />
+              <InputRow label="City" value={form.city || ""} onChange={(v) => handleChange("city", v)} isEditing={isEditing} />
+              <InputRow label="State" value={form.state || ""} onChange={(v) => handleChange("state", v)} isEditing={isEditing} />
+              <InputRow label="ZIP" value={form.zip || ""} onChange={(v) => handleChange("zip", v)} isEditing={isEditing} />
+              <InputRow label="Notes" type="textarea" value={form.notes || ""} onChange={(v) => handleChange("notes", v)} isEditing={isEditing} />
             </div>
           ) : (
             <div
               onClick={(e) => {
                 if (e.target.tagName !== "A") setIsEditing(true);
               }}
-              className="text-sm space-y-3 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-4 border border-gray-200 cursor-pointer transition-all hover:shadow-md hover:border-blue-300"
-            >
-            </div>
+              className="text-sm space-y-3 bg-gray-50 rounded-xl p-4 border border-gray-200 cursor-pointer hover:shadow-md"
+            ></div>
           )}
 
+          {/* ACTIONS */}
           <div className="space-y-3">
-            <div className="flex justify-between items-center pt-3 border-t border-gray-200 gap-3 flex-wrap">
+            <div className="flex justify-between items-center pt-3 border-t border-gray-200 gap-3">
               <button
                 onClick={handleExit}
-                className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-8 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95"
+                className="bg-gray-700 hover:bg-gray-800 text-white px-8 py-3 rounded-xl font-bold text-base"
               >
                 Exit
               </button>
@@ -368,51 +329,42 @@ export default function LeadModal({
               {!isEditing ? (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold text-base"
                 >
                   Edit
                 </button>
               ) : (
                 <button
                   onClick={handleSave}
-                  className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-8 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-base"
                 >
                   Save
                 </button>
               )}
             </div>
-
-            {!isEditing && (
-              <button
-                onClick={handleSyncToGHL}
-                disabled={syncLoading}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95"
-              >
-                {syncLoading ? "Syncing…" : "Sync to GHL"}
-              </button>
-            )}
           </div>
 
+          {/* DELETE */}
           <div className="text-center pt-4 border-t border-gray-100">
             {!deleteConfirm ? (
               <button
                 onClick={() => setDeleteConfirm(true)}
-                className="text-red-600 text-sm hover:text-red-700 font-medium hover:underline transition-colors"
+                className="text-red-600 text-sm hover:text-red-700"
               >
                 Delete Contact
               </button>
             ) : (
               <div className="flex justify-center items-center gap-4">
-                <span className="text-sm text-gray-600 font-medium">Are you sure?</span>
+                <span className="text-sm text-gray-600">Are you sure?</span>
                 <button
                   onClick={() => onDelete(form)}
-                  className="text-red-600 text-sm font-bold hover:text-red-700 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors"
+                  className="text-red-600 text-sm font-bold px-3 py-1 rounded bg-red-50 hover:bg-red-100"
                 >
                   Yes, Delete
                 </button>
                 <button
                   onClick={() => setDeleteConfirm(false)}
-                  className="text-gray-600 text-sm font-medium hover:text-gray-800 px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 transition-colors"
+                  className="text-gray-600 text-sm font-medium px-3 py-1 rounded bg-gray-100 hover:bg-gray-200"
                 >
                   Cancel
                 </button>
@@ -425,16 +377,10 @@ export default function LeadModal({
       {showDateModal && (
         <DateModal
           initialDate={form[showDateModal]}
-          initialTentative={
-            showDateModal === "installDate" ? form.installTentative : false
-          }
+          initialTentative={showDateModal === "installDate" ? form.installTentative : false}
           allowTentative={showDateModal === "installDate"}
-          label={
-            showDateModal === "installDate" ? "Set Install Date" : "Select Date"
-          }
-          onConfirm={(date, tentative) =>
-            handleDateConfirm(showDateModal, date, tentative)
-          }
+          label={showDateModal === "installDate" ? "Set Install Date" : "Select Date"}
+          onConfirm={(date, tentative) => handleDateConfirm(showDateModal, date, tentative)}
           onRemove={() => handleDateRemove(showDateModal)}
           onClose={() => setShowDateModal(null)}
         />
@@ -453,18 +399,14 @@ export default function LeadModal({
       {showNotSoldModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              Reason Not Sold
-            </h3>
-            <p className="text-sm text-gray-600 mb-5">
-              Select the reason why this lead was not sold:
-            </p>
+            <h3 className="text-xl font-bold mb-2">Reason Not Sold</h3>
+            <p className="text-sm text-gray-600 mb-5">Select a reason:</p>
             <div className="space-y-2">
               {notSoldReasons.map((reason) => (
                 <button
                   key={reason}
                   onClick={() => handleNotSoldReasonSelect(reason)}
-                  className="w-full px-4 py-3.5 text-left font-semibold text-gray-700 bg-gray-50 hover:bg-gradient-to-r hover:from-blue-50 hover:to-emerald-50 hover:text-blue-700 rounded-xl transition-all border border-gray-200 hover:border-blue-300 shadow-sm hover:shadow-md"
+                  className="w-full px-4 py-3.5 text-left font-semibold bg-gray-50 hover:bg-blue-50 rounded-xl border border-gray-200"
                 >
                   {reason}
                 </button>
@@ -472,7 +414,7 @@ export default function LeadModal({
             </div>
             <button
               onClick={() => setShowNotSoldModal(false)}
-              className="w-full mt-4 px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+              className="w-full mt-4 px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800"
             >
               Cancel
             </button>

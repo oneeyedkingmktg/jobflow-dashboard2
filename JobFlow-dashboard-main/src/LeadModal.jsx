@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import InputRow from "./InputRow.jsx";
 import LeadDetails from "./LeadDetails.jsx";
 import DateModal from "./DateModal.jsx";
 import ApptDateTimeModal from "./ApptDateTimeModal.jsx";
 import { syncLeadToMailerLite } from "./mailerLiteAPI.js";
 import { GHLAPI } from "./api";
-import { AuthContext } from "./AuthContext";
+import { useAuth } from "./AuthContext";
+import { useCompany } from "./CompanyContext";
 
 export default function LeadModal({
   lead,
@@ -13,10 +14,10 @@ export default function LeadModal({
   onSave,
   onDelete,
   fromView,
-  currentUser,
   leadSource,
 }) {
-  const { activeCompany } = useContext(AuthContext);
+  const { user, isMaster } = useAuth();
+  const { currentCompany } = useCompany();
 
   const [form, setForm] = useState({
     buyerType: "",
@@ -26,6 +27,7 @@ export default function LeadModal({
     installTentative: false,
     ...lead,
   });
+
   const [isEditing, setIsEditing] = useState(lead?.isNew || false);
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
@@ -36,7 +38,6 @@ export default function LeadModal({
   const [previousStatus, setPreviousStatus] = useState(lead?.status || "Lead");
   const [syncLoading, setSyncLoading] = useState(false);
 
-  // Auto-open modals when status changes
   useEffect(() => {
     if (form.status !== previousStatus) {
       if (form.status === "Appointment Set" && previousStatus !== "Appointment Set") {
@@ -202,7 +203,7 @@ export default function LeadModal({
   };
 
   const handleSyncToGHL = async () => {
-    if (!activeCompany?.id) {
+    if (!currentCompany?.id) {
       alert("No active company ID.");
       return;
     }
@@ -212,7 +213,7 @@ export default function LeadModal({
       const parsed = parseName(form.name);
       const cleanForm = { ...form, ...parsed };
 
-      await GHLAPI.syncLead(cleanForm, activeCompany.id);
+      await GHLAPI.syncLead(cleanForm, currentCompany.id);
 
       alert("Lead synced to GHL successfully.");
     } catch (err) {
@@ -250,9 +251,6 @@ export default function LeadModal({
               </a>
               <a
                 href={`sms:${form.phone || ""}`}
-                className="bg-white
-              <a
-                href={`sms:${form.phone || ""}`}
                 className="bg-white hover:bg-gray-100 text-gray-900 text-base px-6 py-2.5 rounded-lg font-semibold transition-all shadow-sm hover:shadow flex-1 text-center"
               >
                 Text
@@ -272,7 +270,6 @@ export default function LeadModal({
         </div>
 
         <div className="p-6 space-y-6">
-          {/* STATUS + ACTION BUTTONS */}
           <div className="flex flex-wrap justify-between items-center gap-3 pb-4 border-b border-gray-200">
             <div className="relative">
               <button
@@ -309,7 +306,6 @@ export default function LeadModal({
               )}
             </div>
 
-            {/* RIGHT-SIDE PROGRESSION BUTTONS */}
             <div className="flex items-center gap-2">
               {form.status === "Appointment Set" ? (
                 <>
@@ -338,7 +334,6 @@ export default function LeadModal({
             </div>
           </div>
 
-          {/* DETAILS COMPONENT */}
           <LeadDetails
             form={form}
             isEditing={isEditing}
@@ -348,11 +343,8 @@ export default function LeadModal({
             setShowDateModal={setShowDateModal}
           />
 
-          {/* EDIT MODE FIELDS */}
           {isEditing ? (
             <div className="space-y-4 pt-4">
-              {/* name, address, city, etc (UNCHANGED — your existing fields) */}
-              {/* ... your entire edit form stays exactly the same ... */}
             </div>
           ) : (
             <div
@@ -361,19 +353,11 @@ export default function LeadModal({
               }}
               className="text-sm space-y-3 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-4 border border-gray-200 cursor-pointer transition-all hover:shadow-md hover:border-blue-300"
             >
-              {/* READ-ONLY DETAILS BLOCK (UNCHANGED) */}
-              {/* ... */}
             </div>
           )}
 
-          {/* VALIDATION ALERT (UNCHANGED) */}
-          {/* ... */}
-
-          {/* ACTION BUTTONS */}
           <div className="space-y-3">
             <div className="flex justify-between items-center pt-3 border-t border-gray-200 gap-3 flex-wrap">
-
-              {/* EXIT */}
               <button
                 onClick={handleExit}
                 className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-8 py-3 rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all active:scale-95"
@@ -381,7 +365,6 @@ export default function LeadModal({
                 Exit
               </button>
 
-              {/* EDIT / SAVE */}
               {!isEditing ? (
                 <button
                   onClick={() => setIsEditing(true)}
@@ -399,7 +382,6 @@ export default function LeadModal({
               )}
             </div>
 
-            {/* NEW: SYNC TO GHL BUTTON */}
             {!isEditing && (
               <button
                 onClick={handleSyncToGHL}
@@ -411,7 +393,6 @@ export default function LeadModal({
             )}
           </div>
 
-          {/* DELETE CONTACT */}
           <div className="text-center pt-4 border-t border-gray-100">
             {!deleteConfirm ? (
               <button
@@ -441,7 +422,6 @@ export default function LeadModal({
         </div>
       </div>
 
-      {/* MODALS (UNCHANGED) */}
       {showDateModal && (
         <DateModal
           initialDate={form[showDateModal]}
@@ -502,4 +482,3 @@ export default function LeadModal({
     </div>
   );
 }
-

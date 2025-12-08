@@ -6,107 +6,166 @@ export default function LeadDetails({
   formatDate,
   formatTime,
   setShowApptModal,
-  setShowDateModal,
+  setShowDateModal
 }) {
-  // Helper to display a section row
-  const Row = ({ label, value, onClick }) => (
-    <div
-      className={`flex justify-between py-1 ${
-        onClick ? "cursor-pointer hover:bg-gray-50 rounded-lg px-2" : ""
-      }`}
-      onClick={onClick}
-    >
-      <span className="font-medium text-gray-600">{label}:</span>
-      <span className="text-gray-900">{value || "—"}</span>
-    </div>
-  );
+  return (
+    <div className="mb-4">
+      {/* ADDRESS SECTION */}
+      <div className="mb-4 pb-4 border-b border-gray-200">
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+            `${form.address}, ${form.city}, ${form.state} ${form.zip}`
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`block bg-gray-50 rounded-lg p-2.5 mb-3 cursor-pointer transition-colors ${
+            isEditing
+              ? "hover:bg-blue-50 hover:border-blue-300 border border-transparent"
+              : "hover:bg-gray-100 border border-transparent"
+          }`}
+        >
+          <div className="text-xs text-gray-500 font-medium mb-0.5">
+            📍 Tap to open in Maps
+          </div>
+          <p
+            className={`font-semibold text-base ${
+              isEditing ? "text-blue-600" : "text-gray-900"
+            }`}
+          >
+            {form.address}
+          </p>
+          <p
+            className={`text-sm ${
+              isEditing ? "text-blue-600" : "text-gray-600"
+            }`}
+          >
+            {form.city}, {form.state} {form.zip}
+          </p>
+        </a>
 
-  /* ----------------------------------------------------
-     VIEW MODE ONLY
-  -----------------------------------------------------*/
-  if (!isEditing) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4 shadow-sm">
+        {/* PHONE */}
+        {form.phone && (
+          <p className="mt-2 text-sm text-gray-800 font-medium">
+            {form.phone}
+          </p>
+        )}
 
-        {/* CONTACT */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-1">Contact</h3>
-          <Row label="Phone" value={form.phone} />
-          <Row label="Email" value={form.email} />
-          <Row label="Preferred Contact" value={form.preferredContact} />
-        </div>
+        {/* EMAIL */}
+        {form.email && (
+          <p className="text-sm text-gray-600 mt-1">{form.email}</p>
+        )}
 
-        {/* ADDRESS */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-1">Address</h3>
-          <Row label="Address" value={form.address} />
-          <Row label="City" value={form.city} />
-          <Row label="State" value={form.state} />
-          <Row label="Zip" value={form.zip} />
-        </div>
+        {/* LEAD SOURCE */}
+        {form.leadSource && (
+          <div className="mt-3 inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-200">
+            <span>Lead Source:</span>
+            <span>{form.leadSource}</span>
+          </div>
+        )}
 
-        {/* PROJECT */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-1">Project</h3>
-          <Row label="Buyer Type" value={form.buyerType} />
-          <Row label="Company Name" value={form.companyName} />
-          <Row label="Project Type" value={form.projectType} />
-        </div>
+        {/* REFERRAL SOURCE */}
+        {form.referralSource && (
+          <div className="mt-2 inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold border border-blue-200">
+            <span>Referral:</span>
+            <span>{form.referralSource}</span>
+          </div>
+        )}
 
-        {/* SOURCES */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-1">Sources</h3>
-          <Row label="Lead Source" value={form.leadSource} />
-          <Row label="Referral Source" value={form.referralSource} />
-        </div>
+        {/* PROJECT TYPE */}
+        {form.projectType && (
+          <div className="mt-2 inline-flex items-center gap-2 bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold border border-gray-300">
+            <span>Project:</span>
+            <span>{form.projectType}</span>
+          </div>
+        )}
 
-        {/* DATES */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-1">Dates</h3>
+        {/* BUYER TYPE */}
+        {form.buyerType && (
+          <div className="mt-2 inline-flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-semibold border border-purple-200">
+            <span>Buyer:</span>
+            <span>{form.buyerType}</span>
+          </div>
+        )}
 
-          <Row
-            label="Appointment"
-            value={
-              form.apptDate
-                ? `${formatDate(form.apptDate)} @ ${formatTime(form.apptTime)}`
-                : "Not Set"
-            }
-            onClick={() => setShowApptModal(true)}
-          />
+        {/* COMPANY NAME */}
+        {form.companyName && (
+          <div className="mt-2 inline-flex items-center gap-2 bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-semibold border border-orange-200">
+            <span>Company:</span>
+            <span>{form.companyName}</span>
+          </div>
+        )}
 
-          <Row
-            label="Install Date"
-            value={
-              form.installDate
-                ? `${formatDate(form.installDate)}${
-                    form.installTentative ? " (Tentative)" : ""
-                  }`
-                : "Not Set"
-            }
-            onClick={() => setShowDateModal("installDate")}
-          />
-        </div>
+        {/* CONTRACT PRICE */}
+        {form.contractPrice && (
+          <div className="mt-2 inline-flex items-center gap-2 bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold border border-teal-200">
+            <span>Contract:</span>
+            <span>${form.contractPrice}</span>
+          </div>
+        )}
 
-        {/* FINANCIAL */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-1">Financial</h3>
-          <Row label="Contract Price" value={form.contractPrice} />
-        </div>
+        {/* PREFERRED CONTACT */}
+        {form.preferredContact && (
+          <div className="mt-2 inline-flex items-center gap-2 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold border border-yellow-200">
+            <span>Preferred:</span>
+            <span>{form.preferredContact}</span>
+          </div>
+        )}
+      </div>
 
-        {/* NOTES */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-1">Notes</h3>
-          <div className="p-3 bg-gray-50 rounded-lg border text-gray-800 whitespace-pre-line">
-            {form.notes || "—"}
+      {/* DATES SECTION */}
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        {/* APPOINTMENT */}
+        <div
+          onClick={() => setShowApptModal(true)}
+          className={`bg-gray-50 rounded-lg p-2.5 cursor-pointer transition-colors ${
+            isEditing
+              ? "hover:bg-blue-50 hover:border-blue-300"
+              : "hover:bg-gray-100"
+          }`}
+        >
+          <div className="text-xs text-gray-500 font-medium mb-0.5">
+            Appointment
+          </div>
+          <div
+            className={`font-semibold ${
+              isEditing ? "text-blue-600" : "text-gray-900"
+            }`}
+          >
+            {formatDate(form.apptDate)}
+          </div>
+          <div
+            className={`text-xs ${
+              isEditing ? "text-blue-600" : "text-gray-600"
+            }`}
+          >
+            {formatTime(form.apptTime)}
           </div>
         </div>
 
+        {/* INSTALL DATE */}
+        <div
+          onClick={() => setShowDateModal("installDate")}
+          className={`bg-gray-50 rounded-lg p-2.5 cursor-pointer transition-colors ${
+            isEditing
+              ? "hover:bg-blue-50 hover:border-blue-300"
+              : "hover:bg-gray-100"
+          }`}
+        >
+          <div className="text-xs text-gray-500 font-medium mb-0.5">
+            Install Date
+          </div>
+          <div
+            className={`font-semibold ${
+              isEditing ? "text-blue-600" : "text-gray-900"
+            }`}
+          >
+            {form.installTentative && form.installDate && (
+              <span className="text-xs font-normal mr-1">Week of</span>
+            )}
+            {formatDate(form.installDate)}
+          </div>
+        </div>
       </div>
-    );
-  }
-
-  /* ----------------------------------------------------
-     EDITING MODE — LeadModal controls fields
-  -----------------------------------------------------*/
-  return <></>;
+    </div>
+  );
 }

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
+
 import DateModal from "./DateModal.jsx";
 import ApptDateTimeModal from "./ApptDateTimeModal.jsx";
 import ReasonNotSoldModal from "./ReasonNotSoldModal.jsx";
+
+import LeadHeader from "./leadModalParts/LeadHeader.jsx";
+import LeadInfoCard from "./leadModalParts/LeadInfoCard.jsx";
+import LeadEditForm from "./leadModalParts/LeadEditForm.jsx";
+import LeadViewDetails from "./leadModalParts/LeadViewDetails.jsx";
+import LeadFooter from "./leadModalParts/LeadFooter.jsx";
+
 import { useCompany } from "./CompanyContext";
 import { formatPhoneNumber } from "./utils/formatting";
-
-const STATUS_LABELS = {
-  lead: "Lead",
-  appointment_set: "Appointment Set",
-  sold: "Sold",
-  not_sold: "Not Sold",
-  complete: "Completed",
-};
 
 const STATUS_COLORS = {
   lead: "#59687d",
@@ -21,15 +21,7 @@ const STATUS_COLORS = {
   complete: "#ea8e09",
 };
 
-const STATUS_PROGRESS = {
-  lead: "appointment_set",
-  sold: "complete",
-  not_sold: "sold",
-  complete: null,
-  appointment_set: null,
-};
-
-// NEW — Split full name into first/last
+// Split full name → first + last
 const splitName = (full) => {
   if (!full || !full.trim()) return { first: "", last: "" };
   const parts = full.trim().split(" ");
@@ -49,6 +41,9 @@ export default function LeadModal({
 }) {
   const { currentCompany } = useCompany();
 
+  // ------------------------------------
+  // FORM STATE
+  // ------------------------------------
   const [form, setForm] = useState({
     id: lead?.id || null,
     name: lead?.name || "",
@@ -75,12 +70,16 @@ export default function LeadModal({
   });
 
   const [isEditing, setIsEditing] = useState(!lead?.id);
+
+  // MODALS
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [showNotSoldModal, setShowNotSoldModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  // Prefill phone from lookup
+  // ------------------------------------
+  // PREFILL PHONE ON NEW LEAD
+  // ------------------------------------
   useEffect(() => {
     if (!lead?.id && presetPhone) {
       setForm((prev) => ({
@@ -90,113 +89,47 @@ export default function LeadModal({
     }
   }, [presetPhone, lead]);
 
-  const formatDate = (value) => {
-    if (!value) return "Not Set";
-    const d = new Date(value);
-    if (isNaN(d)) return "Not Set";
-    return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-      d.getDate()
-    ).padStart(2, "0")}-${d.getFullYear()}`;
-  };
-
-  const formatTime = (value) => {
-    if (!value) return "";
-    const parts = String(value).split(":");
-    let hour = parseInt(parts[0], 10);
-    const minutes = parts[1] || "00";
-    const ampm = hour >= 12 ? "PM" : "AM";
-    hour = hour % 12 || 12;
-    return `${hour}:${minutes.padStart(2, "0")} ${ampm}`;
-  };
-
-  const handleChange = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handlePhoneChange = (val) => {
-    handleChange("phone", formatPhoneNumber(val));
-  };
-
-  // SAVE
-  const handleSave = () => {
+  // ------------------------------------
+  // SAVE (stay inside modal)
+  // ------------------------------------
+  const handleSaveOnly = () => {
     const { first, last } = splitName(form.name);
+
     const updated = {
       ...form,
       firstName: first,
       lastName: last,
       full_name: form.name,
     };
+
     onSave(updated);
     setForm(updated);
     setIsEditing(false);
   };
 
-  // EXIT (save always)
+  // ------------------------------------
+  // EXIT (save + close modal)
+  // ------------------------------------
   const handleExit = () => {
     const { first, last } = splitName(form.name);
+
     const updated = {
       ...form,
       firstName: first,
       lastName: last,
       full_name: form.name,
     };
+
     onSave(updated);
     onClose({ view: "home" });
   };
 
-  const call = () => {
-    if (!form.phone) return;
-    window.open(`tel:${form.phone.replace(/[^\d]/g, "")}`);
-  };
-
-  const text = () => {
-    if (!form.phone) return;
-    window.open(`sms:${form.phone.replace(/[^\d]/g, "")}`);
-  };
-
-  const maps = () => {
-    const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
-    window.open(
-      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        query
-      )}`,
-      "_blank"
-    );
-  };
-
-  const currentStatus = form.status;
-  const nextStatus = STATUS_PROGRESS[currentStatus] || null;
-  const nextStatusLabel = nextStatus ? STATUS_LABELS[nextStatus] : null;
-  const nextStatusColor = nextStatus ? STATUS_COLORS[nextStatus] : "#ccc";
-
-  const statusOptions = [
-    "lead",
-    "appointment_set",
-    "sold",
-    "not_sold",
-    "complete",
-  ];
-
-  const buyerTypes = [
-    "Residential",
-    "Small Business",
-    "Buyer not Owner",
-    "Competitive Bid",
-  ];
-
-  const preferredContacts = ["Phone", "SMS", "Email"];
-
-  const projectTypes = [
-    "Garage Floor",
-    "Basement",
-    "Patio",
-    "Sidewalk",
-    "Pool Deck",
-    "Commercial",
-  ];
-
-  const saveWithUpdates = (updates) => {
+  // ------------------------------------
+  // STATUS PROGRESSION
+  // ------------------------------------
+  const applyUpdates = (updates) => {
     const { first, last } = splitName(form.name);
+
     const updated = {
       ...form,
       ...updates,
@@ -204,33 +137,21 @@ export default function LeadModal({
       lastName: last,
       full_name: form.name,
     };
+
     setForm(updated);
     onSave(updated);
   };
 
-  const handleProgressNext = () => {
-    if (!nextStatus) return;
-    if (currentStatus === "not_sold" && nextStatus === "sold") {
-      saveWithUpdates({ status: "sold", notSoldReason: "" });
-    } else {
-      saveWithUpdates({ status: nextStatus });
-    }
+  const handleSoldFromAppt = () => {
+    applyUpdates({ status: "sold", notSoldReason: "" });
   };
 
-  const handleProgressSoldFromAppt = () => {
-    saveWithUpdates({ status: "sold", notSoldReason: "" });
-  };
-
-  const handleProgressNotSoldFromAppt = () => {
+  const handleNotSoldFromAppt = () => {
     setShowNotSoldModal(true);
   };
 
   const handleNotSoldReasonSelected = (reason) => {
-    saveWithUpdates({ status: "not_sold", notSoldReason: reason });
-    setShowNotSoldModal(false);
-  };
-
-  const handleNotSoldCancel = () => {
+    applyUpdates({ status: "not_sold", notSoldReason: reason });
     setShowNotSoldModal(false);
   };
 
@@ -238,393 +159,41 @@ export default function LeadModal({
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-auto">
       <div className="bg-[#f5f6f7] rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
 
-        {/* HEADER */}
-        <div
-          className="px-6 pt-4 pb-5"
-          style={{ backgroundColor: STATUS_COLORS[currentStatus] || "#59687d" }}
-        >
-          <h2 className="text-2xl font-bold text-white mb-4">
-            {form.name || "New Lead"}
-          </h2>
+        {/* ---------------- HEADER ---------------- */}
+        <LeadHeader
+          form={form}
+          setForm={setForm}
+          handleSoldFromAppt={handleSoldFromAppt}
+          handleNotSoldFromAppt={handleNotSoldFromAppt}
+        />
 
-          <div className="grid grid-cols-3 gap-3">
-            <button onClick={call} className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md">
-              Call
-            </button>
-            <button onClick={text} className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md">
-              Text
-            </button>
-            <button onClick={maps} className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md">
-              Maps
-            </button>
-          </div>
-        </div>
+        {/* ---------------- MAIN BODY ---------------- */}
+        <div className="px-6 py-6 space-y-6">
 
-        {/* BODY */}
-        <div className="px-6 py-6 space-y-5">
+          {/* Info Cards */}
+          <LeadInfoCard
+            form={form}
+            setShowApptModal={setShowApptModal}
+            setShowDateModal={setShowDateModal}
+          />
 
-          {/* STATUS + PROGRESSION */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="relative">
-              <select
-                value={currentStatus}
-                onChange={(e) => handleChange("status", e.target.value)}
-                className="appearance-none bg-[#59687d] text-white text-sm font-semibold px-4 py-2 rounded-full pr-8 shadow cursor-pointer"
-              >
-                {statusOptions.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white text-sm pointer-events-none">
-                ▼
-              </span>
-            </div>
-
-            {/* Conditional Progression */}
-            {currentStatus === "appointment_set" ? (
-              <div className="flex gap-3">
-                <button
-                  onClick={handleProgressSoldFromAppt}
-                  className="px-5 py-2 rounded-full text-sm font-bold shadow text-white flex items-center"
-                  style={{ backgroundColor: STATUS_COLORS["sold"] }}
-                >
-                  <span className="mr-1">»»</span> SOLD
-                </button>
-
-                <button
-                  onClick={handleProgressNotSoldFromAppt}
-                  className="px-5 py-2 rounded-full text-sm font-bold shadow text-white flex items-center"
-                  style={{ backgroundColor: STATUS_COLORS["not_sold"] }}
-                >
-                  <span className="mr-1">»»</span> NOT SOLD
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleProgressNext}
-                disabled={!nextStatus}
-                className={`px-6 py-2 rounded-full text-sm font-bold shadow flex items-center ${nextStatus ? "text-white" : "text-gray-600 bg-gray-300"}`}
-                style={nextStatus ? { backgroundColor: nextStatusColor } : {}}
-              >
-                {nextStatusLabel ? (
-                  <>
-                    <span className="mr-1">»»</span>
-                    {nextStatusLabel.toUpperCase()}
-                  </>
-                ) : (
-                  "NO NEXT STEP"
-                )}
-              </button>
-            )}
-          </div>
-
-          {/* ADDRESS BOX */}
-          <div
-            onClick={maps}
-            className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
-          >
-            <div className="text-xs text-gray-500">📍 Tap to open in Maps</div>
-            <div className="text-blue-700 font-semibold">{form.address}</div>
-            <div className="text-gray-700 text-sm">
-              {[form.city, form.state, form.zip].filter(Boolean).join(", ")}
-            </div>
-          </div>
-
-          {/* PHONE + LEAD SOURCE */}
-          <div className="space-y-2">
-            <div className="text-gray-900 font-semibold">{form.phone}</div>
-
-            {form.leadSource && (
-              <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                Lead Source: {form.leadSource}
-              </div>
-            )}
-          </div>
-
-          {/* APPOINTMENT + INSTALL */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Appointment */}
-            <div
-              onClick={() => setShowApptModal(true)}
-              className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
-            >
-              <div className="text-xs text-gray-500">Appointment</div>
-              <div className="text-blue-700 font-semibold">
-                {formatDate(form.apptDate)}
-              </div>
-              <div className="text-gray-700 text-xs">
-                {formatTime(form.apptTime)}
-              </div>
-            </div>
-
-            {/* Install */}
-            <div
-              onClick={() => setShowDateModal("installDate")}
-              className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
-            >
-              <div className="text-xs text-gray-500">Install Date</div>
-              <div className="text-blue-700 font-semibold">
-                {formatDate(form.installDate)}
-              </div>
-            </div>
-          </div>
-
-          {/* EDIT MODE */}
+          {/* Edit OR View */}
           {isEditing ? (
-            <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm space-y-4">
-              {/* NAME */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600">Name *</label>
-                <input
-                  value={form.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
-                  className="w-full border px-3 py-2 rounded-lg"
-                />
-              </div>
-
-              {/* ADDRESS */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600">Address</label>
-                <input
-                  value={form.address}
-                  onChange={(e) => handleChange("address", e.target.value)}
-                  className="w-full border px-3 py-2 rounded-lg"
-                />
-              </div>
-
-              {/* CITY / STATE / ZIP */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-gray-600">City</label>
-                  <input
-                    value={form.city}
-                    onChange={(e) => handleChange("city", e.target.value)}
-                    className="w-full border px-3 py-2 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-600">State</label>
-                  <input
-                    value={form.state}
-                    onChange={(e) => handleChange("state", e.target.value)}
-                    className="w-full border px-3 py-2 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-600">Zip</label>
-                  <input
-                    value={form.zip}
-                    onChange={(e) => handleChange("zip", e.target.value)}
-                    className="w-full border px-3 py-2 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              {/* PHONE */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600">Phone *</label>
-                <input
-                  value={form.phone}
-                  onChange={(e) => handlePhoneChange(e.target.value)}
-                  className="w-full border px-3 py-2 rounded-lg"
-                />
-              </div>
-
-              {/* EMAIL */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600">Email</label>
-                <input
-                  value={form.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  className="w-full border px-3 py-2 rounded-lg"
-                />
-              </div>
-
-              {/* BUYER TYPE */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600">Buyer Type</label>
-                <select
-                  value={form.buyerType}
-                  onChange={(e) => handleChange("buyerType", e.target.value)}
-                  className="w-full border px-3 py-2 rounded-lg"
-                >
-                  <option value="">Select Type</option>
-                  {buyerTypes.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* COMPANY */}
-              {form.buyerType !== "Residential" && form.buyerType !== "" && (
-                <div>
-                  <label className="text-xs font-semibold text-gray-600">Company Name</label>
-                  <input
-                    value={form.companyName}
-                    onChange={(e) => handleChange("companyName", e.target.value)}
-                    className="w-full border px-3 py-2 rounded-lg"
-                  />
-                </div>
-              )}
-
-              {/* PROJECT TYPE */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600">Project Type</label>
-                <select
-                  value={form.projectType}
-                  onChange={(e) => handleChange("projectType", e.target.value)}
-                  className="w-full border px-3 py-2 rounded-lg"
-                >
-                  <option value="">Choose Project</option>
-                  {projectTypes.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* CONTRACT PRICE */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600">Contract Price</label>
-                <input
-                  value={form.contractPrice}
-                  onChange={(e) => handleChange("contractPrice", e.target.value)}
-                  className="w-full border px-3 py-2 rounded-lg"
-                />
-              </div>
-
-              {/* PREFERRED CONTACT */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600">Preferred Contact</label>
-                <select
-                  value={form.preferredContact}
-                  onChange={(e) => handleChange("preferredContact", e.target.value)}
-                  className="w-full border px-3 py-2 rounded-lg"
-                >
-                  <option value="">Choose Contact</option>
-                  {preferredContacts.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* NOTES */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600">Notes</label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => handleChange("notes", e.target.value)}
-                  className="w-full border px-3 py-2 rounded-lg h-24 resize-none"
-                />
-              </div>
-            </div>
+            <LeadEditForm form={form} setForm={setForm} />
           ) : (
-            // VIEW MODE
-            <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm text-sm text-gray-800 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Email</span>
-                <span className="font-semibold">{form.email || "Not Set"}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-500">Buyer Type</span>
-                <span className="font-semibold">
-                  {form.buyerType || "Not Set"}
-                </span>
-              </div>
-
-              {form.companyName && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Company</span>
-                  <span className="font-semibold">{form.companyName}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between">
-                <span className="text-gray-500">Project Type</span>
-                <span className="font-semibold">
-                  {form.projectType || "Not Set"}
-                </span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-500">Contract Price</span>
-                <span className="font-semibold">
-                  {form.contractPrice ? `$${form.contractPrice}` : "Not Set"}
-                </span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-500">Preferred Contact</span>
-                <span className="font-semibold">
-                  {form.preferredContact || "Not Set"}
-                </span>
-              </div>
-
-              <div>
-                <span className="text-gray-500 block">Notes</span>
-                <p className="font-semibold whitespace-pre-line mt-1">
-                  {form.notes?.trim() ? form.notes : "No notes added"}
-                </p>
-              </div>
-            </div>
+            <LeadViewDetails form={form} />
           )}
 
-          {/* FOOTER BUTTONS */}
-          <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-            <button
-              onClick={handleExit}
-              className="bg-[#3b4250] text-white px-8 py-2 rounded-xl font-semibold shadow hover:shadow-md"
-            >
-              Exit
-            </button>
-
-            <button
-              onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-              className="bg-[#048c63] text-white px-8 py-2 rounded-xl font-semibold shadow hover:shadow-md"
-            >
-              {isEditing ? "Save" : "Edit"}
-            </button>
-          </div>
-
-          {/* DELETE CONTACT */}
-          <div className="text-center pt-3">
-            {!deleteConfirm ? (
-              <button
-                onClick={() => setDeleteConfirm(true)}
-                className="text-red-600 text-sm font-semibold"
-              >
-                Delete Contact
-              </button>
-            ) : (
-              <div className="inline-block bg-red-50 border border-red-300 rounded-xl p-3">
-                <p className="text-red-700 text-sm font-semibold mb-2">
-                  Are you sure you want to delete this contact?
-                </p>
-                <div className="flex gap-3 justify-center text-sm font-semibold">
-                  <button
-                    onClick={() => onDelete(form)}
-                    className="bg-red-600 text-white px-4 py-1 rounded"
-                  >
-                    Yes, Delete
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(false)}
-                    className="bg-gray-200 px-4 py-1 rounded"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Footer Buttons */}
+          <LeadFooter
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            handleSaveOnly={handleSaveOnly}
+            handleExit={handleExit}
+            deleteConfirm={deleteConfirm}
+            setDeleteConfirm={setDeleteConfirm}
+            onDelete={() => onDelete(form)}
+          />
         </div>
       </div>
 
@@ -638,16 +207,16 @@ export default function LeadModal({
           allowTentative={showDateModal === "installDate"}
           label={showDateModal === "installDate" ? "Set Install Date" : "Select Date"}
           onConfirm={(date, tentative) => {
-            setForm((p) => ({
-              ...p,
+            setForm((prev) => ({
+              ...prev,
               [showDateModal]: date,
               installTentative: tentative || false,
             }));
             setShowDateModal(null);
           }}
           onRemove={() => {
-            setForm((p) => ({
-              ...p,
+            setForm((prev) => ({
+              ...prev,
               [showDateModal]: "",
               installTentative: false,
             }));
@@ -657,17 +226,17 @@ export default function LeadModal({
         />
       )}
 
-      {/* APPOINTMENT DATE/TIME MODAL */}
+      {/* APPOINTMENT MODAL */}
       {showApptModal && (
         <ApptDateTimeModal
           apptDate={form.apptDate}
           apptTime={form.apptTime}
           onConfirm={(date, time) => {
-            setForm((p) => ({ ...p, apptDate: date, apptTime: time }));
+            setForm((prev) => ({ ...prev, apptDate: date, apptTime: time }));
             setShowApptModal(false);
           }}
           onRemove={() => {
-            setForm((p) => ({ ...p, apptDate: "", apptTime: "" }));
+            setForm((prev) => ({ ...prev, apptDate: "", apptTime: "" }));
             setShowApptModal(false);
           }}
           onClose={() => setShowApptModal(false)}
@@ -678,7 +247,7 @@ export default function LeadModal({
       {showNotSoldModal && (
         <ReasonNotSoldModal
           onSelect={handleNotSoldReasonSelected}
-          onCancel={handleNotSoldCancel}
+          onCancel={() => setShowNotSoldModal(false)}
         />
       )}
     </div>

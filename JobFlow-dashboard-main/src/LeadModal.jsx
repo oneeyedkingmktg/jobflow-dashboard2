@@ -164,6 +164,7 @@ export default function LeadModal({
             form={form}
             setForm={setForm}
             onOpenNotSold={() => setShowNotSoldModal(true)}
+            onOpenApptModal={() => setShowApptModal(true)}
           />
 
           {/* ADDRESS BOX */}
@@ -172,14 +173,14 @@ export default function LeadModal({
           {/* CONTACT INFO */}
           <LeadContactSection form={form} />
 
-          {/* APPOINTMENTS */}
+          {/* APPOINTMENT / INSTALL */}
           <LeadAppointmentSection
             form={form}
             setShowApptModal={setShowApptModal}
             setShowDateModal={setShowDateModal}
           />
 
-          {/* EDIT OR VIEW DETAILS */}
+          {/* DETAILS (VIEW OR EDIT) */}
           {isEditing ? (
             <LeadDetailsEdit
               form={form}
@@ -187,7 +188,10 @@ export default function LeadModal({
               onPhoneChange={handlePhoneChange}
             />
           ) : (
-            <LeadDetailsView form={form} />
+            <LeadDetailsView
+              form={form}
+              onEdit={() => setIsEditing(true)}
+            />
           )}
 
           {/* FOOTER BUTTONS */}

@@ -11,6 +11,7 @@ import LeadDetailsEdit from "./leadModalParts/LeadDetailsEdit.jsx";
 import LeadDetailsView from "./leadModalParts/LeadDetailsView.jsx";
 import LeadFooter from "./leadModalParts/LeadFooter.jsx";
 import LeadModalsWrapper from "./leadModalParts/LeadModalsWrapper.jsx";
+import LeadStatusBar from "./leadModalParts/LeadStatusBar.jsx"; // <<< REQUIRED
 
 // Constants
 const STATUS_COLORS = {
@@ -143,9 +144,7 @@ export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone
           onMap={() => {
             const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
             window.open(
-              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                query
-              )}`,
+              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
               "_blank"
             );
           }}
@@ -162,7 +161,16 @@ export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone
           />
 
           {/* ADDRESS BOX */}
-          <LeadAddressBox form={form} onMapClick={() => {}} />
+          <LeadAddressBox
+            form={form}
+            onOpenMaps={() => {
+              const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
+              window.open(
+                `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
+                "_blank"
+              );
+            }}
+          />
 
           {/* PHONE + LEAD SOURCE */}
           <LeadContactSection form={form} />

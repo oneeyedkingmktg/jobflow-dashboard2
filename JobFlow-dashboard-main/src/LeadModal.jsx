@@ -11,18 +11,9 @@ import LeadDetailsEdit from "./leadModalParts/LeadDetailsEdit.jsx";
 import LeadDetailsView from "./leadModalParts/LeadDetailsView.jsx";
 import LeadFooter from "./leadModalParts/LeadFooter.jsx";
 import LeadModalsWrapper from "./leadModalParts/LeadModalsWrapper.jsx";
-import LeadStatusBar from "./leadModalParts/LeadStatusBar.jsx"; // <<< REQUIRED
+import LeadStatusBar from "./leadModalParts/LeadStatusBar.jsx";
 
-// Constants
-const STATUS_COLORS = {
-  lead: "#59687d",
-  appointment_set: "#225ce5",
-  sold: "#048c63",
-  not_sold: "#c72020",
-  complete: "#ea8e09",
-};
-
-// Split "Full Name" into first + last
+// Split full name into first + last
 const splitName = (full) => {
   if (!full || !full.trim()) return { first: "", last: "" };
   const parts = full.trim().split(" ");
@@ -33,10 +24,16 @@ const splitName = (full) => {
   };
 };
 
-export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone }) {
+export default function LeadModal({
+  lead,
+  onClose,
+  onSave,
+  onDelete,
+  presetPhone,
+}) {
   const { currentCompany } = useCompany();
 
-  // Form State
+  // FORM STATE
   const [form, setForm] = useState({
     id: lead?.id || null,
     name: lead?.name || "",
@@ -62,14 +59,14 @@ export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone
     status: lead?.status || "lead",
   });
 
-  // UI State
+  // UI STATE
   const [isEditing, setIsEditing] = useState(!lead?.id);
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
   const [showNotSoldModal, setShowNotSoldModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  // Prefill phone if new lead
+  // Prefill phone for new leads
   useEffect(() => {
     if (!lead?.id && presetPhone) {
       setForm((prev) => ({
@@ -79,7 +76,7 @@ export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone
     }
   }, [presetPhone, lead]);
 
-  // Update helper
+  // FORM UPDATE HELPERS
   const handleChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -88,7 +85,7 @@ export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone
     handleChange("phone", formatPhoneNumber(val));
   };
 
-  // SAVE (Stay open)
+  // SAVE — stay on modal
   const handleSave = () => {
     const { first, last } = splitName(form.name);
 
@@ -104,7 +101,7 @@ export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone
     setIsEditing(false);
   };
 
-  // EXIT (Save + close)
+  // EXIT — save then close
   const handleExit = () => {
     const { first, last } = splitName(form.name);
 
@@ -119,7 +116,7 @@ export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone
     onClose({ view: "home" });
   };
 
-  // Not Sold → Reason modal selection
+  // NOT SOLD reason selection
   const handleNotSoldSelect = (reason) => {
     const updated = {
       ...form,
@@ -128,6 +125,17 @@ export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone
     };
     setForm(updated);
     onSave(updated);
+  };
+
+  // OPEN MAPS
+  const handleMaps = () => {
+    const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        query
+      )}`,
+      "_blank"
+    );
   };
 
   return (
@@ -139,15 +147,13 @@ export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone
           name={form.name}
           status={form.status}
           phone={form.phone}
-          onCall={() => window.open(`tel:${form.phone.replace(/[^\d]/g, "")}`)}
-          onText={() => window.open(`sms:${form.phone.replace(/[^\d]/g, "")}`)}
-          onMap={() => {
-            const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
-            window.open(
-              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
-              "_blank"
-            );
-          }}
+          onCall={() =>
+            window.open(`tel:${form.phone.replace(/[^\d]/g, "")}`)
+          }
+          onText={() =>
+            window.open(`sms:${form.phone.replace(/[^\d]/g, "")}`)
+          }
+          onMap={handleMaps}
         />
 
         {/* BODY */}
@@ -161,16 +167,7 @@ export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone
           />
 
           {/* ADDRESS BOX */}
-          <LeadAddressBox
-            form={form}
-            onOpenMaps={() => {
-              const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
-              window.open(
-                `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
-                "_blank"
-              );
-            }}
-          />
+          <LeadAddressBox form={form} onOpenMaps={handleMaps} />
 
           {/* PHONE + LEAD SOURCE */}
           <LeadContactSection form={form} />
@@ -182,7 +179,7 @@ export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone
             setShowDateModal={setShowDateModal}
           />
 
-          {/* EDIT MODE or VIEW MODE */}
+          {/* EDIT OR VIEW DETAILS */}
           {isEditing ? (
             <LeadDetailsEdit
               form={form}

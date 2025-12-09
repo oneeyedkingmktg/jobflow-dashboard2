@@ -13,6 +13,43 @@ import LeadFooter from "./leadModalParts/LeadFooter.jsx";
 import LeadModalsWrapper from "./leadModalParts/LeadModalsWrapper.jsx";
 import LeadStatusBar from "./leadModalParts/LeadStatusBar.jsx";
 
+/* ============================================================
+   CORRECT camelCase → snake_case PAYLOAD FOR BACKEND
+============================================================ */
+const toBackend = (form) => ({
+  name: form.name || "",
+  full_name: form.name || "",
+  first_name: form.name?.split(" ")?.[0] || "",
+  last_name: form.name?.split(" ")?.slice(1).join(" ") || "",
+
+  phone: form.phone || "",
+  email: form.email || "",
+  address: form.address || "",
+  city: form.city || "",
+  state: form.state || "",
+  zip: form.zip || "",
+
+  buyer_type: form.buyerType || "",
+  company_name: form.companyName || "",
+  project_type: form.projectType || "",
+  lead_source: form.leadSource || "",
+  referral_source: form.referralSource || "",
+
+  preferred_contact: form.preferredContact || "",
+  notes: form.notes || "",
+
+  status: form.status || "lead",
+  not_sold_reason: form.notSoldReason || "",
+
+  contract_price: form.contractPrice || null,
+
+  appointment_date: form.apptDate || null,
+  appointment_time: form.apptTime || null,
+
+  install_date: form.installDate || null,
+  install_tentative: form.installTentative || false,
+});
+
 export default function LeadModal({
   lead,
   onClose,
@@ -70,22 +107,28 @@ export default function LeadModal({
   const handlePhoneChange = (val) =>
     handleChange("phone", formatPhoneNumber(val));
 
-  // SAVE (stay in modal)
-  const handleSave = () => {
-    onSave(form);
+  /* ============================================================
+     SAVE (stay open)
+  ============================================================ */
+  const handleSave = async () => {
+    const payload = toBackend(form);
+    await onSave({ ...form, ...payload });
     setIsEditing(false);
   };
 
-  // SAVE & EXIT (close modal)
+  /* ============================================================
+     SAVE & EXIT
+  ============================================================ */
   const handleExit = async () => {
-    await onSave(form);
+    const payload = toBackend(form);
+    await onSave({ ...form, ...payload });
     onClose();
   };
 
   const handleNotSoldSelect = (reason) => {
     const updated = { ...form, status: "not_sold", notSoldReason: reason };
     setForm(updated);
-    onSave(updated);
+    onSave({ ...updated, ...toBackend(updated) });
   };
 
   // OPEN MAPS
@@ -102,7 +145,7 @@ export default function LeadModal({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-auto">
       <div className="bg-[#f5f6f7] rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
-        {/* HEADER */}
+
         <LeadHeader
           name={form.name}
           status={form.status}
@@ -116,9 +159,7 @@ export default function LeadModal({
           onMap={handleMaps}
         />
 
-        {/* BODY */}
         <div className="px-6 py-6 space-y-5">
-          {/* STATUS BAR */}
           <LeadStatusBar
             form={form}
             setForm={setForm}
@@ -126,20 +167,16 @@ export default function LeadModal({
             onOpenApptModal={() => setShowApptModal(true)}
           />
 
-          {/* ADDRESS BOX */}
           <LeadAddressBox form={form} onOpenMaps={handleMaps} />
 
-          {/* CONTACT INFO */}
           <LeadContactSection form={form} />
 
-          {/* APPOINTMENT / INSTALL */}
           <LeadAppointmentSection
             form={form}
             setShowApptModal={setShowApptModal}
             setShowDateModal={setShowDateModal}
           />
 
-          {/* DETAILS (VIEW OR EDIT) */}
           {isEditing ? (
             <LeadDetailsEdit
               form={form}
@@ -147,13 +184,9 @@ export default function LeadModal({
               onPhoneChange={handlePhoneChange}
             />
           ) : (
-            <LeadDetailsView
-              form={form}
-              onEdit={() => setIsEditing(true)}
-            />
+            <LeadDetailsView form={form} onEdit={() => setIsEditing(true)} />
           )}
 
-          {/* FOOTER BUTTONS */}
           <LeadFooter
             isEditing={isEditing}
             onSave={handleSave}
@@ -166,7 +199,6 @@ export default function LeadModal({
         </div>
       </div>
 
-      {/* MODALS */}
       <LeadModalsWrapper
         form={form}
         setForm={setForm}

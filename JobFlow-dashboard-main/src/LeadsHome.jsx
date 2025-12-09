@@ -65,9 +65,17 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   const [loading, setLoading] = useState(true);
   const [showPhoneLookup, setShowPhoneLookup] = useState(false);
 
-  // ===============================
+  // COLORS FOR TABS — SAFELISTED, NO TAILWIND ERRORS
+  const tabColorClasses = {
+    blue: "bg-gradient-to-r from-blue-500 to-blue-600",
+    purple: "bg-gradient-to-r from-purple-500 to-purple-600",
+    green: "bg-gradient-to-r from-green-500 to-green-600",
+    red: "bg-gradient-to-r from-red-500 to-red-600",
+    gray: "bg-gradient-to-r from-gray-500 to-gray-600",
+    indigo: "bg-gradient-to-r from-indigo-500 to-indigo-600",
+  };
+
   // LOAD LEADS FROM BACKEND
-  // ===============================
   useEffect(() => {
     const fetchLeads = async () => {
       try {
@@ -86,26 +94,20 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     fetchLeads();
   }, []);
 
-  // ===============================
   // OPEN EXISTING LEAD
-  // ===============================
   const handleLeadClick = (lead) => {
     setSelectedLead(lead);
     setIsNewLead(false);
   };
 
-  // ===============================
-  // START ADD NEW → always phone lookup
-  // ===============================
+  // ADD NEW LEAD → start with phone lookup
   const handleAddLead = () => {
     setSelectedLead(null);
     setIsNewLead(false);
     setShowPhoneLookup(true);
   };
 
-  // ===============================
-  // PHONE LOOKUP: No match found → New lead
-  // ===============================
+  // PHONE LOOKUP: New lead
   const handlePhoneLookupCreateNew = (phone) => {
     const mapped = {
       id: null,
@@ -149,9 +151,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     setShowPhoneLookup(false);
   };
 
-  // ===============================
-  // PHONE LOOKUP: Match → open existing
-  // ===============================
+  // PHONE LOOKUP: Existing lead
   const handlePhoneLookupSelectExisting = (lead) => {
     if (!lead) return;
     setSelectedLead(lead);
@@ -159,17 +159,13 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     setShowPhoneLookup(false);
   };
 
-  // ===============================
-  // CLOSE MODAL ONLY — no saving
-  // ===============================
+  // CLOSE MODAL
   const handleCloseModal = () => {
     setSelectedLead(null);
     setIsNewLead(false);
   };
 
-  // ===============================
-  // SAVE LEAD
-  // ===============================
+  // SAVE LEAD (POST or PUT)
   const handleSaveLead = async (lead) => {
     try {
       const backendLead = {
@@ -227,19 +223,15 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
           : prev.map((l) => (l.id === converted.id ? converted : l))
       );
 
-      // DO NOT CLOSE MODAL ON SAVE
       setSelectedLead(converted);
       setIsNewLead(false);
-
     } catch (error) {
       console.error("Error saving lead:", error);
       alert("Failed to save lead: " + error.message);
     }
   };
 
-  // ===============================
   // DELETE LEAD
-  // ===============================
   const handleDeleteLead = async (leadToDelete) => {
     try {
       await apiRequest(`/leads/${leadToDelete.id}`, { method: "DELETE" });
@@ -251,9 +243,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     }
   };
 
-  // ===============================
-  // FILTERING + TAB COUNTS
-  // ===============================
+  // FILTERING
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       const tabMatch =
@@ -285,9 +275,6 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   const notSoldCount = leads.filter((l) => l.status === "not_sold").length;
   const completeCount = leads.filter((l) => l.status === "complete").length;
 
-  // ===============================
-  // UI
-  // ===============================
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xl">
@@ -296,7 +283,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Lead Pipeline</h1>
               <p className="text-blue-100 mt-1">
-                {currentCompany ? currentCompany : "Loading..."}
+                {currentCompany?.name || "Loading..."}
               </p>
             </div>
             <SettingsMenu />
@@ -323,7 +310,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                 transition-all duration-200 transform hover:scale-105
                 ${
                   activeTab === tab.name
-                    ? `bg-gradient-to-r from-${tab.color}-500 to-${tab.color}-600 text-white shadow-lg`
+                    ? `${tabColorClasses[tab.color]} text-white shadow-lg`
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
@@ -426,10 +413,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         )}
       </div>
 
-      {/* ============================================== */}
       {/* MODALS */}
-      {/* ============================================== */}
-
       {(selectedLead || isNewLead) && (
         <LeadModal
           lead={selectedLead}

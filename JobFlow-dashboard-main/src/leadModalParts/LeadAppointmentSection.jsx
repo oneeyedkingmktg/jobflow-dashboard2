@@ -5,51 +5,59 @@ export default function LeadAppointmentSection({
   setShowApptModal,
   setShowDateModal,
 }) {
-  const formatDate = (value) => {
-    if (!value) return "Not Set";
-    const d = new Date(value);
-    if (isNaN(d)) return "Not Set";
-    return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-      d.getDate()
-    ).padStart(2, "0")}-${d.getFullYear()}`;
-  };
-
-  const formatTime = (value) => {
-    if (!value) return "";
-    const parts = String(value).split(":");
-    let hour = parseInt(parts[0], 10);
-    const minutes = parts[1] || "00";
-    const ampm = hour >= 12 ? "PM" : "AM";
-    hour = hour % 12 || 12;
-    return `${hour}:${minutes.padStart(2, "0")} ${ampm}`;
-  };
-
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4 shadow-sm text-sm text-gray-800 space-y-3">
 
-      {/* APPOINTMENT DATE/TIME */}
-      <div
-        onClick={() => setShowApptModal(true)}
-        className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
-      >
-        <div className="text-xs text-gray-500">Appointment</div>
-        <div className="text-blue-700 font-semibold">
-          {formatDate(form.apptDate)}
+      {/* APPOINTMENT DATE */}
+      <div className="flex justify-between items-center">
+        <div>
+          <div className="text-gray-500 text-xs">Appointment Date</div>
+          <div className="font-semibold">
+            {form.apptDate ? form.apptDate : "Not Set"}
+          </div>
         </div>
-        <div className="text-gray-700 text-xs">
-          {formatTime(form.apptTime)}
+
+        <button
+          onClick={() => setShowApptModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-full text-xs font-bold shadow hover:shadow-md"
+        >
+          {form.apptDate ? "Edit" : "Set"}
+        </button>
+      </div>
+
+      {/* APPOINTMENT TIME */}
+      <div className="flex justify-between items-center">
+        <div>
+          <div className="text-gray-500 text-xs">Appointment Time</div>
+          <div className="font-semibold">
+            {form.apptTime ? form.apptTime : "Not Set"}
+          </div>
         </div>
+
+        <button
+          onClick={() => setShowApptModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-full text-xs font-bold shadow hover:shadow-md"
+        >
+          {form.apptTime ? "Edit" : "Set"}
+        </button>
       </div>
 
       {/* INSTALL DATE */}
-      <div
-        onClick={() => setShowDateModal("installDate")}
-        className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
-      >
-        <div className="text-xs text-gray-500">Install Date</div>
-        <div className="text-blue-700 font-semibold">
-          {formatDate(form.installDate)}
+      <div className="flex justify-between items-center">
+        <div>
+          <div className="text-gray-500 text-xs">Install Date</div>
+          <div className="font-semibold">
+            {form.installDate ? form.installDate : "Not Set"}
+            {form.installTentative ? " (Tentative)" : ""}
+          </div>
         </div>
+
+        <button
+          onClick={() => setShowDateModal("installDate")}
+          className="px-4 py-2 bg-purple-600 text-white rounded-full text-xs font-bold shadow hover:shadow-md"
+        >
+          {form.installDate ? "Edit" : "Set"}
+        </button>
       </div>
     </div>
   );

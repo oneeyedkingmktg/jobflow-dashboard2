@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from "react";
-
-import DateModal from "./DateModal.jsx";
-import ApptDateTimeModal from "./ApptDateTimeModal.jsx";
-import ReasonNotSoldModal from "./ReasonNotSoldModal.jsx";
-
-import LeadHeader from "./leadModalParts/LeadHeader.jsx";
-import LeadInfoCard from "./leadModalParts/LeadInfoCard.jsx";
-import LeadEditForm from "./leadModalParts/LeadEditForm.jsx";
-import LeadViewDetails from "./leadModalParts/LeadViewDetails.jsx";
-import LeadFooter from "./leadModalParts/LeadFooter.jsx";
-
 import { useCompany } from "./CompanyContext";
 import { formatPhoneNumber } from "./utils/formatting";
 
+// Modular Parts
+import LeadHeader from "./leadModalParts/LeadHeader.jsx";
+import LeadStatusBar from "./leadModalParts/LeadStatusBar.jsx";
+import LeadAddressBox from "./leadModalParts/LeadAddressBox.jsx";
+import LeadContactSection from "./leadModalParts/LeadContactSection.jsx";
+import LeadAppointmentSection from "./leadModalParts/LeadAppointmentSection.jsx";
+import LeadDetailsEdit from "./leadModalParts/LeadDetailsEdit.jsx";
+import LeadDetailsView from "./leadModalParts/LeadDetailsView.jsx";
+import LeadFooter from "./leadModalParts/LeadFooter.jsx";
+import LeadModalsWrapper from "./leadModalParts/LeadModalsWrapper.jsx";
+
+// Constants
 const STATUS_COLORS = {
   lead: "#59687d",
   appointment_set: "#225ce5",
@@ -21,7 +22,7 @@ const STATUS_COLORS = {
   complete: "#ea8e09",
 };
 
-// Split full name → first + last
+// Split "Full Name" into first + last
 const splitName = (full) => {
   if (!full || !full.trim()) return { first: "", last: "" };
   const parts = full.trim().split(" ");
@@ -32,18 +33,10 @@ const splitName = (full) => {
   };
 };
 
-export default function LeadModal({
-  lead,
-  onClose,
-  onSave,
-  onDelete,
-  presetPhone,
-}) {
+export default function LeadModal({ lead, onClose, onSave, onDelete, presetPhone }) {
   const { currentCompany } = useCompany();
 
-  // ------------------------------------
-  // FORM STATE
-  // ------------------------------------
+  // Form State
   const [form, setForm] = useState({
     id: lead?.id || null,
     name: lead?.name || "",
@@ -69,17 +62,14 @@ export default function LeadModal({
     status: lead?.status || "lead",
   });
 
+  // UI State
   const [isEditing, setIsEditing] = useState(!lead?.id);
-
-  // MODALS
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
   const [showNotSoldModal, setShowNotSoldModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  // ------------------------------------
-  // PREFILL PHONE ON NEW LEAD
-  // ------------------------------------
+  // Prefill phone if new lead
   useEffect(() => {
     if (!lead?.id && presetPhone) {
       setForm((prev) => ({
@@ -89,10 +79,17 @@ export default function LeadModal({
     }
   }, [presetPhone, lead]);
 
-  // ------------------------------------
-  // SAVE (stay inside modal)
-  // ------------------------------------
-  const handleSaveOnly = () => {
+  // Update helper
+  const handleChange = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handlePhoneChange = (val) => {
+    handleChange("phone", formatPhoneNumber(val));
+  };
+
+  // SAVE (Stay open)
+  const handleSave = () => {
     const { first, last } = splitName(form.name);
 
     const updated = {
@@ -107,9 +104,7 @@ export default function LeadModal({
     setIsEditing(false);
   };
 
-  // ------------------------------------
-  // EXIT (save + close modal)
-  // ------------------------------------
+  // EXIT (Save + close)
   const handleExit = () => {
     const { first, last } = splitName(form.name);
 
@@ -124,72 +119,79 @@ export default function LeadModal({
     onClose({ view: "home" });
   };
 
-  // ------------------------------------
-  // STATUS PROGRESSION
-  // ------------------------------------
-  const applyUpdates = (updates) => {
-    const { first, last } = splitName(form.name);
-
+  // Not Sold → Reason modal selection
+  const handleNotSoldSelect = (reason) => {
     const updated = {
       ...form,
-      ...updates,
-      firstName: first,
-      lastName: last,
-      full_name: form.name,
+      status: "not_sold",
+      notSoldReason: reason,
     };
-
     setForm(updated);
     onSave(updated);
-  };
-
-  const handleSoldFromAppt = () => {
-    applyUpdates({ status: "sold", notSoldReason: "" });
-  };
-
-  const handleNotSoldFromAppt = () => {
-    setShowNotSoldModal(true);
-  };
-
-  const handleNotSoldReasonSelected = (reason) => {
-    applyUpdates({ status: "not_sold", notSoldReason: reason });
-    setShowNotSoldModal(false);
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-auto">
       <div className="bg-[#f5f6f7] rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
 
-        {/* ---------------- HEADER ---------------- */}
+        {/* HEADER */}
         <LeadHeader
-          form={form}
-          setForm={setForm}
-          handleSoldFromAppt={handleSoldFromAppt}
-          handleNotSoldFromAppt={handleNotSoldFromAppt}
+          name={form.name}
+          status={form.status}
+          phone={form.phone}
+          onCall={() => window.open(`tel:${form.phone.replace(/[^\d]/g, "")}`)}
+          onText={() => window.open(`sms:${form.phone.replace(/[^\d]/g, "")}`)}
+          onMap={() => {
+            const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
+            window.open(
+              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                query
+              )}`,
+              "_blank"
+            );
+          }}
         />
 
-        {/* ---------------- MAIN BODY ---------------- */}
-        <div className="px-6 py-6 space-y-6">
+        {/* BODY */}
+        <div className="px-6 py-6 space-y-5">
 
-          {/* Info Cards */}
-          <LeadInfoCard
+          {/* STATUS BAR */}
+          <LeadStatusBar
+            form={form}
+            setForm={setForm}
+            onOpenNotSold={() => setShowNotSoldModal(true)}
+          />
+
+          {/* ADDRESS BOX */}
+          <LeadAddressBox form={form} onMapClick={() => {}} />
+
+          {/* PHONE + LEAD SOURCE */}
+          <LeadContactSection form={form} />
+
+          {/* APPOINTMENTS */}
+          <LeadAppointmentSection
             form={form}
             setShowApptModal={setShowApptModal}
             setShowDateModal={setShowDateModal}
           />
 
-          {/* Edit OR View */}
+          {/* EDIT MODE or VIEW MODE */}
           {isEditing ? (
-            <LeadEditForm form={form} setForm={setForm} />
+            <LeadDetailsEdit
+              form={form}
+              onChange={handleChange}
+              onPhoneChange={handlePhoneChange}
+            />
           ) : (
-            <LeadViewDetails form={form} />
+            <LeadDetailsView form={form} />
           )}
 
-          {/* Footer Buttons */}
+          {/* FOOTER BUTTONS */}
           <LeadFooter
             isEditing={isEditing}
-            setIsEditing={setIsEditing}
-            handleSaveOnly={handleSaveOnly}
-            handleExit={handleExit}
+            onSave={handleSave}
+            onEdit={() => setIsEditing(true)}
+            onExit={handleExit}
             deleteConfirm={deleteConfirm}
             setDeleteConfirm={setDeleteConfirm}
             onDelete={() => onDelete(form)}
@@ -197,59 +199,18 @@ export default function LeadModal({
         </div>
       </div>
 
-      {/* DATE MODALS */}
-      {showDateModal && (
-        <DateModal
-          initialDate={form[showDateModal]}
-          initialTentative={
-            showDateModal === "installDate" ? form.installTentative : false
-          }
-          allowTentative={showDateModal === "installDate"}
-          label={showDateModal === "installDate" ? "Set Install Date" : "Select Date"}
-          onConfirm={(date, tentative) => {
-            setForm((prev) => ({
-              ...prev,
-              [showDateModal]: date,
-              installTentative: tentative || false,
-            }));
-            setShowDateModal(null);
-          }}
-          onRemove={() => {
-            setForm((prev) => ({
-              ...prev,
-              [showDateModal]: "",
-              installTentative: false,
-            }));
-            setShowDateModal(null);
-          }}
-          onClose={() => setShowDateModal(null)}
-        />
-      )}
-
-      {/* APPOINTMENT MODAL */}
-      {showApptModal && (
-        <ApptDateTimeModal
-          apptDate={form.apptDate}
-          apptTime={form.apptTime}
-          onConfirm={(date, time) => {
-            setForm((prev) => ({ ...prev, apptDate: date, apptTime: time }));
-            setShowApptModal(false);
-          }}
-          onRemove={() => {
-            setForm((prev) => ({ ...prev, apptDate: "", apptTime: "" }));
-            setShowApptModal(false);
-          }}
-          onClose={() => setShowApptModal(false)}
-        />
-      )}
-
-      {/* NOT SOLD MODAL */}
-      {showNotSoldModal && (
-        <ReasonNotSoldModal
-          onSelect={handleNotSoldReasonSelected}
-          onCancel={() => setShowNotSoldModal(false)}
-        />
-      )}
+      {/* MODALS */}
+      <LeadModalsWrapper
+        form={form}
+        setForm={setForm}
+        showDateModal={showDateModal}
+        setShowDateModal={setShowDateModal}
+        showApptModal={showApptModal}
+        setShowApptModal={setShowApptModal}
+        showNotSoldModal={showNotSoldModal}
+        setShowNotSoldModal={setShowNotSoldModal}
+        onNotSoldSelect={handleNotSoldSelect}
+      />
     </div>
   );
 }

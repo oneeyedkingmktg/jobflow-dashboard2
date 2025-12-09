@@ -13,43 +13,6 @@ import LeadFooter from "./leadModalParts/LeadFooter.jsx";
 import LeadModalsWrapper from "./leadModalParts/LeadModalsWrapper.jsx";
 import LeadStatusBar from "./leadModalParts/LeadStatusBar.jsx";
 
-/* ============================================================
-   CORRECT camelCase → snake_case PAYLOAD FOR BACKEND
-============================================================ */
-const toBackend = (form) => ({
-  name: form.name || "",
-  full_name: form.name || "",
-  first_name: form.name?.split(" ")?.[0] || "",
-  last_name: form.name?.split(" ")?.slice(1).join(" ") || "",
-
-  phone: form.phone || "",
-  email: form.email || "",
-  address: form.address || "",
-  city: form.city || "",
-  state: form.state || "",
-  zip: form.zip || "",
-
-  buyer_type: form.buyerType || "",
-  company_name: form.companyName || "",
-  project_type: form.projectType || "",
-  lead_source: form.leadSource || "",
-  referral_source: form.referralSource || "",
-
-  preferred_contact: form.preferredContact || "",
-  notes: form.notes || "",
-
-  status: form.status || "lead",
-  not_sold_reason: form.notSoldReason || "",
-
-  contract_price: form.contractPrice || null,
-
-  appointment_date: form.apptDate || null,
-  appointment_time: form.apptTime || null,
-
-  install_date: form.installDate || null,
-  install_tentative: form.installTentative || false,
-});
-
 export default function LeadModal({
   lead,
   onClose,
@@ -107,28 +70,22 @@ export default function LeadModal({
   const handlePhoneChange = (val) =>
     handleChange("phone", formatPhoneNumber(val));
 
-  /* ============================================================
-     SAVE (stay open)
-  ============================================================ */
-  const handleSave = async () => {
-    const payload = toBackend(form);
-    await onSave({ ...form, ...payload });
+  // SAVE (stay in modal)
+  const handleSave = () => {
+    onSave(form);
     setIsEditing(false);
   };
 
-  /* ============================================================
-     SAVE & EXIT
-  ============================================================ */
+  // SAVE & EXIT
   const handleExit = async () => {
-    const payload = toBackend(form);
-    await onSave({ ...form, ...payload });
+    await onSave(form);
     onClose();
   };
 
   const handleNotSoldSelect = (reason) => {
     const updated = { ...form, status: "not_sold", notSoldReason: reason };
     setForm(updated);
-    onSave({ ...updated, ...toBackend(updated) });
+    onSave(updated);
   };
 
   // OPEN MAPS
@@ -142,6 +99,9 @@ export default function LeadModal({
     );
   };
 
+  // --------------------------
+  // RENDER
+  // --------------------------
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-auto">
       <div className="bg-[#f5f6f7] rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
@@ -160,6 +120,7 @@ export default function LeadModal({
         />
 
         <div className="px-6 py-6 space-y-5">
+
           <LeadStatusBar
             form={form}
             setForm={setForm}
@@ -184,9 +145,13 @@ export default function LeadModal({
               onPhoneChange={handlePhoneChange}
             />
           ) : (
-            <LeadDetailsView form={form} onEdit={() => setIsEditing(true)} />
+            <LeadDetailsView
+              form={form}
+              onEdit={() => setIsEditing(true)}
+            />
           )}
 
+          {/* FOOTER */}
           <LeadFooter
             isEditing={isEditing}
             onSave={handleSave}

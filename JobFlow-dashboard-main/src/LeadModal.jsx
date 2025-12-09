@@ -18,7 +18,10 @@ const splitName = (full) => {
   if (!full || !full.trim()) return { first: "", last: "" };
   const parts = full.trim().split(" ");
   if (parts.length === 1) return { first: parts[0], last: "" };
-  return { first: parts[0], last: parts.slice(1).join(" ") };
+  return {
+    first: parts[0],
+    last: parts.slice(1).join(" "),
+  };
 };
 
 export default function LeadModal({
@@ -28,8 +31,19 @@ export default function LeadModal({
   onDelete,
   presetPhone,
 }) {
+
+  // GUARD — prevent undefined from crashing UI
+  if (!lead) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center text-white text-xl">
+        Loading…
+      </div>
+    );
+  }
+
   const { currentCompany } = useCompany();
 
+  // FORM STATE
   const [form, setForm] = useState({
     id: lead?.id || null,
     name: lead?.name || "",
@@ -55,12 +69,14 @@ export default function LeadModal({
     status: lead?.status || "lead",
   });
 
+  // UI STATE
   const [isEditing, setIsEditing] = useState(!lead?.id);
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
   const [showNotSoldModal, setShowNotSoldModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+  // Prefill phone for new leads
   useEffect(() => {
     if (!lead?.id && presetPhone) {
       setForm((prev) => ({
@@ -70,6 +86,7 @@ export default function LeadModal({
     }
   }, [presetPhone, lead]);
 
+  // FORM UPDATE HELPERS
   const handleChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -78,31 +95,38 @@ export default function LeadModal({
     handleChange("phone", formatPhoneNumber(val));
   };
 
+  // SAVE — stay on modal
   const handleSave = () => {
     const { first, last } = splitName(form.name);
+
     const updated = {
       ...form,
       firstName: first,
       lastName: last,
       full_name: form.name,
     };
+
     onSave(updated);
     setForm(updated);
     setIsEditing(false);
   };
 
+  // EXIT — save then close
   const handleExit = () => {
     const { first, last } = splitName(form.name);
+
     const updated = {
       ...form,
       firstName: first,
       lastName: last,
       full_name: form.name,
     };
+
     onSave(updated);
     onClose({ view: "home" });
   };
 
+  // NOT SOLD reason selection
   const handleNotSoldSelect = (reason) => {
     const updated = {
       ...form,
@@ -113,6 +137,7 @@ export default function LeadModal({
     onSave(updated);
   };
 
+  // OPEN MAPS
   const handleMaps = () => {
     const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
     window.open(
@@ -127,6 +152,7 @@ export default function LeadModal({
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-auto">
       <div className="bg-[#f5f6f7] rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
 
+        {/* HEADER */}
         <LeadHeader
           name={form.name}
           status={form.status}
@@ -140,24 +166,30 @@ export default function LeadModal({
           onMap={handleMaps}
         />
 
+        {/* BODY */}
         <div className="px-6 py-6 space-y-5">
 
+          {/* STATUS BAR */}
           <LeadStatusBar
             form={form}
             setForm={setForm}
             onOpenNotSold={() => setShowNotSoldModal(true)}
           />
 
+          {/* ADDRESS BOX */}
           <LeadAddressBox form={form} onOpenMaps={handleMaps} />
 
+          {/* PHONE + LEAD SOURCE */}
           <LeadContactSection form={form} />
 
+          {/* APPOINTMENTS */}
           <LeadAppointmentSection
             form={form}
             setShowApptModal={setShowApptModal}
             setShowDateModal={setShowDateModal}
           />
 
+          {/* EDIT OR VIEW DETAILS */}
           {isEditing ? (
             <LeadDetailsEdit
               form={form}
@@ -168,6 +200,7 @@ export default function LeadModal({
             <LeadDetailsView form={form} />
           )}
 
+          {/* FOOTER BUTTONS */}
           <LeadFooter
             isEditing={isEditing}
             onSave={handleSave}
@@ -180,6 +213,7 @@ export default function LeadModal({
         </div>
       </div>
 
+      {/* MODALS */}
       <LeadModalsWrapper
         form={form}
         setForm={setForm}

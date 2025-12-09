@@ -10,67 +10,69 @@ export default function LeadFooter({
   onDelete,
 }) {
   return (
-    <div className="pt-4 flex flex-col gap-3">
-      {/* TOP ROW — EDIT / SAVE + EXIT */}
-      <div className="flex items-center justify-end gap-3">
+    <div className="w-full pt-6 flex flex-col gap-6">
+
+      {/* TOP ROW — SAVE & EXIT (LEFT) and EDIT (RIGHT) */}
+      <div className="flex items-center justify-between w-full flex-wrap gap-4">
+
+        {/* LEFT SIDE — SAVE & EXIT */}
         {isEditing ? (
-          <>
-            <button
-              onClick={onSave}
-              className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700"
-            >
-              Save
-            </button>
-            <button
-              onClick={onExit}
-              className="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg shadow hover:bg-gray-400"
-            >
-              Exit
-            </button>
-          </>
+          <button
+            onClick={onExit}
+            className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700"
+          >
+            Save & Exit
+          </button>
         ) : (
-          <>
-            <button
-              onClick={onEdit}
-              className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700"
-            >
-              Edit
-            </button>
-            <button
-              onClick={onExit}
-              className="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg shadow hover:bg-gray-400"
-            >
-              Exit
-            </button>
-          </>
+          <button
+            onClick={onExit}
+            className="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg shadow hover:bg-gray-400"
+          >
+            Save & Exit
+          </button>
+        )}
+
+        {/* RIGHT SIDE — EDIT */}
+        {!isEditing && (
+          <button
+            onClick={onEdit}
+            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 ml-auto"
+          >
+            Edit
+          </button>
+        )}
+
+        {isEditing && (
+          <button
+            onClick={onSave}
+            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 ml-auto"
+          >
+            Save
+          </button>
         )}
       </div>
 
-      {/* BOTTOM ROW — CENTERED DELETE LINK + CONFIRM INLINE */}
+      {/* DELETE AREA */}
       {!isEditing && (
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex justify-center items-center pt-2">
           {!deleteConfirm ? (
             <button
-              type="button"
               onClick={() => setDeleteConfirm(true)}
-              className="text-xs font-semibold text-red-600 underline-offset-2 hover:underline"
+              className="text-red-600 text-sm font-semibold hover:underline"
             >
               Delete Contact
             </button>
           ) : (
-            <div className="flex items-center gap-3 text-xs">
-              <span className="text-gray-700">Confirm delete?</span>
+            <div className="flex gap-3">
               <button
-                type="button"
                 onClick={onDelete}
-                className="px-3 py-1 rounded-md bg-red-600 text-white font-semibold shadow"
+                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg shadow"
               >
-                Yes, Delete
+                Confirm Delete
               </button>
               <button
-                type="button"
                 onClick={() => setDeleteConfirm(false)}
-                className="px-3 py-1 rounded-md border border-gray-300 text-gray-700 font-semibold"
+                className="px-4 py-2 text-sm font-semibold text-gray-700 border rounded-lg"
               >
                 Cancel
               </button>

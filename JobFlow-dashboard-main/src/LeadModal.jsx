@@ -31,16 +31,6 @@ export default function LeadModal({
   onDelete,
   presetPhone,
 }) {
-
-  // GUARD — prevent undefined from crashing UI
-  if (!lead) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center text-white text-xl">
-        Loading…
-      </div>
-    );
-  }
-
   const { currentCompany } = useCompany();
 
   // FORM STATE
@@ -179,7 +169,7 @@ export default function LeadModal({
           {/* ADDRESS BOX */}
           <LeadAddressBox form={form} onOpenMaps={handleMaps} />
 
-          {/* PHONE + LEAD SOURCE */}
+          {/* CONTACT INFO */}
           <LeadContactSection form={form} />
 
           {/* APPOINTMENTS */}

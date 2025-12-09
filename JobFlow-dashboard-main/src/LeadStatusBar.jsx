@@ -1,92 +1,74 @@
-import React, { useState } from "react";
+import React from "react";
+import {
+  STATUS_LABELS,
+  STATUS_COLORS,
+  STATUS_PROGRESS,
+} from "./statusConfig.js";
 
-export default function LeadStatusBar({ form, setForm }) {
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+export default function LeadStatusBar({ form, setForm, onOpenNotSold }) {
+  const currentStatus = form.status;
+  const nextStatus = STATUS_PROGRESS[currentStatus] || null;
 
-  const statuses = ["Lead", "Appointment Set", "Sold", "Not Sold", "Complete"];
-  const statusColors = {
-    Lead: "bg-gray-400",
-    "Appointment Set": "bg-blue-500",
-    Sold: "bg-green-500",
-    "Not Sold": "bg-red-500",
-    Complete: "bg-yellow-500",
-  };
+  const handleProgress = () => {
+    if (!nextStatus) return;
 
-  const getNextProgression = () => {
-    switch (form.status) {
-      case "Lead":
-        return "Appointment Set";
-      case "Appointment Set":
-        return "Sold";
-      case "Sold":
-        return "Complete";
-      default:
-        return null;
+    // Appointment Set → Sold
+    if (currentStatus === "appointment_set" && nextStatus === "sold") {
+      setForm((p) => ({ ...p, status: "sold", notSoldReason: "" }));
+      return;
     }
-  };
 
-  const nextProgress = getNextProgression();
+    // Appointment Set → Not Sold → open modal
+    if (currentStatus === "appointment_set" && nextStatus === "not_sold") {
+      onOpenNotSold();
+      return;
+    }
+
+    // Normal progression
+    setForm((p) => ({ ...p, status: nextStatus }));
+  };
 
   return (
-    <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
-      {/* Current Status Button + Dropdown */}
+    <div className="flex items-center justify-between gap-4">
+      {/* STATUS SELECTOR */}
       <div className="relative">
-        <button
-          onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-          className={`px-3 py-1 rounded text-white ${
-            statusColors[form.status] || "bg-gray-400"
-          } font-medium`}
+        <select
+          value={form.status}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, status: e.target.value }))
+          }
+          className="appearance-none bg-[#59687d] text-white text-sm font-semibold px-4 py-2 rounded-full pr-8 shadow cursor-pointer"
         >
-          {form.status}
-        </button>
-        {statusDropdownOpen && (
-          <div className="absolute mt-1 bg-white border border-gray-300 rounded shadow-lg z-50">
-            {statuses.map((s) => (
-              <div
-                key={s}
-                onClick={() => {
-                  setForm((prev) => ({ ...prev, status: s }));
-                  setStatusDropdownOpen(false);
-                }}
-                className="px-3 py-1 text-sm hover:bg-gray-100 cursor-pointer"
-              >
-                {s}
-              </div>
-            ))}
-          </div>
-        )}
+          {Object.keys(STATUS_LABELS).map((s) => (
+            <option key={s} value={s}>
+              {STATUS_LABELS[s]}
+            </option>
+          ))}
+        </select>
+
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white text-sm pointer-events-none">
+          ▼
+        </span>
       </div>
 
-      {/* Move-To Buttons */}
-      <div className="flex items-center gap-2">
-        {form.status === "Appointment Set" ? (
-          <>
-            <button
-              onClick={() => setForm((prev) => ({ ...prev, status: "Sold" }))}
-              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Sold
-            </button>
-            <button
-              onClick={() =>
-                setForm((prev) => ({ ...prev, status: "Not Sold" }))
-              }
-              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Not Sold
-            </button>
-          </>
-        ) : nextProgress ? (
-          <button
-            onClick={() =>
-              setForm((prev) => ({ ...prev, status: nextProgress }))
-            }
-            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            Move to {nextProgress}
-          </button>
-        ) : null}
-      </div>
+      {/* PROGRESSION BUTTON */}
+      {nextStatus ? (
+        <button
+          onClick={handleProgress}
+          className="px-6 py-2 rounded-full text-sm font-bold shadow text-white flex items-center"
+          style={{ backgroundColor: STATUS_COLORS[nextStatus] }}
+        >
+          <span className="mr-1">»»</span>
+          {STATUS_LABELS[nextStatus].toUpperCase()}
+        </button>
+      ) : (
+        <button
+          disabled
+          className="px-6 py-2 rounded-full text-sm font-bold shadow text-gray-600 bg-gray-300"
+        >
+          NO NEXT STEP
+        </button>
+      )}
     </div>
   );
 }

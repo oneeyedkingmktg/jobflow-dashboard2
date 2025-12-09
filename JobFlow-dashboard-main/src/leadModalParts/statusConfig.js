@@ -1,6 +1,3 @@
-// ===============================
-// STATUS LABELS
-// ===============================
 export const STATUS_LABELS = {
   lead: "Lead",
   appointment_set: "Appointment Set",
@@ -9,25 +6,18 @@ export const STATUS_LABELS = {
   complete: "Completed",
 };
 
-// ===============================
-// STATUS COLORS (From Your Spec)
-// ===============================
 export const STATUS_COLORS = {
-  lead: "#59687d",          // Lead
-  appointment_set: "#225ce5", // Booked Appt
-  sold: "#048c63",          // Sold
-  not_sold: "#c72020",      // Not Sold
-  complete: "#ea8e09",      // Completed
+  lead: "#59687d",
+  appointment_set: "#225ce5",
+  sold: "#048c63",
+  not_sold: "#c72020",
+  complete: "#ea8e09",
 };
 
-// ===============================
-// DEFAULT STATUS PROGRESSION
-// (Appointment Set handled separately)
-// ===============================
 export const STATUS_PROGRESS = {
   lead: "appointment_set",
+  appointment_set: null,
   sold: "complete",
   not_sold: "sold",
   complete: null,
-  appointment_set: null,
 };

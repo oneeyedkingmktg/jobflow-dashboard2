@@ -7,21 +7,23 @@ export default function ApptDateTimeModal({
   onClose,
   onRemove,
 }) {
-  const [localDate, setLocalDate] = useState(apptDate || "");
-  const [localTime, setLocalTime] = useState(apptTime || "");
+  const [date, setDate] = useState(apptDate || "");
+  const [time, setTime] = useState(apptTime || "");
 
   useEffect(() => {
-    if (apptDate) setLocalDate(apptDate);
-    if (apptTime) setLocalTime(apptTime);
+    if (apptDate) setDate(apptDate);
+    if (apptTime) setTime(apptTime);
   }, [apptDate, apptTime]);
 
   const handleSave = () => {
-    onConfirm(localDate || "", localTime || "");
+    if (!date) return;
+    const normalized = new Date(date).toISOString().split("T")[0];
+    onConfirm(normalized, time);
     onClose();
   };
 
   const handleRemove = () => {
-    onRemove();
+    if (onRemove) onRemove();
     onClose();
   };
 
@@ -38,32 +40,33 @@ export default function ApptDateTimeModal({
           Appointment Date & Time
         </h2>
 
-        {/* DATE */}
-        <div className="mb-4">
+        {/* Date */}
+        <div className="mb-4 cursor-pointer">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Appointment Date
+            Date
           </label>
           <input
             type="date"
-            value={localDate}
-            onChange={(e) => setLocalDate(e.target.value)}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
             className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
           />
         </div>
 
-        {/* TIME */}
-        <div className="mb-4">
+        {/* Time */}
+        <div className="mb-4 cursor-pointer">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Appointment Time
+            Time
           </label>
           <input
             type="time"
-            value={localTime}
-            onChange={(e) => setLocalTime(e.target.value)}
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
             className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
           />
         </div>
 
+        {/* Buttons */}
         <div className="flex justify-between mt-4 gap-2">
           <button
             onClick={handleRemove}

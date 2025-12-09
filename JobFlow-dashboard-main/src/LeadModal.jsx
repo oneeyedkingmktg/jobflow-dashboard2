@@ -4,7 +4,6 @@ import { formatPhoneNumber } from "./utils/formatting";
 
 // Modular Parts
 import LeadHeader from "./leadModalParts/LeadHeader.jsx";
-import LeadStatusBar from "./leadModalParts/LeadStatusBar.jsx";
 import LeadAddressBox from "./leadModalParts/LeadAddressBox.jsx";
 import LeadContactSection from "./leadModalParts/LeadContactSection.jsx";
 import LeadAppointmentSection from "./leadModalParts/LeadAppointmentSection.jsx";

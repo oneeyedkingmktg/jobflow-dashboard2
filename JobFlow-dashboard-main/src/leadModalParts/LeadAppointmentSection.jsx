@@ -5,61 +5,48 @@ export default function LeadAppointmentSection({
   setShowApptModal,
   setShowDateModal,
 }) {
+  const apptDisplay =
+    form.apptDate || form.apptTime
+      ? `${form.apptDate || "Date Not Set"}${
+          form.apptTime ? ` @ ${form.apptTime}` : ""
+        }`
+      : "Not Set";
+
+  const installDisplay = form.installDate
+    ? `${form.installDate}${form.installTentative ? " (Tentative)" : ""}`
+    : "Not Set";
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4 shadow-sm space-y-3 text-sm">
-
-      {/* APPOINTMENT DATE */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-gray-500">Appointment Date</div>
-          <div className="font-semibold">
-            {form.apptDate ? form.apptDate : "Not Set"}
-          </div>
-        </div>
-
+    <div className="bg-white rounded-2xl border border-gray-200 px-4 py-4 shadow-sm text-sm">
+      <div className="grid grid-cols-2 gap-3">
+        {/* APPOINTMENT CARD */}
         <button
+          type="button"
           onClick={() => setShowApptModal(true)}
-          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-semibold text-xs shadow"
+          className="bg-[#f5f6f7] rounded-xl border border-gray-200 px-3 py-3 text-left flex flex-col justify-between min-w-0"
         >
-          Set
-        </button>
-      </div>
-
-      {/* APPOINTMENT TIME */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-gray-500">Appointment Time</div>
-          <div className="font-semibold">
-            {form.apptTime ? form.apptTime : "Not Set"}
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Appointment
           </div>
-        </div>
-
-        <button
-          onClick={() => setShowApptModal(true)}
-          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-semibold text-xs shadow"
-        >
-          Set
-        </button>
-      </div>
-
-      {/* INSTALL DATE */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-gray-500">Install Date</div>
-          <div className="font-semibold">
-            {form.installDate ? form.installDate : "Not Set"}
-            {form.installTentative ? " (Tentative)" : ""}
+          <div className="mt-1 font-semibold text-gray-900 break-words">
+            {apptDisplay}
           </div>
-        </div>
+        </button>
 
+        {/* INSTALL DATE CARD */}
         <button
+          type="button"
           onClick={() => setShowDateModal("installDate")}
-          className="px-3 py-1.5 bg-green-600 text-white rounded-lg font-semibold text-xs shadow"
+          className="bg-[#f5f6f7] rounded-xl border border-gray-200 px-3 py-3 text-left flex flex-col justify-between min-w-0"
         >
-          Set
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Install Date
+          </div>
+          <div className="mt-1 font-semibold text-gray-900 break-words">
+            {installDisplay}
+          </div>
         </button>
       </div>
-
     </div>
   );
 }

@@ -13,7 +13,36 @@ import LeadFooter from "./leadModalParts/LeadFooter.jsx";
 import LeadModalsWrapper from "./leadModalParts/LeadModalsWrapper.jsx";
 import LeadStatusBar from "./leadModalParts/LeadStatusBar.jsx";
 
-// Split full name into first + last
+// Convert camelCase → snake_case (backend format)
+const toBackend = (form) => ({
+  id: form.id,
+  name: form.name,
+  phone: form.phone,
+  email: form.email,
+  address: form.address,
+  city: form.city,
+  state: form.state,
+  zip: form.zip,
+
+  buyer_type: form.buyerType,
+  company_name: form.companyName,
+  project_type: form.projectType,
+  lead_source: form.leadSource,
+  referral_source: form.referralSource,
+
+  status: form.status,
+  not_sold_reason: form.notSoldReason,
+  contract_price: form.contractPrice,
+
+  appointment_date: form.apptDate,
+  preferred_contact: form.preferredContact,
+  notes: form.notes,
+
+  install_date: form.installDate,
+  install_tentative: form.installTentative,
+});
+
+// Split full name
 const splitName = (full) => {
   if (!full || !full.trim()) return { first: "", last: "" };
   const parts = full.trim().split(" ");
@@ -33,7 +62,6 @@ export default function LeadModal({
 }) {
   const { currentCompany } = useCompany();
 
-  // FORM STATE
   const [form, setForm] = useState({
     id: lead?.id || null,
     name: lead?.name || "",
@@ -76,64 +104,37 @@ export default function LeadModal({
     }
   }, [presetPhone, lead]);
 
-  // FORM UPDATE HELPERS
-  const handleChange = (key, value) => {
+  const handleChange = (key, value) =>
     setForm((prev) => ({ ...prev, [key]: value }));
-  };
 
-  const handlePhoneChange = (val) => {
+  const handlePhoneChange = (val) =>
     handleChange("phone", formatPhoneNumber(val));
-  };
 
-  // SAVE — stay on modal
+  // SAVE (stay in modal)
   const handleSave = () => {
-    const { first, last } = splitName(form.name);
-
-    const updated = {
-      ...form,
-      firstName: first,
-      lastName: last,
-      full_name: form.name,
-    };
-
-    onSave(updated);
-    setForm(updated);
+    const payload = toBackend(form);
+    onSave(payload);
     setIsEditing(false);
   };
 
-  // EXIT — save then close
+  // EXIT (save then close)
   const handleExit = () => {
-    const { first, last } = splitName(form.name);
-
-    const updated = {
-      ...form,
-      firstName: first,
-      lastName: last,
-      full_name: form.name,
-    };
-
-    onSave(updated);
+    const payload = toBackend(form);
+    onSave(payload);
     onClose({ view: "home" });
   };
 
-  // NOT SOLD reason selection
   const handleNotSoldSelect = (reason) => {
-    const updated = {
-      ...form,
-      status: "not_sold",
-      notSoldReason: reason,
-    };
+    const updated = { ...form, status: "not_sold", notSoldReason: reason };
     setForm(updated);
-    onSave(updated);
+    onSave(toBackend(updated));
   };
 
   // OPEN MAPS
   const handleMaps = () => {
     const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
     window.open(
-      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        query
-      )}`,
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
       "_blank"
     );
   };
@@ -142,7 +143,6 @@ export default function LeadModal({
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-auto">
       <div className="bg-[#f5f6f7] rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
 
-        {/* HEADER */}
         <LeadHeader
           name={form.name}
           status={form.status}
@@ -156,10 +156,7 @@ export default function LeadModal({
           onMap={handleMaps}
         />
 
-        {/* BODY */}
         <div className="px-6 py-6 space-y-5">
-
-          {/* STATUS BAR */}
           <LeadStatusBar
             form={form}
             setForm={setForm}
@@ -167,20 +164,16 @@ export default function LeadModal({
             onOpenApptModal={() => setShowApptModal(true)}
           />
 
-          {/* ADDRESS BOX */}
           <LeadAddressBox form={form} onOpenMaps={handleMaps} />
 
-          {/* CONTACT INFO */}
           <LeadContactSection form={form} />
 
-          {/* APPOINTMENT / INSTALL */}
           <LeadAppointmentSection
             form={form}
             setShowApptModal={setShowApptModal}
             setShowDateModal={setShowDateModal}
           />
 
-          {/* DETAILS (VIEW OR EDIT) */}
           {isEditing ? (
             <LeadDetailsEdit
               form={form}
@@ -194,7 +187,6 @@ export default function LeadModal({
             />
           )}
 
-          {/* FOOTER BUTTONS */}
           <LeadFooter
             isEditing={isEditing}
             onSave={handleSave}
@@ -207,7 +199,6 @@ export default function LeadModal({
         </div>
       </div>
 
-      {/* MODALS */}
       <LeadModalsWrapper
         form={form}
         setForm={setForm}

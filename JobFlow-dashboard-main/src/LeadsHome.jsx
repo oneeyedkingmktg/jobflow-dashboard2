@@ -8,48 +8,50 @@ import SettingsMenu from "./SettingsMenu.jsx";
 import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
-// Convert backend snake_case → frontend camelCase
+// ============================================================
+// FIXED: Convert backend camelCase → frontend camelCase
+// ============================================================
 const convertLeadFromBackend = (lead) => {
   if (!lead) return null;
 
   return {
     id: lead.id,
-    companyId: lead.company_id,
-    createdByUserId: lead.created_by_user_id,
+    companyId: lead.companyId,
+    createdByUserId: lead.createdByUserId,
 
-    name: lead.full_name || lead.name || "",
-    firstName: lead.first_name || "",
-    lastName: lead.last_name || "",
+    name: lead.fullName || lead.name || "",
+    firstName: lead.firstName || "",
+    lastName: lead.lastName || "",
 
     phone: lead.phone,
     email: lead.email,
-    preferredContact: lead.preferred_contact,
+    preferredContact: lead.preferredContact,
 
     address: lead.address,
     city: lead.city,
     state: lead.state,
     zip: lead.zip,
 
-    buyerType: lead.buyer_type,
-    companyName: lead.company_name,
-    projectType: lead.project_type,
+    buyerType: lead.buyerType,
+    companyName: lead.companyName,
+    projectType: lead.projectType,
 
-    leadSource: lead.lead_source,
-    referralSource: lead.referral_source,
+    leadSource: lead.leadSource,
+    referralSource: lead.referralSource,
 
     status: lead.status,
-    notSoldReason: lead.not_sold_reason,
+    notSoldReason: lead.notSoldReason,
     notes: lead.notes,
 
-    contractPrice: lead.contract_price,
+    contractPrice: lead.contractPrice,
 
-    apptDate: lead.appointment_date,
-    apptTime: lead.appointment_time,
-    installDate: lead.install_date,
-    installTentative: lead.install_tentative,
+    apptDate: lead.appointmentDate || lead.apptDate,
+    apptTime: lead.appointmentTime || lead.apptTime,
+    installDate: lead.installDate,
+    installTentative: lead.installTentative,
 
-    createdAt: lead.created_at,
-    updatedAt: lead.updated_at,
+    createdAt: lead.createdAt,
+    updatedAt: lead.updatedAt,
   };
 };
 
@@ -74,13 +76,16 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     indigo: "bg-gradient-to-r from-indigo-500 to-indigo-600",
   };
 
+  // ============================================================
+  // FETCH LEADS
+  // ============================================================
   useEffect(() => {
     const fetchLeads = async () => {
       try {
         setLoading(true);
         const response = await apiRequest("/leads");
-        const convertedLeads = (response.leads || []).map(convertLeadFromBackend);
-        setLeads(convertedLeads);
+        const converted = (response.leads || []).map(convertLeadFromBackend);
+        setLeads(converted);
       } catch (error) {
         console.error("Error fetching leads:", error);
         setLeads([]);
@@ -92,11 +97,13 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     fetchLeads();
   }, []);
 
+  // OPEN LEAD
   const handleLeadClick = (lead) => {
     setSelectedLead(lead);
     setIsNewLead(false);
   };
 
+  // NEW LEAD
   const handleAddLead = () => {
     setSelectedLead(null);
     setIsNewLead(false);
@@ -159,7 +166,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   };
 
   // ============================================================
-  // SAVE → CREATE or UPDATE
+  // SAVE LEAD
   // ============================================================
   const handleSaveLead = async (lead) => {
     try {
@@ -213,16 +220,15 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
 
       const converted = convertLeadFromBackend(response.lead);
 
-      // Update list
+      // Update in list
       setLeads((prev) =>
         isNewLead
           ? [...prev, converted]
           : prev.map((l) => (l.id === converted.id ? converted : l))
       );
 
-      // Critical fix — send updated lead back to modal
+      // Refresh the modal
       setSelectedLead(converted);
-
       setIsNewLead(false);
     } catch (error) {
       console.error("Error saving lead:", error);
@@ -230,6 +236,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     }
   };
 
+  // ============================================================
+  // DELETE
+  // ============================================================
   const handleDeleteLead = async (leadToDelete) => {
     try {
       await apiRequest(`/leads/${leadToDelete.id}`, { method: "DELETE" });
@@ -241,6 +250,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     }
   };
 
+  // ============================================================
+  // FILTER / SEARCH
+  // ============================================================
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       const tabMatch =
@@ -272,6 +284,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   const notSoldCount = leads.filter((l) => l.status === "not_sold").length;
   const completeCount = leads.filter((l) => l.status === "complete").length;
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xl">

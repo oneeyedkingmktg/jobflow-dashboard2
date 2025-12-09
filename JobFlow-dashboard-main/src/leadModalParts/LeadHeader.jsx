@@ -1,4 +1,17 @@
 import React from "react";
+import { STATUS_COLORS } from "./statusConfig";
+
+// Simple button used for Call / Text / Maps
+function ActionButton({ label, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md"
+    >
+      {label}
+    </button>
+  );
+}
 
 export default function LeadHeader({
   name,
@@ -8,47 +21,38 @@ export default function LeadHeader({
   onText,
   onMap,
 }) {
+  const safeName = name || "New Lead";
+  const headerColor = STATUS_COLORS[status] || "#59687d";
+
+  const handleCall = () => {
+    if (!phone || !onCall) return;
+    onCall();
+  };
+
+  const handleText = () => {
+    if (!phone || !onText) return;
+    onText();
+  };
+
+  const handleMap = () => {
+    if (!onMap) return;
+    onMap();
+  };
+
   return (
     <div
       className="px-6 pt-4 pb-5"
-      style={{
-        backgroundColor:
-          status === "lead"
-            ? "#59687d"
-            : status === "appointment_set"
-            ? "#225ce5"
-            : status === "sold"
-            ? "#048c63"
-            : status === "not_sold"
-            ? "#c72020"
-            : "#ea8e09",
-      }}
+      style={{ backgroundColor: headerColor }}
     >
       <h2 className="text-2xl font-bold text-white mb-4">
-        {name || "New Lead"}
+        {safeName}
       </h2>
 
+      {/* CALL / TEXT / MAPS buttons */}
       <div className="grid grid-cols-3 gap-3">
-        <button
-          onClick={onCall}
-          className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md"
-        >
-          Call
-        </button>
-
-        <button
-          onClick={onText}
-          className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md"
-        >
-          Text
-        </button>
-
-        <button
-          onClick={onMap}
-          className="bg-white text-gray-800 rounded-lg py-2 font-semibold shadow hover:shadow-md"
-        >
-          Maps
-        </button>
+        <ActionButton label="Call" onClick={handleCall} />
+        <ActionButton label="Text" onClick={handleText} />
+        <ActionButton label="Maps" onClick={handleMap} />
       </div>
     </div>
   );

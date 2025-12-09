@@ -6,12 +6,12 @@ export default function LeadAppointmentSection({
   setShowDateModal,
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4 shadow-sm text-sm text-gray-800 space-y-3">
+    <div className="bg-white rounded-2xl border border-gray-200 px-5 py-4 shadow-sm space-y-3 text-sm">
 
       {/* APPOINTMENT DATE */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <div className="text-gray-500 text-xs">Appointment Date</div>
+          <div className="text-gray-500">Appointment Date</div>
           <div className="font-semibold">
             {form.apptDate ? form.apptDate : "Not Set"}
           </div>
@@ -19,16 +19,16 @@ export default function LeadAppointmentSection({
 
         <button
           onClick={() => setShowApptModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-full text-xs font-bold shadow hover:shadow-md"
+          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-semibold text-xs shadow"
         >
-          {form.apptDate ? "Edit" : "Set"}
+          Set
         </button>
       </div>
 
       {/* APPOINTMENT TIME */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <div className="text-gray-500 text-xs">Appointment Time</div>
+          <div className="text-gray-500">Appointment Time</div>
           <div className="font-semibold">
             {form.apptTime ? form.apptTime : "Not Set"}
           </div>
@@ -36,16 +36,16 @@ export default function LeadAppointmentSection({
 
         <button
           onClick={() => setShowApptModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-full text-xs font-bold shadow hover:shadow-md"
+          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-semibold text-xs shadow"
         >
-          {form.apptTime ? "Edit" : "Set"}
+          Set
         </button>
       </div>
 
       {/* INSTALL DATE */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <div className="text-gray-500 text-xs">Install Date</div>
+          <div className="text-gray-500">Install Date</div>
           <div className="font-semibold">
             {form.installDate ? form.installDate : "Not Set"}
             {form.installTentative ? " (Tentative)" : ""}
@@ -54,11 +54,12 @@ export default function LeadAppointmentSection({
 
         <button
           onClick={() => setShowDateModal("installDate")}
-          className="px-4 py-2 bg-purple-600 text-white rounded-full text-xs font-bold shadow hover:shadow-md"
+          className="px-3 py-1.5 bg-green-600 text-white rounded-lg font-semibold text-xs shadow"
         >
-          {form.installDate ? "Edit" : "Set"}
+          Set
         </button>
       </div>
+
     </div>
   );
 }

@@ -1,27 +1,11 @@
 import React from "react";
 
 export default function LeadDetailsView({ form, onEdit }) {
-  const formatPrice = (price) => {
-    if (!price || isNaN(price)) return "Not Set";
-    return `$${Number(price).toLocaleString("en-US", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })}`;
-  };
-
   return (
     <div
-      className="bg-[#f5f6f7] rounded-2xl border border-gray-200 px-5 py-5 shadow-sm 
-      text-sm text-gray-800 space-y-4 cursor-pointer hover:shadow-md transition-shadow"
+      className="bg-[#f5f6f7] rounded-2xl border border-gray-200 px-5 py-5 shadow-sm text-sm text-gray-800 space-y-2 cursor-pointer hover:shadow-md transition-shadow"
       onClick={onEdit}
     >
-      {/* LEAD SOURCE PILL */}
-      {form.leadSource && (
-        <div className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
-          {form.leadSource}
-        </div>
-      )}
-
       {/* EMAIL */}
       <div className="flex justify-between gap-4">
         <span className="text-gray-500">Email</span>
@@ -60,11 +44,13 @@ export default function LeadDetailsView({ form, onEdit }) {
       <div className="flex justify-between gap-4">
         <span className="text-gray-500">Contract Price</span>
         <span className="font-semibold text-right break-words">
-          {formatPrice(form.contractPrice)}
+          {form.contractPrice
+            ? `$${Number(form.contractPrice).toLocaleString("en-US")}`
+            : "Not Set"}
         </span>
       </div>
 
-      {/* PREFERRED CONTACT */}
+      {/* PREFERRED CONTACT — UPDATED */}
       <div className="flex justify-between gap-4">
         <span className="text-gray-500">Preferred Contact</span>
         <span className="font-semibold text-right break-words">

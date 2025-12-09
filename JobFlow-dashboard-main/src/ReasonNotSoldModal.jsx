@@ -1,28 +1,34 @@
 import React from "react";
 
+const REASONS = [
+  "Price Too High",
+  "Went With Competitor",
+  "Not Ready Yet",
+  "No Show / No Response",
+  "Project Cancelled",
+  "Other",
+];
+
 export default function ReasonNotSoldModal({ onSelect, onCancel }) {
-  const reasons = [
-    "Too Expensive",
-    "Waiting for Another Bid",
-    "Thinking About It",
-    "Going with Another Contractor",
-  ];
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-1">Reason Not Sold</h2>
-        <p className="text-sm text-gray-600 mb-5">
-          Select the reason why this lead was not sold:
-        </p>
+    <div
+      className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl w-full max-w-xs p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-semibold mb-4 text-gray-800 text-center">
+          Reason Not Sold
+        </h2>
 
-        <div className="space-y-3 mb-4">
-          {reasons.map((reason) => (
+        <div className="space-y-2">
+          {REASONS.map((reason) => (
             <button
               key={reason}
               onClick={() => onSelect(reason)}
-              className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 
-                         hover:bg-gray-100 hover:border-blue-400 transition text-sm font-medium text-gray-800"
+              className="w-full text-left px-4 py-2 border rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-700"
             >
               {reason}
             </button>
@@ -31,7 +37,7 @@ export default function ReasonNotSoldModal({ onSelect, onCancel }) {
 
         <button
           onClick={onCancel}
-          className="w-full text-center text-sm text-gray-500 font-semibold hover:text-gray-700"
+          className="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-sm font-semibold"
         >
           Cancel
         </button>

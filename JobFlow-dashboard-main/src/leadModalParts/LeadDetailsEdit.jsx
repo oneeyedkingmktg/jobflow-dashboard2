@@ -1,19 +1,12 @@
 import React from "react";
-import { formatPhoneNumber } from "../utils/formatting";
 
-export default function LeadDetailsEdit({
-  form,
-  handleChange,
-  handlePhoneChange,
-}) {
+export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
   const buyerTypes = [
     "Residential",
     "Small Business",
     "Buyer not Owner",
     "Competitive Bid",
   ];
-
-  const preferredContacts = ["Phone", "SMS", "Email"];
 
   const projectTypes = [
     "Garage Floor",
@@ -24,6 +17,8 @@ export default function LeadDetailsEdit({
     "Commercial",
   ];
 
+  const preferredContacts = ["Phone", "SMS", "Email"];
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm space-y-4">
 
@@ -32,7 +27,7 @@ export default function LeadDetailsEdit({
         <label className="text-xs font-semibold text-gray-600">Name *</label>
         <input
           value={form.name}
-          onChange={(e) => handleChange("name", e.target.value)}
+          onChange={(e) => onChange("name", e.target.value)}
           className="w-full border px-3 py-2 rounded-lg"
         />
       </div>
@@ -42,7 +37,7 @@ export default function LeadDetailsEdit({
         <label className="text-xs font-semibold text-gray-600">Address</label>
         <input
           value={form.address}
-          onChange={(e) => handleChange("address", e.target.value)}
+          onChange={(e) => onChange("address", e.target.value)}
           className="w-full border px-3 py-2 rounded-lg"
         />
       </div>
@@ -53,23 +48,25 @@ export default function LeadDetailsEdit({
           <label className="text-xs font-semibold text-gray-600">City</label>
           <input
             value={form.city}
-            onChange={(e) => handleChange("city", e.target.value)}
+            onChange={(e) => onChange("city", e.target.value)}
             className="w-full border px-3 py-2 rounded-lg"
           />
         </div>
+
         <div>
           <label className="text-xs font-semibold text-gray-600">State</label>
           <input
             value={form.state}
-            onChange={(e) => handleChange("state", e.target.value)}
+            onChange={(e) => onChange("state", e.target.value)}
             className="w-full border px-3 py-2 rounded-lg"
           />
         </div>
+
         <div>
           <label className="text-xs font-semibold text-gray-600">Zip</label>
           <input
             value={form.zip}
-            onChange={(e) => handleChange("zip", e.target.value)}
+            onChange={(e) => onChange("zip", e.target.value)}
             className="w-full border px-3 py-2 rounded-lg"
           />
         </div>
@@ -80,7 +77,7 @@ export default function LeadDetailsEdit({
         <label className="text-xs font-semibold text-gray-600">Phone *</label>
         <input
           value={form.phone}
-          onChange={(e) => handlePhoneChange(e.target.value)}
+          onChange={(e) => onPhoneChange(e.target.value)}
           className="w-full border px-3 py-2 rounded-lg"
         />
       </div>
@@ -90,7 +87,7 @@ export default function LeadDetailsEdit({
         <label className="text-xs font-semibold text-gray-600">Email</label>
         <input
           value={form.email}
-          onChange={(e) => handleChange("email", e.target.value)}
+          onChange={(e) => onChange("email", e.target.value)}
           className="w-full border px-3 py-2 rounded-lg"
         />
       </div>
@@ -100,7 +97,7 @@ export default function LeadDetailsEdit({
         <label className="text-xs font-semibold text-gray-600">Buyer Type</label>
         <select
           value={form.buyerType}
-          onChange={(e) => handleChange("buyerType", e.target.value)}
+          onChange={(e) => onChange("buyerType", e.target.value)}
           className="w-full border px-3 py-2 rounded-lg"
         >
           <option value="">Select Type</option>
@@ -112,7 +109,7 @@ export default function LeadDetailsEdit({
         </select>
       </div>
 
-      {/* COMPANY NAME (conditional) */}
+      {/* COMPANY NAME — only when needed */}
       {form.buyerType !== "Residential" && form.buyerType !== "" && (
         <div>
           <label className="text-xs font-semibold text-gray-600">
@@ -120,7 +117,7 @@ export default function LeadDetailsEdit({
           </label>
           <input
             value={form.companyName}
-            onChange={(e) => handleChange("companyName", e.target.value)}
+            onChange={(e) => onChange("companyName", e.target.value)}
             className="w-full border px-3 py-2 rounded-lg"
           />
         </div>
@@ -133,7 +130,7 @@ export default function LeadDetailsEdit({
         </label>
         <select
           value={form.projectType}
-          onChange={(e) => handleChange("projectType", e.target.value)}
+          onChange={(e) => onChange("projectType", e.target.value)}
           className="w-full border px-3 py-2 rounded-lg"
         >
           <option value="">Choose Project</option>
@@ -152,7 +149,7 @@ export default function LeadDetailsEdit({
         </label>
         <input
           value={form.contractPrice}
-          onChange={(e) => handleChange("contractPrice", e.target.value)}
+          onChange={(e) => onChange("contractPrice", e.target.value)}
           className="w-full border px-3 py-2 rounded-lg"
         />
       </div>
@@ -164,7 +161,7 @@ export default function LeadDetailsEdit({
         </label>
         <select
           value={form.preferredContact}
-          onChange={(e) => handleChange("preferredContact", e.target.value)}
+          onChange={(e) => onChange("preferredContact", e.target.value)}
           className="w-full border px-3 py-2 rounded-lg"
         >
           <option value="">Choose Contact</option>
@@ -181,7 +178,7 @@ export default function LeadDetailsEdit({
         <label className="text-xs font-semibold text-gray-600">Notes</label>
         <textarea
           value={form.notes}
-          onChange={(e) => handleChange("notes", e.target.value)}
+          onChange={(e) => onChange("notes", e.target.value)}
           className="w-full border px-3 py-2 rounded-lg h-24 resize-none"
         />
       </div>

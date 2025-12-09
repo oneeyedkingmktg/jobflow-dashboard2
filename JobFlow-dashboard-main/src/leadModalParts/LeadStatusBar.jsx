@@ -16,9 +16,7 @@ export default function LeadStatusBar({
     setForm((prev) => ({ ...prev, status }));
   };
 
-  const handleLeadToAppt = () => {
-    setStatus("appointment_set");
-  };
+  const handleLeadToAppt = () => setStatus("appointment_set");
 
   const handleSoldFromAppt = () => {
     setForm((prev) => ({
@@ -26,35 +24,21 @@ export default function LeadStatusBar({
       status: "sold",
       notSoldReason: "",
     }));
-    if (onOpenApptModal) {
-      onOpenApptModal();
-    }
+    onOpenApptModal && onOpenApptModal();
   };
 
-  const handleNotSoldFromAppt = () => {
-    if (onOpenNotSold) {
-      onOpenNotSold();
-    }
-  };
+  const handleNotSoldFromAppt = () => onOpenNotSold && onOpenNotSold();
 
-  const handleSoldFromNotSold = () => {
-    setForm((prev) => ({
-      ...prev,
-      status: "sold",
-    }));
-  };
+  const handleSoldFromNotSold = () =>
+    setForm((prev) => ({ ...prev, status: "sold" }));
 
-  const handleSoldToComplete = () => {
-    setStatus("complete");
-  };
+  const handleSoldToComplete = () => setStatus("complete");
 
   const handleCompleteToArchive = () => {
-    // Archive behavior will be implemented later.
-    // For now, you can wire custom logic here when ready.
+    // Archive behavior will be added later.
   };
 
   const renderButtons = () => {
-    // LEAD → APPOINTMENT SET
     if (currentStatus === "lead") {
       return (
         <button
@@ -68,7 +52,6 @@ export default function LeadStatusBar({
       );
     }
 
-    // APPOINTMENT SET → SOLD / NOT SOLD
     if (currentStatus === "appointment_set") {
       return (
         <div className="flex w-full sm:w-auto gap-2">
@@ -80,6 +63,7 @@ export default function LeadStatusBar({
             <span className="mr-1">»»</span>
             {STATUS_LABELS["sold"].toUpperCase()}
           </button>
+
           <button
             onClick={handleNotSoldFromAppt}
             className="flex-1 sm:flex-none px-4 py-2 rounded-full text-sm font-bold shadow text-white flex items-center justify-center"
@@ -92,7 +76,6 @@ export default function LeadStatusBar({
       );
     }
 
-    // NOT SOLD → SOLD
     if (currentStatus === "not_sold") {
       return (
         <button
@@ -106,7 +89,6 @@ export default function LeadStatusBar({
       );
     }
 
-    // SOLD → COMPLETE
     if (currentStatus === "sold") {
       return (
         <button
@@ -120,7 +102,6 @@ export default function LeadStatusBar({
       );
     }
 
-    // COMPLETE → ARCHIVE (button only for now)
     if (currentStatus === "complete") {
       return (
         <button
@@ -133,7 +114,6 @@ export default function LeadStatusBar({
       );
     }
 
-    // Default / no next step
     return (
       <button
         disabled
@@ -146,18 +126,28 @@ export default function LeadStatusBar({
 
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-      <select
-        value={form.status}
-        onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-        className="appearance-none bg-[#59687d] text-white text-sm font-semibold px-4 py-2 rounded-full pr-8 shadow cursor-pointer w-full sm:w-auto"
-      >
-        {Object.keys(STATUS_LABELS).map((s) => (
-          <option key={s} value={s}>
-            {STATUS_LABELS[s]}
-          </option>
-        ))}
-      </select>
 
+      {/* Status Dropdown */}
+      <div className="relative w-full sm:w-auto">
+        <select
+          value={form.status}
+          onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
+          className="appearance-none bg-[#59687d] text-white text-sm font-semibold px-4 py-2 rounded-full pr-10 shadow cursor-pointer w-full sm:w-auto"
+        >
+          {Object.keys(STATUS_LABELS).map((s) => (
+            <option key={s} value={s}>
+              {STATUS_LABELS[s]}
+            </option>
+          ))}
+        </select>
+
+        {/* Down-arrow indicator */}
+        <div className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-white text-xs">
+          ▼
+        </div>
+      </div>
+
+      {/* Progression Buttons */}
       {renderButtons()}
     </div>
   );

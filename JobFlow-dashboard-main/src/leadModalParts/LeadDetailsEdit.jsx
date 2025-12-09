@@ -1,212 +1,115 @@
 import React from "react";
 
-export default function LeadDetailsEdit({
-  form,
-  onChange,
-  onPhoneChange,
-}) {
-  const buyerTypes = [
-    "Residential",
-    "Small Business",
-    "Buyer not Owner",
-    "Competitive Bid",
-  ];
-
-  const preferredContacts = ["Phone", "SMS", "Email"];
-
-  const projectTypes = [
-    "Garage Floor",
-    "Basement",
-    "Patio",
-    "Sidewalk",
-    "Pool Deck",
-    "Commercial",
-  ];
-
+export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm space-y-4">
+    <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm text-sm text-gray-800 space-y-4">
 
       {/* NAME */}
       <div>
-        <label className="text-xs font-semibold text-gray-600">
-          Name *
-        </label>
+        <label className="text-gray-500 block mb-1">Full Name</label>
         <input
+          type="text"
           value={form.name}
           onChange={(e) => onChange("name", e.target.value)}
-          className="w-full border px-3 py-2 rounded-lg"
+          className="w-full px-3 py-2 border rounded-lg"
         />
-      </div>
-
-      {/* ADDRESS */}
-      <div>
-        <label className="text-xs font-semibold text-gray-600">
-          Address
-        </label>
-        <input
-          value={form.address}
-          onChange={(e) => onChange("address", e.target.value)}
-          className="w-full border px-3 py-2 rounded-lg"
-        />
-      </div>
-
-      {/* CITY / STATE / ZIP */}
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className="text-xs font-semibold text-gray-600">
-            City
-          </label>
-          <input
-            value={form.city}
-            onChange={(e) => onChange("city", e.target.value)}
-            className="w-full border px-3 py-2 rounded-lg"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-gray-600">
-            State
-          </label>
-          <input
-            value={form.state}
-            onChange={(e) => onChange("state", e.target.value)}
-            className="w-full border px-3 py-2 rounded-lg"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-gray-600">
-            Zip
-          </label>
-          <input
-            value={form.zip}
-            onChange={(e) => onChange("zip", e.target.value)}
-            className="w-full border px-3 py-2 rounded-lg"
-          />
-        </div>
       </div>
 
       {/* PHONE */}
       <div>
-        <label className="text-xs font-semibold text-gray-600">
-          Phone *
-        </label>
+        <label className="text-gray-500 block mb-1">Phone</label>
         <input
+          type="text"
           value={form.phone}
           onChange={(e) => onPhoneChange(e.target.value)}
-          className="w-full border px-3 py-2 rounded-lg"
+          className="w-full px-3 py-2 border rounded-lg"
         />
       </div>
 
       {/* EMAIL */}
       <div>
-        <label className="text-xs font-semibold text-gray-600">
-          Email
-        </label>
+        <label className="text-gray-500 block mb-1">Email</label>
         <input
+          type="text"
           value={form.email}
           onChange={(e) => onChange("email", e.target.value)}
-          className="w-full border px-3 py-2 rounded-lg"
+          className="w-full px-3 py-2 border rounded-lg"
         />
       </div>
 
-      {/* BUYER TYPE */}
+      {/* ADDRESS */}
       <div>
-        <label className="text-xs font-semibold text-gray-600">
-          Buyer Type
-        </label>
-        <select
-          value={form.buyerType}
-          onChange={(e) => onChange("buyerType", e.target.value)}
-          className="w-full border px-3 py-2 rounded-lg"
-        >
-          <option value="">Select Type</option>
-          {buyerTypes.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+        <label className="text-gray-500 block mb-1">Address</label>
+        <input
+          type="text"
+          value={form.address}
+          onChange={(e) => onChange("address", e.target.value)}
+          className="w-full px-3 py-2 border rounded-lg"
+        />
       </div>
 
-      {/* COMPANY NAME — only shows for non-residential */}
-      {form.buyerType !== "Residential" &&
-        form.buyerType !== "" && (
-          <div>
-            <label className="text-xs font-semibold text-gray-600">
-              Company Name
-            </label>
-            <input
-              value={form.companyName}
-              onChange={(e) =>
-                onChange("companyName", e.target.value)
-              }
-              className="w-full border px-3 py-2 rounded-lg"
-            />
-          </div>
-        )}
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="text-gray-500 block mb-1">City</label>
+          <input
+            type="text"
+            value={form.city}
+            onChange={(e) => onChange("city", e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg"
+          />
+        </div>
+
+        <div>
+          <label className="text-gray-500 block mb-1">State</label>
+          <input
+            type="text"
+            value={form.state}
+            onChange={(e) => onChange("state", e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg"
+          />
+        </div>
+
+        <div>
+          <label className="text-gray-500 block mb-1">ZIP</label>
+          <input
+            type="text"
+            value={form.zip}
+            onChange={(e) => onChange("zip", e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg"
+          />
+        </div>
+      </div>
 
       {/* PROJECT TYPE */}
       <div>
-        <label className="text-xs font-semibold text-gray-600">
-          Project Type
-        </label>
-        <select
+        <label className="text-gray-500 block mb-1">Project Type</label>
+        <input
+          type="text"
           value={form.projectType}
           onChange={(e) => onChange("projectType", e.target.value)}
-          className="w-full border px-3 py-2 rounded-lg"
-        >
-          <option value="">Choose Project</option>
-          {projectTypes.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
+          className="w-full px-3 py-2 border rounded-lg"
+        />
       </div>
 
       {/* CONTRACT PRICE */}
       <div>
-        <label className="text-xs font-semibold text-gray-600">
-          Contract Price
-        </label>
+        <label className="text-gray-500 block mb-1">Contract Price</label>
         <input
+          type="number"
           value={form.contractPrice}
-          onChange={(e) =>
-            onChange("contractPrice", e.target.value)
-          }
-          className="w-full border px-3 py-2 rounded-lg"
+          onChange={(e) => onChange("contractPrice", e.target.value)}
+          className="w-full px-3 py-2 border rounded-lg"
         />
-      </div>
-
-      {/* PREFERRED CONTACT */}
-      <div>
-        <label className="text-xs font-semibold text-gray-600">
-          Preferred Contact
-        </label>
-        <select
-          value={form.preferredContact}
-          onChange={(e) =>
-            onChange("preferredContact", e.target.value)
-          }
-          className="w-full border px-3 py-2 rounded-lg"
-        >
-          <option value="">Choose Contact</option>
-          {preferredContacts.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
       </div>
 
       {/* NOTES */}
       <div>
-        <label className="text-xs font-semibold text-gray-600">
-          Notes
-        </label>
+        <label className="text-gray-500 block mb-1">Notes</label>
         <textarea
           value={form.notes}
           onChange={(e) => onChange("notes", e.target.value)}
-          className="w-full border px-3 py-2 rounded-lg h-24 resize-none"
+          className="w-full px-3 py-2 border rounded-lg"
+          rows={4}
         />
       </div>
     </div>

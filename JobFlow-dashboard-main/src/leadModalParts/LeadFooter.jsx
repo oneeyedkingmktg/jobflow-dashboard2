@@ -10,74 +10,72 @@ export default function LeadFooter({
   onDelete,
 }) {
   return (
-    <div className="w-full pt-6 flex flex-col gap-6">
+    <div className="pt-6 border-t border-gray-300">
+      {/* TOP ROW: Save & Exit (left) — Edit (right) */}
+      <div className="flex items-center justify-between mb-5">
 
-      {/* TOP ROW — SAVE & EXIT (LEFT) and EDIT (RIGHT) */}
-      <div className="flex items-center justify-between w-full flex-wrap gap-4">
+        {/* SAVE & EXIT */}
+        <button
+          onClick={onExit}
+          className="px-5 py-3 bg-gradient-to-r from-blue-500 to-blue-600 
+          text-white rounded-xl font-semibold shadow-md 
+          hover:shadow-lg transition-all text-sm"
+        >
+          Save & Exit
+        </button>
 
-        {/* LEFT SIDE — SAVE & EXIT */}
-        {isEditing ? (
-          <button
-            onClick={onExit}
-            className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700"
-          >
-            Save & Exit
-          </button>
-        ) : (
-          <button
-            onClick={onExit}
-            className="px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg shadow hover:bg-gray-400"
-          >
-            Save & Exit
-          </button>
-        )}
-
-        {/* RIGHT SIDE — EDIT */}
+        {/* EDIT BUTTON (only if NOT in edit mode) */}
         {!isEditing && (
           <button
             onClick={onEdit}
-            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 ml-auto"
+            className="px-5 py-3 bg-white border border-gray-300 
+            text-gray-700 rounded-xl font-semibold shadow-sm 
+            hover:bg-gray-100 transition-all text-sm"
           >
             Edit
           </button>
         )}
-
-        {isEditing && (
-          <button
-            onClick={onSave}
-            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 ml-auto"
-          >
-            Save
-          </button>
-        )}
       </div>
 
-      {/* DELETE AREA */}
-      {!isEditing && (
-        <div className="flex justify-center items-center pt-2">
-          {!deleteConfirm ? (
+      {/* SAVE BUTTON (only while editing) */}
+      {isEditing && (
+        <button
+          onClick={onSave}
+          className="w-full px-5 py-3 bg-green-600 text-white rounded-xl 
+          font-semibold shadow-md hover:shadow-lg transition-all mb-4 text-sm"
+        >
+          Save Changes
+        </button>
+      )}
+
+      {/* DELETE BUTTON */}
+      {!deleteConfirm ? (
+        <button
+          onClick={() => setDeleteConfirm(true)}
+          className="w-full px-5 py-3 bg-red-500 text-white rounded-xl font-semibold 
+          shadow-sm hover:bg-red-600 transition-all text-sm"
+        >
+          Delete Lead
+        </button>
+      ) : (
+        <div className="space-y-3">
+          <div className="text-center text-gray-700 font-semibold">
+            Confirm Delete?
+          </div>
+          <div className="flex gap-3">
             <button
-              onClick={() => setDeleteConfirm(true)}
-              className="text-red-600 text-sm font-semibold hover:underline"
+              onClick={onDelete}
+              className="flex-1 px-5 py-3 bg-red-600 text-white rounded-xl font-semibold shadow"
             >
-              Delete Contact
+              Yes, Delete
             </button>
-          ) : (
-            <div className="flex gap-3">
-              <button
-                onClick={onDelete}
-                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg shadow"
-              >
-                Confirm Delete
-              </button>
-              <button
-                onClick={() => setDeleteConfirm(false)}
-                className="px-4 py-2 text-sm font-semibold text-gray-700 border rounded-lg"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
+            <button
+              onClick={() => setDeleteConfirm(false)}
+              className="flex-1 px-5 py-3 bg-gray-300 text-gray-800 rounded-xl font-semibold shadow"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </div>

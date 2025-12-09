@@ -1,5 +1,9 @@
 import React from "react";
-import { STATUS_LABELS, STATUS_COLORS, STATUS_PROGRESS } from "./statusConfig";
+import {
+  STATUS_LABELS,
+  STATUS_COLORS,
+  STATUS_PROGRESS
+} from "./statusConfig.js";
 
 export default function LeadStatusBar({ form, setForm, onOpenNotSold }) {
   const currentStatus = form.status;
@@ -10,7 +14,10 @@ export default function LeadStatusBar({ form, setForm, onOpenNotSold }) {
 
     if (currentStatus === "appointment_set" && nextStatus === "sold") {
       setForm((p) => ({ ...p, status: "sold", notSoldReason: "" }));
-    } else if (currentStatus === "appointment_set" && nextStatus === "not_sold") {
+    } else if (
+      currentStatus === "appointment_set" &&
+      nextStatus === "not_sold"
+    ) {
       onOpenNotSold();
     } else {
       setForm((p) => ({ ...p, status: nextStatus }));
@@ -19,6 +26,7 @@ export default function LeadStatusBar({ form, setForm, onOpenNotSold }) {
 
   return (
     <div className="flex items-center justify-between gap-4">
+
       <select
         value={form.status}
         onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}

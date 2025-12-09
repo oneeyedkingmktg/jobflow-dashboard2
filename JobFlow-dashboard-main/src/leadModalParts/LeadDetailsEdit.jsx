@@ -1,6 +1,12 @@
 import React from "react";
 
 export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
+  // Ensure whole-dollar prices only
+  const handleContractPrice = (val) => {
+    const num = val.replace(/[^\d]/g, ""); // strip non-digits
+    onChange("contractPrice", num);
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm space-y-4 text-sm text-gray-800">
 
@@ -48,6 +54,7 @@ export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
         />
       </div>
 
+      {/* CITY / STATE / ZIP */}
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="text-gray-500">City</label>
@@ -80,15 +87,20 @@ export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
         </div>
       </div>
 
-      {/* BUYER TYPE */}
+      {/* BUYER TYPE — DROPDOWN */}
       <div>
         <label className="text-gray-500">Buyer Type</label>
-        <input
-          type="text"
+        <select
           value={form.buyerType}
           onChange={(e) => onChange("buyerType", e.target.value)}
-          className="w-full mt-1 px-3 py-2 border rounded-lg"
-        />
+          className="w-full mt-1 px-3 py-2 border rounded-lg bg-white"
+        >
+          <option value="">Select...</option>
+          <option value="Residential">Residential</option>
+          <option value="Small Business">Small Business</option>
+          <option value="Commercial">Commercial</option>
+          <option value="Competitive Bid">Competitive Bid</option>
+        </select>
       </div>
 
       {/* COMPANY NAME */}
@@ -113,14 +125,15 @@ export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
         />
       </div>
 
-      {/* CONTRACT PRICE */}
+      {/* CONTRACT PRICE — WHOLE DOLLARS */}
       <div>
         <label className="text-gray-500">Contract Price</label>
         <input
-          type="number"
+          type="text"
           value={form.contractPrice}
-          onChange={(e) => onChange("contractPrice", e.target.value)}
+          onChange={(e) => handleContractPrice(e.target.value)}
           className="w-full mt-1 px-3 py-2 border rounded-lg"
+          placeholder="2450"
         />
       </div>
 

@@ -17,32 +17,34 @@ export default function LeadAppointmentSection({
     : "Not Set";
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 px-4 py-4 shadow-sm text-sm">
-      <div className="grid grid-cols-2 gap-3">
-        {/* APPOINTMENT CARD */}
+    <div className="w-full">
+      {/* Grid for the two light-gray boxes */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+        {/* APPOINTMENT BOX */}
         <button
           type="button"
           onClick={() => setShowApptModal(true)}
-          className="bg-[#f5f6f7] rounded-xl border border-gray-200 px-3 py-3 text-left flex flex-col justify-between min-w-0"
+          className="bg-[#f5f6f7] rounded-xl border border-gray-200 px-3 py-3 text-left shadow-sm flex flex-col justify-between min-w-0"
         >
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
             Appointment
           </div>
-          <div className="mt-1 font-semibold text-gray-900 break-words">
+          <div className="mt-1 font-semibold text-gray-900 break-words text-sm">
             {apptDisplay}
           </div>
         </button>
 
-        {/* INSTALL DATE CARD */}
+        {/* INSTALL BOX */}
         <button
           type="button"
           onClick={() => setShowDateModal("installDate")}
-          className="bg-[#f5f6f7] rounded-xl border border-gray-200 px-3 py-3 text-left flex flex-col justify-between min-w-0"
+          className="bg-[#f5f6f7] rounded-xl border border-gray-200 px-3 py-3 text-left shadow-sm flex flex-col justify-between min-w-0"
         >
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
             Install Date
           </div>
-          <div className="mt-1 font-semibold text-gray-900 break-words">
+          <div className="mt-1 font-semibold text-gray-900 break-words text-sm">
             {installDisplay}
           </div>
         </button>

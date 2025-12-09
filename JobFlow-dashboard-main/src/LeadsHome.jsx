@@ -158,12 +158,13 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     setIsNewLead(false);
   };
 
-  // ✔ UPDATED — name is now included
+  // ============================================================
+  // SAVE → CREATE or UPDATE
+  // ============================================================
   const handleSaveLead = async (lead) => {
     try {
       const backendLead = {
-        name: lead.name || "", // REQUIRED FIELD
-
+        name: lead.name || "",
         full_name: lead.name || "",
         first_name: lead.firstName || "",
         last_name: lead.lastName || "",
@@ -212,13 +213,16 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
 
       const converted = convertLeadFromBackend(response.lead);
 
+      // Update list
       setLeads((prev) =>
         isNewLead
           ? [...prev, converted]
           : prev.map((l) => (l.id === converted.id ? converted : l))
       );
 
+      // Critical fix — send updated lead back to modal
       setSelectedLead(converted);
+
       setIsNewLead(false);
     } catch (error) {
       console.error("Error saving lead:", error);
@@ -428,5 +432,3 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     </div>
   );
 }
-
-

@@ -12,14 +12,7 @@ function ActionButton({ label, onClick }) {
   );
 }
 
-export default function LeadHeader({
-  name,
-  status,
-  phone,
-  onCall,
-  onText,
-  onMap,
-}) {
+export default function LeadHeader({ name, status, phone, onCall, onText, onMap }) {
   return (
     <div
       className="px-6 pt-4 pb-5"

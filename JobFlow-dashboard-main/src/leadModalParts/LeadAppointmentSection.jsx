@@ -1,16 +1,33 @@
 import React from "react";
 
-export default function LeadApptInstallBoxes({
+export default function LeadAppointmentSection({
   form,
-  formatDate,
-  formatTime,
   setShowApptModal,
   setShowDateModal,
 }) {
+  const formatDate = (value) => {
+    if (!value) return "Not Set";
+    const d = new Date(value);
+    if (isNaN(d)) return "Not Set";
+    return `${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate()
+    ).padStart(2, "0")}-${d.getFullYear()}`;
+  };
+
+  const formatTime = (value) => {
+    if (!value) return "";
+    const parts = String(value).split(":");
+    let hour = parseInt(parts[0], 10);
+    const minutes = parts[1] || "00";
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12 || 12;
+    return `${hour}:${minutes.padStart(2, "0")} ${ampm}`;
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-      {/* APPOINTMENT BOX */}
+      {/* APPOINTMENT DATE/TIME */}
       <div
         onClick={() => setShowApptModal(true)}
         className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
@@ -24,7 +41,7 @@ export default function LeadApptInstallBoxes({
         </div>
       </div>
 
-      {/* INSTALL DATE BOX */}
+      {/* INSTALL DATE */}
       <div
         onClick={() => setShowDateModal("installDate")}
         className="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm cursor-pointer hover:border-blue-500 transition"
@@ -33,11 +50,7 @@ export default function LeadApptInstallBoxes({
         <div className="text-blue-700 font-semibold">
           {formatDate(form.installDate)}
         </div>
-        {form.installTentative && (
-          <div className="text-xs text-amber-600 font-semibold">(Tentative)</div>
-        )}
       </div>
-
     </div>
   );
 }

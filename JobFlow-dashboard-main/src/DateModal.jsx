@@ -1,6 +1,16 @@
+// File: src/DateModal.jsx - updated 2025-12-10
+
 import React, { useState, useEffect } from "react";
 
-export default function DateModal({ initialDate, initialTentative = false, onConfirm, onClose, onRemove, label = "Select Date", allowTentative = false }) {
+export default function DateModal({
+  initialDate,
+  initialTentative = false,
+  onConfirm,
+  onClose,
+  onRemove,
+  label = "Select Date",
+  allowTentative = false,
+}) {
   const [date, setDate] = useState(initialDate || "");
   const [tentative, setTentative] = useState(initialTentative || false);
 
@@ -11,7 +21,8 @@ export default function DateModal({ initialDate, initialTentative = false, onCon
 
   const handleSave = () => {
     if (!date) return;
-    const normalized = new Date(date).toISOString().split("T")[0];
+    // date is already "YYYY-MM-DD" from the input; strip any time just in case
+    const normalized = date.split(" ")[0];
     onConfirm(normalized, tentative);
     onClose();
   };

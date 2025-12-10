@@ -80,15 +80,21 @@ export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
         </div>
       </div>
 
-      {/* BUYER TYPE */}
+      {/* BUYER TYPE — UPDATED TO DROPDOWN */}
       <div>
         <label className="text-gray-500">Buyer Type</label>
-        <input
-          type="text"
+        <select
           value={form.buyerType}
           onChange={(e) => onChange("buyerType", e.target.value)}
-          className="w-full mt-1 px-3 py-2 border rounded-lg"
-        />
+          className="w-full mt-1 px-3 py-2 border rounded-lg bg-white"
+        >
+          <option value="">Select…</option>
+          <option value="Homeowner">Homeowner</option>
+          <option value="Business">Business</option>
+          <option value="Contractor">Contractor</option>
+          <option value="Builder">Builder</option>
+          <option value="Other">Other</option>
+        </select>
       </div>
 
       {/* COMPANY NAME */}
@@ -124,7 +130,7 @@ export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
         />
       </div>
 
-      {/* PREFERRED CONTACT — UPDATED TO DROPDOWN */}
+      {/* PREFERRED CONTACT — DROPDOWN */}
       <div>
         <label className="text-gray-500">Preferred Contact</label>
         <select

@@ -9,49 +9,53 @@ import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
 // ============================================================
-// FIXED: Convert backend camelCase → frontend camelCase
+// FIXED: Convert backend snake_case → frontend camelCase
 // ============================================================
 const convertLeadFromBackend = (lead) => {
   if (!lead) return null;
 
   return {
     id: lead.id,
-    companyId: lead.companyId,
-    createdByUserId: lead.createdByUserId,
+    companyId: lead.company_id,
+    createdByUserId: lead.created_by_user_id,
 
-    name: lead.fullName || lead.name || "",
-    firstName: lead.firstName || "",
-    lastName: lead.lastName || "",
+    name: lead.full_name || lead.name || "",
+    firstName: lead.first_name || "",
+    lastName: lead.last_name || "",
 
     phone: lead.phone,
     email: lead.email,
-    preferredContact: lead.preferredContact,
+    preferredContact: lead.preferred_contact,
 
     address: lead.address,
     city: lead.city,
     state: lead.state,
     zip: lead.zip,
 
-    buyerType: lead.buyerType,
-    companyName: lead.companyName,
-    projectType: lead.projectType,
+    buyerType: lead.buyer_type,
+    companyName: lead.company_name,
+    projectType: lead.project_type,
 
-    leadSource: lead.leadSource,
-    referralSource: lead.referralSource,
+    leadSource: lead.lead_source,
+    referralSource: lead.referral_source,
 
     status: lead.status,
-    notSoldReason: lead.notSoldReason,
+    notSoldReason: lead.not_sold_reason,
     notes: lead.notes,
 
-    contractPrice: lead.contractPrice,
+    contractPrice: lead.contract_price,
 
-    apptDate: lead.appointmentDate || lead.apptDate,
-    apptTime: lead.appointmentTime || lead.apptTime,
-    installDate: lead.installDate,
-    installTentative: lead.installTentative,
+    // ============================================================
+    // FIXED DATE FIELDS — MUST map from snake_case
+    // ============================================================
+    apptDate: lead.appointment_date || "",
+    apptTime: lead.appointment_time || "",
 
-    createdAt: lead.createdAt,
-    updatedAt: lead.updatedAt,
+    installDate: lead.install_date || "",
+    installTentative: lead.install_tentative || false,
+
+    createdAt: lead.created_at,
+    updatedAt: lead.updated_at,
   };
 };
 
@@ -97,13 +101,11 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     fetchLeads();
   }, []);
 
-  // OPEN LEAD
   const handleLeadClick = (lead) => {
     setSelectedLead(lead);
     setIsNewLead(false);
   };
 
-  // NEW LEAD
   const handleAddLead = () => {
     setSelectedLead(null);
     setIsNewLead(false);
@@ -198,8 +200,10 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
 
         contract_price: lead.contractPrice || null,
 
+        // SAVE to snake_case
         appointment_date: lead.apptDate || null,
         appointment_time: lead.apptTime || null,
+
         install_date: lead.installDate || null,
         install_tentative: lead.installTentative || false,
       };
@@ -220,14 +224,12 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
 
       const converted = convertLeadFromBackend(response.lead);
 
-      // Update in list
       setLeads((prev) =>
         isNewLead
           ? [...prev, converted]
           : prev.map((l) => (l.id === converted.id ? converted : l))
       );
 
-      // Refresh the modal
       setSelectedLead(converted);
       setIsNewLead(false);
     } catch (error) {
@@ -251,10 +253,10 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   };
 
   // ============================================================
-  // FILTER / SEARCH
+  // FILTER
   // ============================================================
-  const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
+  const filteredLeads = useMemo(() =>
+    leads.filter((lead) => {
       const tabMatch =
         activeTab === "Leads"
           ? lead.status === "lead"
@@ -275,8 +277,8 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         lead.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
       return tabMatch && searchMatch;
-    });
-  }, [leads, activeTab, searchTerm]);
+    })
+  , [leads, activeTab, searchTerm]);
 
   const leadCount = leads.filter((l) => l.status === "lead").length;
   const appointmentCount = leads.filter((l) => l.status === "appointment_set").length;
@@ -319,12 +321,12 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                 key={tab.name}
                 onClick={() => setActiveTab(tab.name)}
                 className={`px-6 py-3 rounded-lg font-semibold text-sm whitespace-nowrap
-                transition-all duration-200 transform hover:scale-105
-                ${
-                  activeTab === tab.name
-                    ? `${tabColorClasses[tab.color]} text-white shadow-lg`
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                  transition-all duration-200 transform hover:scale-105
+                  ${
+                    activeTab === tab.name
+                      ? `${tabColorClasses[tab.color]} text-white shadow-lg`
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
               >
                 {tab.name}
                 {tab.count !== null && (
@@ -353,16 +355,16 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 
-                  focus:border-blue-500 focus:ring-4 focus:ring-blue-100 
-                  transition-all duration-200 shadow-sm"
+                    focus:border-blue-500 focus:ring-4 focus:ring-blue-100 
+                    transition-all duration-200 shadow-sm"
                 />
               </div>
 
               <button
                 onClick={() => setShowPhoneLookup(true)}
                 className="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 
-                text-white rounded-xl font-semibold shadow-lg hover:shadow-xl 
-                transform hover:scale-105 transition-all duration-200"
+                  text-white rounded-xl font-semibold shadow-lg hover:shadow-xl 
+                  transform hover:scale-105 transition-all duration-200"
               >
                 Phone Lookup
               </button>
@@ -370,8 +372,8 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
               <button
                 onClick={handleAddLead}
                 className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 
-                text-white rounded-xl font-semibold shadow-lg hover:shadow-xl 
-                transform hover:scale-105 transition-all duration-200"
+                  text-white rounded-xl font-semibold shadow-lg hover:shadow-xl 
+                  transform hover:scale-105 transition-all duration-200"
               >
                 + Add Lead
               </button>
@@ -399,8 +401,8 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                     key={lead.id}
                     onClick={() => handleLeadClick(lead)}
                     className="bg-white rounded-xl shadow-md hover:shadow-xl 
-                    transform hover:scale-105 transition-all duration-200 
-                    cursor-pointer p-6 border-2 border-transparent hover:border-blue-300"
+                      transform hover:scale-105 transition-all duration-200 
+                      cursor-pointer p-6 border-2 border-transparent hover:border-blue-300"
                   >
                     <h3 className="text-lg font-bold text-gray-900">
                       {lead.name}
@@ -412,7 +414,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                     {lead.projectType && (
                       <span
                         className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 
-                        rounded-full text-xs font-medium"
+                          rounded-full text-xs font-medium"
                       >
                         {lead.projectType}
                       </span>

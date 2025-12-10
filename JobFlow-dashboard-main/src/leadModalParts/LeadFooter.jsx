@@ -12,6 +12,7 @@ export default function LeadFooter({
   return (
     <div className="mt-6">
 
+      
       {/* DELETE CONFIRMATION */}
       {deleteConfirm ? (
         <div className="flex flex-col sm:flex-row sm:justify-between gap-3">

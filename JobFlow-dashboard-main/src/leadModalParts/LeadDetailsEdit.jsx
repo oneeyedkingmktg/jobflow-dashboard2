@@ -1,5 +1,7 @@
 import React from "react";
 
+// FILE: LeadDetailsEdit.jsx — Updated 2025-12-10
+
 export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm space-y-4 text-sm text-gray-800">
@@ -80,7 +82,7 @@ export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
         </div>
       </div>
 
-      {/* BUYER TYPE — UPDATED TO DROPDOWN */}
+      {/* BUYER TYPE — UPDATED OPTIONS */}
       <div>
         <label className="text-gray-500">Buyer Type</label>
         <select
@@ -89,11 +91,10 @@ export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
           className="w-full mt-1 px-3 py-2 border rounded-lg bg-white"
         >
           <option value="">Select…</option>
-          <option value="Homeowner">Homeowner</option>
-          <option value="Business">Business</option>
-          <option value="Contractor">Contractor</option>
-          <option value="Builder">Builder</option>
-          <option value="Other">Other</option>
+          <option value="Residential">Residential</option>
+          <option value="Small Business">Small Business</option>
+          <option value="Commercial">Commercial</option>
+          <option value="Competitive Bid">Competitive Bid</option>
         </select>
       </div>
 
@@ -130,7 +131,7 @@ export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
         />
       </div>
 
-      {/* PREFERRED CONTACT — DROPDOWN */}
+      {/* PREFERRED CONTACT */}
       <div>
         <label className="text-gray-500">Preferred Contact</label>
         <select

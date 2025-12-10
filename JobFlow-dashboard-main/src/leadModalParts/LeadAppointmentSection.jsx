@@ -8,7 +8,7 @@ export default function LeadAppointmentSection({
   // =====================================================
   // SAFE DATE FORMATTER — handles:
   //   "YYYY-MM-DD"
-  //   "YYYY-MM-DD HH:mm:ss"
+  //   "YYYY-MM-DD HH:mm:ss" 
   //   "25-12-16"
   // =====================================================
   const formatDate = (d) => {

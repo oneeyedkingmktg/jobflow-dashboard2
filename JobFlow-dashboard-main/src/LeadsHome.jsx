@@ -1,3 +1,5 @@
+// File: src/LeadsHome.jsx - updated 2025-12-10
+
 // === BACKEND API INTEGRATION - Connected to PostgreSQL ===
 import React, { useState, useMemo, useEffect } from "react";
 import { apiRequest } from "./api";
@@ -9,27 +11,34 @@ import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
 // =============================================
-// Normalize TinyTable or DB dates → YYYY-MM-DD
+// Normalize DB/TinyTable dates → YYYY-MM-DD
+// Handles:
+//  - "2025-12-12"
+//  - "2025-12-12 00:00:00"
+//  - "25-12-16" (YY-MM-DD → 2025-12-16)
 // =============================================
 const normalizeDate = (d) => {
   if (!d) return "";
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  let str = typeof d === "string" ? d : String(d);
 
-  const parts = d.split("-");
-  if (parts.length === 3) {
-    let [a, b, c] = parts;
+  // Strip time if present (e.g. "2025-12-12 00:00:00")
+  const [datePart] = str.split(" ");
 
-    if (a.length === 2) {
-      return `20${a}-${b}-${c}`;
-    }
-
-    if (c.length === 4) {
-      return `${c}-${b}-${a}`;
-    }
+  // Already ISO
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    return datePart;
   }
 
-  return d;
+  // YY-MM-DD → assume 20YY-MM-DD (25-12-16 → 2025-12-16)
+  if (/^\d{2}-\d{2}-\d{2}$/.test(datePart)) {
+    const [yy, mm, dd] = datePart.split("-");
+    const year = `20${yy}`;
+    return `${year}-${mm}-${dd}`;
+  }
+
+  // Fallback
+  return datePart;
 };
 
 // Convert backend → frontend
@@ -67,9 +76,9 @@ const convertLeadFromBackend = (lead) => {
 
     contractPrice: lead.contractPrice,
 
+    // dates
     apptDate: normalizeDate(lead.appointmentDate) || "",
     apptTime: lead.appointmentTime || "",
-
     installDate: normalizeDate(lead.installDate) || "",
     installTentative: lead.installTentative,
 
@@ -108,6 +117,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         const converted = (response.leads || []).map(convertLeadFromBackend);
         setLeads(converted);
       } catch (error) {
+        console.error("Error fetching leads:", error);
         setLeads([]);
       } finally {
         setLoading(false);
@@ -244,7 +254,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
 
       setSelectedLead(converted);
       setIsNewLead(false);
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error saving lead:", error);
+    }
   };
 
   const handleDeleteLead = async (leadToDelete) => {
@@ -252,7 +264,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
       await apiRequest(`/leads/${leadToDelete.id}`, { method: "DELETE" });
       setLeads((prev) => prev.filter((l) => l.id !== leadToDelete.id));
       handleCloseModal();
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error deleting lead:", error);
+    }
   };
 
   const filteredLeads = useMemo(() => {
@@ -293,7 +307,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Lead Pipeline</h1>
-              <p className="text-blue-100 mt-1">{currentCompany?.name || "Loading..."}</p>
+              <p className="text-blue-100 mt-1">
+                {currentCompany?.name || "Loading..."}
+              </p>
             </div>
             <SettingsMenu />
           </div>
@@ -377,13 +393,17 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
             {/* LEAD LIST */}
             {loading ? (
               <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent" />
                 <p className="mt-4 text-gray-600">Loading leads...</p>
               </div>
             ) : filteredLeads.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl shadow-md">
-                <h3 className="mt-4 text-xl font-semibold text-gray-700">No leads yet</h3>
-                <p className="mt-2 text-gray-500">Click "Add Lead" to create your first lead</p>
+                <h3 className="mt-4 text-xl font-semibold text-gray-700">
+                  No leads yet
+                </h3>
+                <p className="mt-2 text-gray-500">
+                  Click "Add Lead" to create your first lead
+                </p>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -397,11 +417,14 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                   >
                     <h3 className="text-lg font-bold text-gray-900">{lead.name}</h3>
                     <p className="text-gray-600 mt-1">{lead.phone}</p>
-                    {lead.email && <p className="text-gray-500 text-sm">{lead.email}</p>}
+                    {lead.email && (
+                      <p className="text-gray-500 text-sm">{lead.email}</p>
+                    )}
 
                     {lead.projectType && (
-                      <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 
-                        rounded-full text-xs font-medium"
+                      <span
+                        className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 
+                          rounded-full text-xs font-medium"
                       >
                         {lead.projectType}
                       </span>

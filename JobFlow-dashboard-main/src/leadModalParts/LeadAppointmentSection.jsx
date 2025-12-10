@@ -1,3 +1,6 @@
+// File: LeadAppointmentSection.jsx
+// Updated: 2025-12-10
+
 import React from "react";
 
 export default function LeadAppointmentSection({
@@ -6,41 +9,44 @@ export default function LeadAppointmentSection({
   setShowDateModal,
 }) {
   // =====================================================
-  // SAFE DATE FORMATTER — handles:
+  // SAFE DATE FORMATTER — NO TIMEZONE SHIFTING
+  // Handles:
   //   "YYYY-MM-DD"
   //   "YYYY-MM-DD HH:mm:ss"
-  //   "25-12-16"
+  //   "YYYY-MM-DDTHH:mm:ss.sssZ"
+  //   "DD-MM-YY" / "DD-MM-YYYY"
   // =====================================================
   const formatDate = (d) => {
     if (!d) return "Not Set";
 
-    // Remove time if included
-    let clean = d.split(" ")[0].trim();
+    const raw = String(d).trim();
 
-    // If format is DD-MM-YY or DD-MM-YYYY → convert to YYYY-MM-DD
-    const parts = clean.split("-");
+    // Strip off any time / timezone chunk
+    const base = raw.split("T")[0].split(" ")[0]; // e.g. "2025-12-12"
+
+    const parts = base.split("-");
     if (parts.length === 3) {
       let [a, b, c] = parts;
 
-      // Case: YYYY-MM-DD already correct
+      // Case: YYYY-MM-DD
       if (a.length === 4) {
         return `${b}/${c}/${a}`;
       }
 
-      // Case: YY-MM-DD → assume 20YY
-      if (a.length === 2 && c.length === 2) {
-        const year = `20${a}`;
-        return `${b}/${c}/${year}`;
-      }
-
-      // Case: DD-MM-YYYY → flip
+      // Case: DD-MM-YYYY
       if (c.length === 4) {
         return `${b}/${a}/${c}`;
       }
+
+      // Case: DD-MM-YY (25-12-16) → assume 20YY
+      if (a.length === 2 && c.length === 2) {
+        const year = `20${c}`;
+        return `${b}/${a}/${year}`;
+      }
     }
 
-    // Fallback: return original
-    return clean;
+    // Fallback: show the cleaned base
+    return base;
   };
 
   // =====================================================
@@ -48,8 +54,10 @@ export default function LeadAppointmentSection({
   // =====================================================
   const formatTime = (t) => {
     if (!t) return "";
-    let [h, m] = t.split(":");
+    let [h, m] = String(t).split(":");
     h = parseInt(h, 10);
+
+    if (Number.isNaN(h)) return t;
 
     const ampm = h >= 12 ? "PM" : "AM";
     const hour12 = h % 12 || 12;
@@ -64,16 +72,14 @@ export default function LeadAppointmentSection({
   const apptTimeDisplay = form.apptTime ? formatTime(form.apptTime) : "";
 
   const installDateDisplay = form.installDate
-    ? formatDate(form.installDate) + (form.installTentative ? " (Tentative)" : "")
+    ? formatDate(form.installDate) +
+      (form.installTentative ? " (Tentative)" : "")
     : "Not Set";
 
   return (
     <div className="w-full">
       <div className="grid grid-cols-2 gap-3">
-
-        {/* ========================= */}
-        {/*      APPOINTMENT BOX     */}
-        {/* ========================= */}
+        {/* APPOINTMENT BOX */}
         <button
           type="button"
           onClick={() => setShowApptModal(true)}
@@ -84,18 +90,18 @@ export default function LeadAppointmentSection({
             Appointment
           </div>
 
+          {/* DATE */}
           <div className="mt-1 text-gray-900 text-sm font-semibold">
             {apptDateDisplay}
           </div>
 
+          {/* TIME (optional) */}
           {apptTimeDisplay && (
             <div className="text-gray-700 text-sm">{apptTimeDisplay}</div>
           )}
         </button>
 
-        {/* ========================= */}
-        {/*        INSTALL BOX        */}
-        {/* ========================= */}
+        {/* INSTALL BOX */}
         <button
           type="button"
           onClick={() => setShowDateModal("installDate")}
@@ -110,7 +116,6 @@ export default function LeadAppointmentSection({
             {installDateDisplay}
           </div>
         </button>
-
       </div>
     </div>
   );

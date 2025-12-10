@@ -7,18 +7,45 @@ export default function ApptDateTimeModal({
   onClose,
   onRemove,
 }) {
-  const [date, setDate] = useState(apptDate || "");
-  const [time, setTime] = useState(apptTime || "");
+  // Convert YYYY-MM-DD → MM/DD/YYYY for UI
+  const formatDisplayDate = (isoDate) => {
+    if (!isoDate) return "";
+    const d = new Date(isoDate);
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
+  };
 
-  useEffect(() => {
-    if (apptDate) setDate(apptDate);
-    if (apptTime) setTime(apptTime);
-  }, [apptDate, apptTime]);
+  // Convert MM/DD/YYYY → YYYY-MM-DD for DB
+  const normalizeToISO = (mmddyyyy) => {
+    if (!mmddyyyy) return "";
+    const [mm, dd, yyyy] = mmddyyyy.split("/");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // Extract hour/minute/ampm from "2:00 PM"
+  const parseTime = (t) => {
+    if (!t) return { hour: "2", minute: "00", ampm: "PM" };
+    const [timePart, ampm] = t.split(" ");
+    let [h, m] = timePart.split(":");
+    return { hour: h || "2", minute: m || "00", ampm: ampm || "PM" };
+  };
+
+  const initialTime = parseTime(apptTime);
+
+  const [date, setDate] = useState(formatDisplayDate(apptDate));
+  const [hour, setHour] = useState(initialTime.hour);
+  const [minute, setMinute] = useState(initialTime.minute);
+  const [ampm, setAmpm] = useState(initialTime.ampm);
 
   const handleSave = () => {
     if (!date) return;
-    const normalized = new Date(date).toISOString().split("T")[0];
-    onConfirm(normalized, time);
+
+    const iso = normalizeToISO(date);
+    const formattedTime = `${hour}:${minute} ${ampm}`;
+
+    onConfirm(iso, formattedTime);
     onClose();
   };
 
@@ -36,37 +63,72 @@ export default function ApptDateTimeModal({
         className="bg-white rounded-lg shadow-xl w-full max-w-xs p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold mb-3 text-gray-800 text-center">
-          Appointment Date & Time
+        <h2 className="text-lg font-semibold mb-4 text-gray-800 text-center">
+          Set Appointment
         </h2>
 
-        {/* Date */}
-        <div className="mb-4 cursor-pointer">
+        {/* DATE FIELD */}
+        <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Date
+            Appointment Date
           </label>
           <input
-            type="date"
+            type="text"
+            placeholder="MM/DD/YYYY"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+            className="w-full border border-gray-300 rounded px-2 py-2 text-sm"
           />
         </div>
 
-        {/* Time */}
-        <div className="mb-4 cursor-pointer">
+        {/* TIME SELECTORS */}
+        <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Time
+            Appointment Time
           </label>
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-          />
+
+          <div className="flex gap-2">
+            {/* HOUR */}
+            <select
+              value={hour}
+              onChange={(e) => setHour(e.target.value)}
+              className="border border-gray-300 rounded px-2 py-2 text-sm w-1/3"
+            >
+              {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"].map(
+                (h) => (
+                  <option key={h} value={h}>
+                    {h}
+                  </option>
+                )
+              )}
+            </select>
+
+            {/* MINUTE */}
+            <select
+              value={minute}
+              onChange={(e) => setMinute(e.target.value)}
+              className="border border-gray-300 rounded px-2 py-2 text-sm w-1/3"
+            >
+              {["00", "15", "30", "45"].map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+
+            {/* AM / PM */}
+            <select
+              value={ampm}
+              onChange={(e) => setAmpm(e.target.value)}
+              className="border border-gray-300 rounded px-2 py-2 text-sm w-1/3"
+            >
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
         </div>
 
-        {/* Buttons */}
+        {/* BUTTONS */}
         <div className="flex justify-between mt-4 gap-2">
           <button
             onClick={handleRemove}

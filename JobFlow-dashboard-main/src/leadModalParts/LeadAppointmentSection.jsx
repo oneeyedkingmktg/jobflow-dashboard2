@@ -5,87 +5,67 @@ export default function LeadAppointmentSection({
   setShowApptModal,
   setShowDateModal,
 }) {
-  // Convert YYYY-MM-DD → MM/DD/YYYY
-  const formatDisplayDate = (isoDate) => {
-    if (!isoDate) return "";
-    const d = new Date(isoDate);
-    if (isNaN(d)) return isoDate; // fallback
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    return `${mm}/${dd}/${yyyy}`;
+  // Fix timezone issue — do not convert via new Date()
+  const formatDate = (d) => {
+    if (!d) return "";
+    const [y, m, day] = d.split("-");
+    return `${m}/${day}/${y}`;
   };
-  
 
-  // Format appointment date + time
-  const apptDateFormatted = form.apptDate ? formatDisplayDate(form.apptDate) : null;
-  const apptTimeFormatted = form.apptTime || null;
+  const formatTime = (t) => {
+    if (!t) return "";
+    let [h, m] = t.split(":");
+    h = parseInt(h, 10);
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${h}:${m} ${ampm}`;
+  };
 
-  const apptDisplay =
-    apptDateFormatted || apptTimeFormatted
-      ? (
-          <>
-            <div>{apptDateFormatted || "Date Not Set"}</div>
-            {apptTimeFormatted && (
-              <div className="text-gray-600 text-xs mt-0.5">{apptTimeFormatted}</div>
-            )}
-          </>
-        )
-      : (
-          <div>Not Set</div>
-        );
+  const apptDateLine = form.apptDate ? formatDate(form.apptDate) : "Not Set";
+  const apptTimeLine = form.apptTime ? formatTime(form.apptTime) : "";
 
-  // Format install date
-  const installDisplay = form.installDate
-    ? (
-        <>
-          <div>{formatDisplayDate(form.installDate)}</div>
-          {form.installTentative && (
-            <div className="text-gray-600 text-xs mt-0.5">(Tentative)</div>
-          )}
-        </>
-      )
-    : (
-        <div>Not Set</div>
-      );
+  const installDateLine = form.installDate
+    ? formatDate(form.installDate) +
+      (form.installTentative ? " (Tentative)" : "")
+    : "Not Set";
 
   return (
     <div className="w-full">
-      {/* Two boxes side-by-side */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3">
 
         {/* APPOINTMENT BOX */}
         <button
           type="button"
           onClick={() => setShowApptModal(true)}
-          className="bg-[#f5f6f7] rounded-xl border border-gray-200 px-3 py-3 text-left 
-                     shadow-sm flex flex-col justify-between min-w-0"
+          className="bg-[#f5f6f7] rounded-xl border border-gray-200 px-3 py-3 text-left shadow-sm flex flex-col"
         >
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
             Appointment
           </div>
 
-          <div className="mt-1 font-semibold text-gray-900 text-sm leading-tight">
-            {apptDisplay}
+          <div className="mt-1 text-gray-900 text-sm font-semibold">
+            {apptDateLine}
           </div>
+
+          {apptTimeLine && (
+            <div className="text-gray-700 text-sm">{apptTimeLine}</div>
+          )}
         </button>
 
         {/* INSTALL BOX */}
         <button
           type="button"
           onClick={() => setShowDateModal("installDate")}
-          className="bg-[#f5f6f7] rounded-xl border border-gray-200 px-3 py-3 text-left 
-                     shadow-sm flex flex-col justify-between min-w-0"
+          className="bg-[#f5f6f7] rounded-xl border border-gray-200 px-3 py-3 text-left shadow-sm flex flex-col"
         >
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
             Install Date
           </div>
 
-          <div className="mt-1 font-semibold text-gray-900 text-sm leading-tight">
-            {installDisplay}
+          <div className="mt-1 text-gray-900 text-sm font-semibold">
+            {installDateLine}
           </div>
         </button>
-
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 import React from "react";
 
+// FILE: LeadDetailsView.jsx — Updated 2025-12-10
+
 export default function LeadDetailsView({ form, onEdit }) {
   return (
     <div
@@ -15,7 +17,7 @@ export default function LeadDetailsView({ form, onEdit }) {
         </span>
       </div>
 
-      {/* BUYER TYPE */}
+      {/* BUYER TYPE — UPDATED OPTIONS */}
       <div className="flex justify-between gap-4">
         <span className="text-gray-500">Buyer Type</span>
         <span className="font-semibold text-right break-words">
@@ -67,7 +69,7 @@ export default function LeadDetailsView({ form, onEdit }) {
         </p>
       </div>
 
-      {/* LEAD SOURCE (VIEW ONLY) */}
+      {/* LEAD SOURCE */}
       <div className="flex justify-between gap-4">
         <span className="text-gray-500">Lead Source</span>
         <span className="font-semibold text-right break-words">

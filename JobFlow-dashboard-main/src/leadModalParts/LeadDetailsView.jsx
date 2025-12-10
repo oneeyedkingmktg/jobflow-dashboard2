@@ -2,77 +2,86 @@ import React from "react";
 
 export default function LeadDetailsView({ form, onEdit }) {
   return (
-    <div
-      className="bg-[#f5f6f7] rounded-2xl border border-gray-200 px-5 py-5 shadow-sm text-sm text-gray-800 space-y-4 cursor-pointer hover:shadow-md transition-shadow"
-      onClick={onEdit}
-    >
+    <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm text-sm text-gray-800 space-y-4">
+
+      {/* FULL NAME */}
+      <div>
+        <div className="text-gray-500 text-xs">Full Name</div>
+        <div className="font-semibold">{form.name || "—"}</div>
+      </div>
 
       {/* EMAIL */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Email</span>
-        <span className="font-semibold text-right break-words">
-          {form.email || "Not Set"}
-        </span>
+      <div>
+        <div className="text-gray-500 text-xs">Email</div>
+        <div>{form.email || "—"}</div>
+      </div>
+
+      {/* PHONE */}
+      <div>
+        <div className="text-gray-500 text-xs">Phone</div>
+        <div>{form.phone || "—"}</div>
+      </div>
+
+      {/* ADDRESS */}
+      <div>
+        <div className="text-gray-500 text-xs">Address</div>
+        <div>
+          {form.address || "—"}
+          <br />
+          {[form.city, form.state, form.zip].filter(Boolean).join(", ")}
+        </div>
       </div>
 
       {/* BUYER TYPE */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Buyer Type</span>
-        <span className="font-semibold text-right break-words">
-          {form.buyerType || "Not Set"}
-        </span>
+      <div>
+        <div className="text-gray-500 text-xs">Buyer Type</div>
+        <div>{form.buyerType || "—"}</div>
       </div>
 
       {/* COMPANY NAME */}
-      {form.companyName ? (
-        <div className="flex justify-between gap-4">
-          <span className="text-gray-500">Company</span>
-          <span className="font-semibold text-right break-words">
-            {form.companyName}
-          </span>
-        </div>
-      ) : null}
+      <div>
+        <div className="text-gray-500 text-xs">Company Name</div>
+        <div>{form.companyName || "—"}</div>
+      </div>
 
       {/* PROJECT TYPE */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Project Type</span>
-        <span className="font-semibold text-right break-words">
-          {form.projectType || "Not Set"}
-        </span>
+      <div>
+        <div className="text-gray-500 text-xs">Project Type</div>
+        <div>{form.projectType || "—"}</div>
       </div>
 
       {/* CONTRACT PRICE */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Contract Price</span>
-        <span className="font-semibold text-right break-words">
-          {form.contractPrice
-            ? `$${Number(form.contractPrice).toLocaleString()}`
-            : "Not Set"}
-        </span>
+      <div>
+        <div className="text-gray-500 text-xs">Contract Price</div>
+        <div>{form.contractPrice ? `$${form.contractPrice}` : "—"}</div>
       </div>
 
       {/* PREFERRED CONTACT */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Preferred Contact</span>
-        <span className="font-semibold text-right break-words">
-          {form.preferredContact || "Not Set"}
-        </span>
+      <div>
+        <div className="text-gray-500 text-xs">Preferred Contact</div>
+        <div>{form.preferredContact || "—"}</div>
       </div>
 
       {/* NOTES */}
       <div>
-        <span className="text-gray-500 block">Notes</span>
-        <p className="font-semibold whitespace-pre-line mt-1 break-words">
-          {form.notes?.trim() ? form.notes : "No notes added"}
-        </p>
+        <div className="text-gray-500 text-xs">Notes</div>
+        <div className="whitespace-pre-line">{form.notes || "—"}</div>
       </div>
 
-      {/* LEAD SOURCE (VIEW ONLY) */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Lead Source</span>
-        <span className="font-semibold text-right break-words">
-          {form.leadSource || "Not Set"}
-        </span>
+      {/* LEAD SOURCE — VIEW MODE ONLY */}
+      <div>
+        <div className="text-gray-500 text-xs">Lead Source</div>
+        <div>{form.leadSource || "—"}</div>
+      </div>
+
+      {/* EDIT BUTTON */}
+      <div className="pt-3">
+        <button
+          onClick={onEdit}
+          className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold text-sm shadow hover:bg-blue-700"
+        >
+          Edit Details
+        </button>
       </div>
 
     </div>

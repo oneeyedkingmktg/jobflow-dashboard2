@@ -1,4 +1,4 @@
-// LeadStatusBar.jsx (Updated 2025-12-10 3:22pm)
+// LeadStatusBar.jsx (Updated 2025-12-10 3:49pm)
 import React from "react";
 import { STATUS_LABELS, STATUS_COLORS } from "./statusConfig.js";
 
@@ -69,7 +69,6 @@ export default function LeadStatusBar({
     if (currentStatus === "appointment_set") {
       return (
         <div className="flex gap-3">
-          {/* Sold */}
           <button
             onClick={handleProgression}
             className="px-5 py-3 rounded-lg text-white shadow flex flex-col"
@@ -79,7 +78,6 @@ export default function LeadStatusBar({
             <span className="text-sm font-semibold">>> Sold</span>
           </button>
 
-          {/* Not Sold */}
           <button
             onClick={onOpenNotSold}
             className="px-5 py-3 rounded-lg text-white shadow flex flex-col"
@@ -117,9 +115,9 @@ export default function LeadStatusBar({
       <div className="flex flex-col">
         <div
           className="text-black text-[10px] uppercase font-semibold mb-1"
-          style={{ paddingLeft: "15px" }}
+          style={{ paddingLeft: "25px" }}
         >
-          status
+          CURRENT STATUS
         </div>
 
         {/* STATUS DROPDOWN */}
@@ -155,6 +153,7 @@ export default function LeadStatusBar({
             ))}
           </select>
 
+          {/* Chevron */}
           <div
             className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white"
             style={{ fontSize: "18px" }}

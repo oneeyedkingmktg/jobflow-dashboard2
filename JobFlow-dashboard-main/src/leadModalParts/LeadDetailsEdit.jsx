@@ -1,7 +1,5 @@
 import React from "react";
 
-// FILE: LeadDetailsEdit.jsx — Updated 2025-12-10
-
 export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 px-5 py-5 shadow-sm space-y-4 text-sm text-gray-800">
@@ -82,7 +80,7 @@ export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
         </div>
       </div>
 
-      {/* BUYER TYPE — UPDATED OPTIONS */}
+      {/* BUYER TYPE — UPDATED */}
       <div>
         <label className="text-gray-500">Buyer Type</label>
         <select
@@ -129,22 +127,6 @@ export default function LeadDetailsEdit({ form, onChange, onPhoneChange }) {
           onChange={(e) => onChange("contractPrice", e.target.value)}
           className="w-full mt-1 px-3 py-2 border rounded-lg"
         />
-      </div>
-
-      {/* PREFERRED CONTACT */}
-      <div>
-        <label className="text-gray-500">Preferred Contact</label>
-        <select
-          value={form.preferredContact}
-          onChange={(e) => onChange("preferredContact", e.target.value)}
-          className="w-full mt-1 px-3 py-2 border rounded-lg bg-white"
-        >
-          <option value="">Select…</option>
-          <option value="Phone">Phone</option>
-          <option value="SMS">SMS</option>
-          <option value="Email">Email</option>
-          <option value="Other">Other</option>
-        </select>
       </div>
 
       {/* NOTES */}

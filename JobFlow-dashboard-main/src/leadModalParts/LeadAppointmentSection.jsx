@@ -15,6 +15,7 @@ export default function LeadAppointmentSection({
     const yyyy = d.getFullYear();
     return `${mm}/${dd}/${yyyy}`;
   };
+  
 
   // Format appointment date + time
   const apptDateFormatted = form.apptDate ? formatDisplayDate(form.apptDate) : null;

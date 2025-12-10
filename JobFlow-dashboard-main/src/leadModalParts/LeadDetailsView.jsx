@@ -1,7 +1,5 @@
 import React from "react";
 
-// FILE: LeadDetailsView.jsx — Updated 2025-12-10
-
 export default function LeadDetailsView({ form, onEdit }) {
   return (
     <div
@@ -17,7 +15,7 @@ export default function LeadDetailsView({ form, onEdit }) {
         </span>
       </div>
 
-      {/* BUYER TYPE — UPDATED OPTIONS */}
+      {/* BUYER TYPE */}
       <div className="flex justify-between gap-4">
         <span className="text-gray-500">Buyer Type</span>
         <span className="font-semibold text-right break-words">
@@ -50,14 +48,6 @@ export default function LeadDetailsView({ form, onEdit }) {
           {form.contractPrice
             ? `$${Number(form.contractPrice).toLocaleString()}`
             : "Not Set"}
-        </span>
-      </div>
-
-      {/* PREFERRED CONTACT */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Preferred Contact</span>
-        <span className="font-semibold text-right break-words">
-          {form.preferredContact || "Not Set"}
         </span>
       </div>
 

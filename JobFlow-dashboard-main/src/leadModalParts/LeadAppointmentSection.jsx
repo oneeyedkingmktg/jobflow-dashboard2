@@ -6,15 +6,41 @@ export default function LeadAppointmentSection({
   setShowDateModal,
 }) {
   // =====================================================
-  // SAFE DATE FORMATTER — NO TIMEZONE SHIFTING
+  // SAFE DATE FORMATTER — handles:
+  //   "YYYY-MM-DD"
+  //   "YYYY-MM-DD HH:mm:ss"
+  //   "25-12-16"
   // =====================================================
   const formatDate = (d) => {
     if (!d) return "Not Set";
-    // Expected input: YYYY-MM-DD
-    const parts = d.split("-");
-    if (parts.length !== 3) return d;
-    const [y, m, day] = parts;
-    return `${m}/${day}/${y}`;
+
+    // Remove time if included
+    let clean = d.split(" ")[0].trim();
+
+    // If format is DD-MM-YY or DD-MM-YYYY → convert to YYYY-MM-DD
+    const parts = clean.split("-");
+    if (parts.length === 3) {
+      let [a, b, c] = parts;
+
+      // Case: YYYY-MM-DD already correct
+      if (a.length === 4) {
+        return `${b}/${c}/${a}`;
+      }
+
+      // Case: YY-MM-DD → assume 20YY
+      if (a.length === 2 && c.length === 2) {
+        const year = `20${a}`;
+        return `${b}/${c}/${year}`;
+      }
+
+      // Case: DD-MM-YYYY → flip
+      if (c.length === 4) {
+        return `${b}/${a}/${c}`;
+      }
+    }
+
+    // Fallback: return original
+    return clean;
   };
 
   // =====================================================
@@ -38,8 +64,7 @@ export default function LeadAppointmentSection({
   const apptTimeDisplay = form.apptTime ? formatTime(form.apptTime) : "";
 
   const installDateDisplay = form.installDate
-    ? formatDate(form.installDate) +
-      (form.installTentative ? " (Tentative)" : "")
+    ? formatDate(form.installDate) + (form.installTentative ? " (Tentative)" : "")
     : "Not Set";
 
   return (
@@ -59,12 +84,10 @@ export default function LeadAppointmentSection({
             Appointment
           </div>
 
-          {/* DATE — always on its own line */}
           <div className="mt-1 text-gray-900 text-sm font-semibold">
             {apptDateDisplay}
           </div>
 
-          {/* TIME — only appears if set */}
           {apptTimeDisplay && (
             <div className="text-gray-700 text-sm">{apptTimeDisplay}</div>
           )}

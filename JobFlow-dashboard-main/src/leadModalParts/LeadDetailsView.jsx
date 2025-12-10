@@ -3,48 +3,50 @@ import React from "react";
 export default function LeadDetailsView({ form, onEdit }) {
   return (
     <div
-      className="bg-[#f5f6f7] rounded-2xl border border-gray-200 px-5 py-5 shadow-sm text-sm text-gray-800 space-y-4 cursor-pointer hover:shadow-md transition-shadow"
+      className="bg-[#f5f6f7] rounded-2xl border border-gray-200 px-5 py-5 
+                 shadow-sm text-sm text-gray-800 space-y-4 cursor-pointer 
+                 hover:shadow-md transition-shadow"
       onClick={onEdit}
     >
 
       {/* EMAIL */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Email</span>
-        <span className="font-semibold text-right break-words">
+      <div>
+        <span className="text-gray-500 block">Email</span>
+        <span className="font-semibold break-words">
           {form.email || "Not Set"}
         </span>
       </div>
 
       {/* BUYER TYPE */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Buyer Type</span>
-        <span className="font-semibold text-right break-words">
+      <div>
+        <span className="text-gray-500 block">Buyer Type</span>
+        <span className="font-semibold break-words">
           {form.buyerType || "Not Set"}
         </span>
       </div>
 
       {/* COMPANY NAME */}
       {form.companyName ? (
-        <div className="flex justify-between gap-4">
-          <span className="text-gray-500">Company</span>
-          <span className="font-semibold text-right break-words">
+        <div>
+          <span className="text-gray-500 block">Company</span>
+          <span className="font-semibold break-words">
             {form.companyName}
           </span>
         </div>
       ) : null}
 
       {/* PROJECT TYPE */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Project Type</span>
-        <span className="font-semibold text-right break-words">
+      <div>
+        <span className="text-gray-500 block">Project Type</span>
+        <span className="font-semibold break-words">
           {form.projectType || "Not Set"}
         </span>
       </div>
 
       {/* CONTRACT PRICE */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Contract Price</span>
-        <span className="font-semibold text-right break-words">
+      <div>
+        <span className="text-gray-500 block">Contract Price</span>
+        <span className="font-semibold break-words">
           {form.contractPrice
             ? `$${Number(form.contractPrice).toLocaleString()}`
             : "Not Set"}
@@ -60,9 +62,9 @@ export default function LeadDetailsView({ form, onEdit }) {
       </div>
 
       {/* LEAD SOURCE */}
-      <div className="flex justify-between gap-4">
-        <span className="text-gray-500">Lead Source</span>
-        <span className="font-semibold text-right break-words">
+      <div>
+        <span className="text-gray-500 block">Lead Source</span>
+        <span className="font-semibold break-words">
           {form.leadSource || "Not Set"}
         </span>
       </div>

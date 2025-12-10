@@ -1,3 +1,5 @@
+// File: src/ApptDateTimeModal.jsx - updated 2025-12-10
+
 import React, { useState, useEffect } from "react";
 
 export default function ApptDateTimeModal({
@@ -34,8 +36,16 @@ export default function ApptDateTimeModal({
   const [minute, setMinute] = useState(initial.minute);
   const [ampm, setAmPm] = useState(initial.ampm);
 
+  useEffect(() => {
+    if (apptDate) setDate(apptDate || "");
+    const parsed = parseTime(apptTime);
+    setHour(parsed.hour);
+    setMinute(parsed.minute);
+    setAmPm(parsed.ampm);
+  }, [apptDate, apptTime]);
+
   // -------------------------------
-  // Convert dropdown values → 24-hour DB time
+  // Convert dropdown values → 24-hour DB time "HH:mm"
   // -------------------------------
   const to24Hour = () => {
     let h = parseInt(hour, 10);
@@ -50,7 +60,9 @@ export default function ApptDateTimeModal({
     if (!date) return;
 
     const finalTime24 = to24Hour();
-    onConfirm(date, finalTime24);
+    // date is already "YYYY-MM-DD" from the input
+    const normalizedDate = date.split(" ")[0];
+    onConfirm(normalizedDate, finalTime24);
     onClose();
   };
 

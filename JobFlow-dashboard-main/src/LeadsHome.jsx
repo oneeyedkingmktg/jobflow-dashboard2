@@ -9,6 +9,7 @@ import PhoneLookupModal from "./PhoneLookupModal.jsx";
 import SettingsMenu from "./SettingsMenu.jsx";
 import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
+import { STATUS_COLORS } from "./leadModalParts/statusConfig.js";
 
 // =============================================
 // Normalize DB/TinyTable dates → YYYY-MM-DD
@@ -39,6 +40,54 @@ const normalizeDate = (d) => {
 
   // Fallback
   return datePart;
+};
+
+// Display date as MM/DD/YYYY
+const formatDisplayDate = (d) => {
+  if (!d) return "";
+  const iso = normalizeDate(d);
+  const parts = iso.split("-");
+  if (parts.length !== 3) return iso;
+  const [y, m, day] = parts;
+  return `${m}/${day}/${y}`;
+};
+
+// Display time as h:mm AM/PM from "HH:mm"
+const formatDisplayTime = (t) => {
+  if (!t) return "";
+  let [h, m] = t.split(":");
+  h = parseInt(h, 10);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${m} ${ampm}`;
+};
+
+// Get status bar text for the card header
+const getStatusBarText = (lead) => {
+  const status = lead.status || "lead";
+
+  if (status === "appointment_set") {
+    const date = lead.apptDate ? formatDisplayDate(lead.apptDate) : "";
+    const time = lead.apptTime ? formatDisplayTime(lead.apptTime) : "";
+    if (!date && !time) return "Appointment Set";
+    if (date && time) return `Appointment: ${date} ${time}`;
+    if (date) return `Appointment: ${date}`;
+    return "Appointment Set";
+  }
+
+  if (status === "sold") {
+    if (lead.installDate) {
+      const base = `Install ${formatDisplayDate(lead.installDate)}`;
+      return lead.installTentative ? `${base} (Tentative)` : base;
+    }
+    return "Sold";
+  }
+
+  if (status === "not_sold") return "Not Sold";
+  if (status === "complete") return "Completed";
+
+  // default for 'lead' and any other
+  return "Lead";
 };
 
 // Convert backend → frontend
@@ -407,30 +456,72 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredLeads.map((lead) => (
-                  <div
-                    key={lead.id}
-                    onClick={() => handleLeadClick(lead)}
-                    className="bg-white rounded-xl shadow-md hover:shadow-xl 
-                      transform hover:scale-105 transition-all duration-200 
-                      cursor-pointer p-6 border-2 border-transparent hover:border-blue-300"
-                  >
-                    <h3 className="text-lg font-bold text-gray-900">{lead.name}</h3>
-                    <p className="text-gray-600 mt-1">{lead.phone}</p>
-                    {lead.email && (
-                      <p className="text-gray-500 text-sm">{lead.email}</p>
-                    )}
+                {filteredLeads.map((lead) => {
+                  const headerColor =
+                    STATUS_COLORS[lead.status] || STATUS_COLORS.lead;
+                  const statusText = getStatusBarText(lead);
 
-                    {lead.projectType && (
-                      <span
-                        className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 
-                          rounded-full text-xs font-medium"
+                  const cityState = [
+                    lead.city || "",
+                    lead.state || "",
+                  ]
+                    .filter(Boolean)
+                    .join(", ");
+
+                  return (
+                    <div
+                      key={lead.id}
+                      onClick={() => handleLeadClick(lead)}
+                      className="bg-white rounded-xl shadow-md hover:shadow-xl 
+                        transform hover:scale-105 transition-all duration-200 
+                        cursor-pointer border-2 border-transparent hover:border-blue-300 overflow-hidden"
+                    >
+                      {/* STATUS BAR HEADER */}
+                      <div
+                        className="px-4 py-2 text-xs font-semibold text-white uppercase tracking-wide"
+                        style={{
+                          backgroundColor: headerColor,
+                        }}
                       >
-                        {lead.projectType}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                        {statusText}
+                      </div>
+
+                      {/* CARD BODY */}
+                      <div className="p-4 space-y-2">
+                        {/* NAME */}
+                        <h3 className="text-base font-bold text-gray-900 truncate">
+                          {lead.name || "Unnamed Lead"}
+                        </h3>
+
+                        {/* BUYER TYPE + PROJECT LINE */}
+                        {(lead.buyerType || lead.projectType) && (
+                          <div className="flex items-center gap-2 text-xs mt-1">
+                            {lead.buyerType && (
+                              <span className="inline-block px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">
+                                {lead.buyerType}
+                              </span>
+                            )}
+                            {lead.projectType && (
+                              <span className="text-gray-700 truncate">
+                                Project:{" "}
+                                <span className="font-semibold">
+                                  {lead.projectType}
+                                </span>
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* CITY / STATE */}
+                        {cityState && (
+                          <div className="pt-2 text-xs text-gray-500">
+                            {cityState}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </>

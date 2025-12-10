@@ -8,54 +8,73 @@ import SettingsMenu from "./SettingsMenu.jsx";
 import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
-// ============================================================
-// FIXED: Convert backend snake_case → frontend camelCase
-// ============================================================
+// =============================================
+// Normalize TinyTable or DB dates → YYYY-MM-DD
+// =============================================
+const normalizeDate = (d) => {
+  if (!d) return "";
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+
+  const parts = d.split("-");
+  if (parts.length === 3) {
+    let [a, b, c] = parts;
+
+    if (a.length === 2) {
+      return `20${a}-${b}-${c}`;
+    }
+
+    if (c.length === 4) {
+      return `${c}-${b}-${a}`;
+    }
+  }
+
+  return d;
+};
+
+// Convert backend → frontend
 const convertLeadFromBackend = (lead) => {
   if (!lead) return null;
 
   return {
     id: lead.id,
-    companyId: lead.company_id,
-    createdByUserId: lead.created_by_user_id,
+    companyId: lead.companyId,
+    createdByUserId: lead.createdByUserId,
 
-    name: lead.full_name || lead.name || "",
-    firstName: lead.first_name || "",
-    lastName: lead.last_name || "",
+    name: lead.fullName || lead.name || "",
+    firstName: lead.firstName || "",
+    lastName: lead.lastName || "",
 
     phone: lead.phone,
     email: lead.email,
-    preferredContact: lead.preferred_contact,
+    preferredContact: lead.preferredContact,
 
     address: lead.address,
     city: lead.city,
     state: lead.state,
     zip: lead.zip,
 
-    buyerType: lead.buyer_type,
-    companyName: lead.company_name,
-    projectType: lead.project_type,
+    buyerType: lead.buyerType,
+    companyName: lead.companyName,
+    projectType: lead.projectType,
 
-    leadSource: lead.lead_source,
-    referralSource: lead.referral_source,
+    leadSource: lead.leadSource,
+    referralSource: lead.referralSource,
 
     status: lead.status,
-    notSoldReason: lead.not_sold_reason,
+    notSoldReason: lead.notSoldReason,
     notes: lead.notes,
 
-    contractPrice: lead.contract_price,
+    contractPrice: lead.contractPrice,
 
-    // ============================================================
-    // FIXED DATE FIELDS — MUST map from snake_case
-    // ============================================================
-    apptDate: lead.appointment_date || "",
-    apptTime: lead.appointment_time || "",
+    apptDate: normalizeDate(lead.appointmentDate) || "",
+    apptTime: lead.appointmentTime || "",
 
-    installDate: lead.install_date || "",
-    installTentative: lead.install_tentative || false,
+    installDate: normalizeDate(lead.installDate) || "",
+    installTentative: lead.installTentative,
 
-    createdAt: lead.created_at,
-    updatedAt: lead.updated_at,
+    createdAt: lead.createdAt,
+    updatedAt: lead.updatedAt,
   };
 };
 
@@ -80,9 +99,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     indigo: "bg-gradient-to-r from-indigo-500 to-indigo-600",
   };
 
-  // ============================================================
   // FETCH LEADS
-  // ============================================================
   useEffect(() => {
     const fetchLeads = async () => {
       try {
@@ -91,7 +108,6 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         const converted = (response.leads || []).map(convertLeadFromBackend);
         setLeads(converted);
       } catch (error) {
-        console.error("Error fetching leads:", error);
         setLeads([]);
       } finally {
         setLoading(false);
@@ -144,9 +160,9 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
 
       contractPrice: "",
 
-      apptDate: null,
-      apptTime: null,
-      installDate: null,
+      apptDate: "",
+      apptTime: "",
+      installDate: "",
       installTentative: false,
     };
 
@@ -167,9 +183,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
     setIsNewLead(false);
   };
 
-  // ============================================================
   // SAVE LEAD
-  // ============================================================
   const handleSaveLead = async (lead) => {
     try {
       const backendLead = {
@@ -200,10 +214,8 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
 
         contract_price: lead.contractPrice || null,
 
-        // SAVE to snake_case
         appointment_date: lead.apptDate || null,
         appointment_time: lead.apptTime || null,
-
         install_date: lead.installDate || null,
         install_tentative: lead.installTentative || false,
       };
@@ -232,31 +244,19 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
 
       setSelectedLead(converted);
       setIsNewLead(false);
-    } catch (error) {
-      console.error("Error saving lead:", error);
-      alert("Failed to save lead: " + error.message);
-    }
+    } catch (error) {}
   };
 
-  // ============================================================
-  // DELETE
-  // ============================================================
   const handleDeleteLead = async (leadToDelete) => {
     try {
       await apiRequest(`/leads/${leadToDelete.id}`, { method: "DELETE" });
       setLeads((prev) => prev.filter((l) => l.id !== leadToDelete.id));
       handleCloseModal();
-    } catch (error) {
-      console.error("Error deleting lead:", error);
-      alert("Failed to delete lead: " + error.message);
-    }
+    } catch (error) {}
   };
 
-  // ============================================================
-  // FILTER
-  // ============================================================
-  const filteredLeads = useMemo(() =>
-    leads.filter((lead) => {
+  const filteredLeads = useMemo(() => {
+    return leads.filter((lead) => {
       const tabMatch =
         activeTab === "Leads"
           ? lead.status === "lead"
@@ -277,8 +277,8 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
         lead.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
       return tabMatch && searchMatch;
-    })
-  , [leads, activeTab, searchTerm]);
+    });
+  }, [leads, activeTab, searchTerm]);
 
   const leadCount = leads.filter((l) => l.status === "lead").length;
   const appointmentCount = leads.filter((l) => l.status === "appointment_set").length;
@@ -286,9 +286,6 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
   const notSoldCount = leads.filter((l) => l.status === "not_sold").length;
   const completeCount = leads.filter((l) => l.status === "complete").length;
 
-  // ============================================================
-  // RENDER
-  // ============================================================
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xl">
@@ -296,9 +293,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Lead Pipeline</h1>
-              <p className="text-blue-100 mt-1">
-                {currentCompany?.name || "Loading..."}
-              </p>
+              <p className="text-blue-100 mt-1">{currentCompany?.name || "Loading..."}</p>
             </div>
             <SettingsMenu />
           </div>
@@ -346,7 +341,7 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
           <CalendarView leads={leads} onLeadClick={handleLeadClick} />
         ) : (
           <>
-            {/* SEARCH + BUTTONS */}
+            {/* SEARCH BAR */}
             <div className="mb-6 flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <input
@@ -387,12 +382,8 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
               </div>
             ) : filteredLeads.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl shadow-md">
-                <h3 className="mt-4 text-xl font-semibold text-gray-700">
-                  No leads yet
-                </h3>
-                <p className="mt-2 text-gray-500">
-                  Click "Add Lead" to create your first lead
-                </p>
+                <h3 className="mt-4 text-xl font-semibold text-gray-700">No leads yet</h3>
+                <p className="mt-2 text-gray-500">Click "Add Lead" to create your first lead</p>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -404,17 +395,13 @@ export default function LeadsHome({ leads: initialLeads = [], currentUser }) {
                       transform hover:scale-105 transition-all duration-200 
                       cursor-pointer p-6 border-2 border-transparent hover:border-blue-300"
                   >
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {lead.name}
-                    </h3>
+                    <h3 className="text-lg font-bold text-gray-900">{lead.name}</h3>
                     <p className="text-gray-600 mt-1">{lead.phone}</p>
-                    {lead.email && (
-                      <p className="text-gray-500 text-sm">{lead.email}</p>
-                    )}
+                    {lead.email && <p className="text-gray-500 text-sm">{lead.email}</p>}
+
                     {lead.projectType && (
-                      <span
-                        className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 
-                          rounded-full text-xs font-medium"
+                      <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 
+                        rounded-full text-xs font-medium"
                       >
                         {lead.projectType}
                       </span>

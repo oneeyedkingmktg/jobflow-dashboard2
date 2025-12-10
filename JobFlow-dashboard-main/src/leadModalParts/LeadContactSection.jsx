@@ -1,19 +1,30 @@
 import React from "react";
 
-export default function LeadContactInfo({ form }) {
+export default function LeadContactSection({ form }) {
   return (
-    <div className="space-y-2">
-      {/* PHONE */}
-      <div className="text-gray-900 font-semibold">
-        {form.phone}
-      </div>
+    <div className="bg-white rounded-2xl border border-gray-200 px-4 py-4 shadow-sm text-sm">
+      <div className="space-y-3">
 
-      {/* LEAD SOURCE BADGE */}
-      {form.leadSource && (
-        <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-          Lead Source: {form.leadSource}
+        {/* EMAIL */}
+        <div>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Email
+          </div>
+          <div className="mt-1 font-semibold text-gray-900 break-words">
+            {form.email || "Not provided"}
+          </div>
         </div>
-      )}
+
+        {/* PREFERRED CONTACT */}
+        <div>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Preferred Contact
+          </div>
+          <div className="mt-1 font-semibold text-gray-900 break-words">
+            {form.preferredContact || "Not Set"}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

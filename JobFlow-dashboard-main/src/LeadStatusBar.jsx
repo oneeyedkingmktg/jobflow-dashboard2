@@ -1,5 +1,3 @@
-// File: src/leadModalParts/LeadStatusBar.jsx
-
 import React from "react";
 import {
   STATUS_LABELS,
@@ -14,21 +12,25 @@ export default function LeadStatusBar({ form, setForm, onOpenNotSold }) {
   const handleProgress = () => {
     if (!nextStatus) return;
 
+    // Appointment Set → Sold
     if (currentStatus === "appointment_set" && nextStatus === "sold") {
       setForm((p) => ({ ...p, status: "sold", notSoldReason: "" }));
       return;
     }
 
+    // Appointment Set → Not Sold → open modal
     if (currentStatus === "appointment_set" && nextStatus === "not_sold") {
       onOpenNotSold();
       return;
     }
 
+    // Normal progression
     setForm((p) => ({ ...p, status: nextStatus }));
   };
 
   return (
     <div className="flex items-center justify-between gap-4">
+      {/* STATUS SELECTOR */}
       <div className="relative">
         <select
           value={form.status}
@@ -49,6 +51,7 @@ export default function LeadStatusBar({ form, setForm, onOpenNotSold }) {
         </span>
       </div>
 
+      {/* PROGRESSION BUTTON */}
       {nextStatus ? (
         <button
           onClick={handleProgress}

@@ -65,3 +65,12 @@ export const getStatusBarText = (lead) => {
       return "Lead";
   }
 };
+
+// REQUIRED EXPORT — Fixes Vercel build error
+export const STATUS_COLORS = {
+  lead: "#59687d",
+  appointment_set: "#225ce5",
+  sold: "#048c63",
+  not_sold: "#c72020",
+  complete: "#ea8e09",
+};

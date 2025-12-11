@@ -47,12 +47,14 @@ export default function LeadModal({
     status: lead?.status || "lead",
   });
 
+  // UI STATE
   const [isEditing, setIsEditing] = useState(!lead?.id);
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
   const [showNotSoldModal, setShowNotSoldModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+  // Prefill phone for new leads
   useEffect(() => {
     if (!lead?.id && presetPhone) {
       setForm((prev) => ({
@@ -68,15 +70,21 @@ export default function LeadModal({
   const handlePhoneChange = (val) =>
     handleChange("phone", formatPhoneNumber(val));
 
-  const handleSave = () => {
-    onSave(form);
-    setIsEditing(false);
+  // SAVE (stay in modal)
+  const handleSave = async () => {
+    const updated = await onSave(form);
+    if (updated) {
+      setForm(updated);
+      setIsEditing(false);
+    }
   };
 
-  // FIXED SAVE & EXIT
+  // SAVE & EXIT
   const handleExit = async () => {
     const updated = await onSave(form);
-    if (updated) onClose();
+    if (updated) {
+      onClose();
+    }
   };
 
   const handleNotSoldSelect = (reason) => {
@@ -85,6 +93,7 @@ export default function LeadModal({
     onSave(updated);
   };
 
+  // OPEN MAPS
   const handleMaps = () => {
     const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
     window.open(
@@ -113,6 +122,7 @@ export default function LeadModal({
         />
 
         <div className="px-6 py-6 space-y-5">
+
           <LeadStatusBar
             form={form}
             setForm={setForm}

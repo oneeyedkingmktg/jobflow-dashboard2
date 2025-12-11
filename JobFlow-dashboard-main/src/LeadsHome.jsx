@@ -1,5 +1,6 @@
 // File: src/LeadsHome.jsx
 // Updated: Auto-switch to ALL tab when searching + ISO date fix + correct case-sensitive imports
+// Added: return updated; so LeadModal Save & Exit works
 
 import React, { useState, useMemo, useEffect } from "react";
 import { apiRequest } from "./api";
@@ -170,7 +171,9 @@ export default function LeadsHome({ currentUser }) {
     All: leads.length,
   };
 
-  // Save lead
+  // ==================================================
+  // Save lead (NOW RETURNS updated lead)
+  // ==================================================
   const handleSaveLead = async (lead) => {
     const body = {
       name: lead.name,
@@ -220,6 +223,9 @@ export default function LeadsHome({ currentUser }) {
 
     setSelectedLead(updated);
     setIsNewLead(false);
+
+    // IMPORTANT FIX — required for Save & Exit
+    return updated;
   };
 
   // ==================================================
@@ -241,7 +247,6 @@ export default function LeadsHome({ currentUser }) {
         }}
       />
 
-      {/* Search bar hidden on Calendar */}
       {activeTab !== "Calendar" && (
         <LeadSearchBar
           searchTerm={searchTerm}

@@ -13,7 +13,7 @@ import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
 // FIXED: correct filename = LeadHeader.jsx
-import LeadsHeader from "./leadComponents/LeadHeader.jsx";
+import LeadsHeader from "./leadComponents/LeadHeader.jsx"; 
 
 import LeadTabs from "./leadComponents/LeadTabs.jsx";
 import LeadSearchBar from "./leadComponents/LeadSearchBar.jsx";

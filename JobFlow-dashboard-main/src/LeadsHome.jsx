@@ -10,10 +10,11 @@ import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
 // Home layout parts
-import LeadsHeader from "./leadsHomeParts/LeadsHeader.jsx";
-import LeadsTabs from "./leadsHomeParts/LeadsTabs.jsx";
-import LeadsSearchBar from "./leadsHomeParts/LeadsSearchBar.jsx";
-import LeadsCardGrid from "./leadsHomeParts/LeadsCardGrid.jsx";
+import LeadsHeader from "./leadComponents/LeadsHeader.jsx";
+import LeadsTabs from "./leadComponents/LeadsTabs.jsx";
+import LeadsSearchBar from "./leadComponents/LeadsSearchBar.jsx";
+import LeadsCardGrid from "./leadComponents/LeadsCardGrid.jsx";
+
 
 // ===============================
 // DATE NORMALIZATION

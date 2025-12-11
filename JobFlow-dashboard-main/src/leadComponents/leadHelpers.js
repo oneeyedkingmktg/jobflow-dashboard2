@@ -1,26 +1,36 @@
 // File: src/leadComponents/leadHelpers.js
-// Created: 2025-12-10
 
-// Normalizes DB dates including strange formats
+// Normalize phone → digits only
+export const normalizePhone = (phone) => {
+  return phone ? phone.replace(/\D/g, "") : "";
+};
+
+// Normalize DB date → YYYY-MM-DD
 export const normalizeDate = (d) => {
   if (!d) return "";
   const [datePart] = String(d).split(" ");
 
+  // already correct
   if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return datePart;
 
+  // YY-MM-DD → assume 20YY-MM-DD
   if (/^\d{2}-\d{2}-\d{2}$/.test(datePart)) {
     const [yy, mm, dd] = datePart.split("-");
     return `20${yy}-${mm}-${dd}`;
   }
+
   return datePart;
 };
 
+// Convert YYYY-MM-DD → MM/DD/YYYY
 export const formatDisplayDate = (d) => {
   if (!d) return "";
-  const [y, m, day] = normalizeDate(d).split("-");
+  const iso = normalizeDate(d);
+  const [y, m, day] = iso.split("-");
   return `${m}/${day}/${y}`;
 };
 
+// Convert "HH:mm" → h:mm AM/PM
 export const formatDisplayTime = (t) => {
   if (!t) return "";
   let [h, m] = t.split(":");
@@ -28,12 +38,13 @@ export const formatDisplayTime = (t) => {
   return `${h % 12 || 12}:${m} ${h >= 12 ? "PM" : "AM"}`;
 };
 
+// Top bar text on each card
 export const getStatusBarText = (lead) => {
   switch (lead.status) {
     case "appointment_set":
       const d = formatDisplayDate(lead.apptDate);
-      const tm = formatDisplayTime(lead.apptTime);
-      return d || tm ? `Appointment: ${d} ${tm}` : "Appointment Set";
+      const t = formatDisplayTime(lead.apptTime);
+      return d || t ? `Appointment: ${d} ${t}` : "Appointment Set";
 
     case "sold":
       if (lead.installDate) {

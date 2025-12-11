@@ -1,5 +1,5 @@
 // File: src/LeadsHome.jsx
-// Updated: 2025-12-11 — ISO date fix + compatible with existing leadComponents folder
+// Updated: 2025-12-11 — ISO date fix + correct case-sensitive import for LeadHeader.jsx
 
 import React, { useState, useMemo, useEffect } from "react";
 import { apiRequest } from "./api";
@@ -12,8 +12,8 @@ import SettingsMenu from "./SettingsMenu.jsx";
 import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
-// FIXED: correct filename = LeadHeader.jsx
-import LeadsHeader from "./leadComponents/LeadHeader.jsx"; 
+// FIXED: correct import name (Vercel requires exact case)
+import LeadHeader from "./leadComponents/LeadHeader.jsx";
 
 import LeadTabs from "./leadComponents/LeadTabs.jsx";
 import LeadSearchBar from "./leadComponents/LeadSearchBar.jsx";
@@ -33,15 +33,12 @@ const normalizeDate = (d) => {
 
   let str = String(d).trim();
 
-  // Handle ISO timestamp: "2025-12-16T00:00:00.000Z"
   if (str.includes("T")) {
     str = str.split("T")[0];
   }
 
-  // YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
 
-  // YY-MM-DD → convert to 20YY-MM-DD
   if (/^\d{2}-\d{2}-\d{2}$/.test(str)) {
     const [yy, mm, dd] = str.split("-");
     return `20${yy}-${mm}-${dd}`;
@@ -84,7 +81,6 @@ const convertLeadFromBackend = (lead) => ({
 
   contractPrice: lead.contractPrice,
 
-  // Dates normalized correctly
   apptDate: normalizeDate(lead.appointmentDate),
   apptTime: lead.appointmentTime || "",
   installDate: normalizeDate(lead.installDate),
@@ -110,7 +106,6 @@ export default function LeadsHome({ currentUser }) {
   const [loading, setLoading] = useState(true);
   const [showPhoneLookup, setShowPhoneLookup] = useState(false);
 
-  // Load leads
   useEffect(() => {
     const loadLeads = async () => {
       try {
@@ -123,9 +118,6 @@ export default function LeadsHome({ currentUser }) {
     loadLeads();
   }, []);
 
-  // ==================================================
-  // Search filtering
-  // ==================================================
   const filteredLeads = useMemo(() => {
     const term = searchTerm.toLowerCase();
     const digits = normalizePhone(searchTerm);
@@ -155,7 +147,6 @@ export default function LeadsHome({ currentUser }) {
     });
   }, [leads, activeTab, searchTerm]);
 
-  // Counts for tabs
   const counts = {
     Leads: leads.filter((l) => l.status === "lead").length,
     "Booked Appt": leads.filter((l) => l.status === "appointment_set").length,
@@ -165,9 +156,6 @@ export default function LeadsHome({ currentUser }) {
     All: leads.length,
   };
 
-  // ============================================
-  // SAVE lead
-  // ============================================
   const handleSaveLead = async (lead) => {
     const body = {
       name: lead.name,
@@ -213,14 +201,11 @@ export default function LeadsHome({ currentUser }) {
     setIsNewLead(false);
   };
 
-  // ============================================
-  // UI Rendering
-  // ============================================
   return (
     <div className="min-h-screen bg-gray-100">
 
       {/* HEADER */}
-      <LeadsHeader companyName={currentCompany?.name} />
+      <LeadHeader companyName={currentCompany?.name} />
 
       {/* TABS */}
       <LeadTabs
@@ -244,9 +229,8 @@ export default function LeadsHome({ currentUser }) {
         />
       )}
 
-      {/* CONTENT AREA */}
+      {/* CONTENT */}
       <div className="max-w-7xl mx-auto px-4 pb-10">
-
         {activeTab === "Calendar" ? (
           <CalendarView leads={leads} onLeadClick={setSelectedLead} />
         ) : loading ? (

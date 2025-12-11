@@ -47,14 +47,12 @@ export default function LeadModal({
     status: lead?.status || "lead",
   });
 
-  // UI STATE
   const [isEditing, setIsEditing] = useState(!lead?.id);
   const [showDateModal, setShowDateModal] = useState(null);
   const [showApptModal, setShowApptModal] = useState(false);
   const [showNotSoldModal, setShowNotSoldModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  // Prefill phone for new leads
   useEffect(() => {
     if (!lead?.id && presetPhone) {
       setForm((prev) => ({
@@ -70,16 +68,15 @@ export default function LeadModal({
   const handlePhoneChange = (val) =>
     handleChange("phone", formatPhoneNumber(val));
 
-  // SAVE (stay in modal)
   const handleSave = () => {
     onSave(form);
     setIsEditing(false);
   };
 
-  // SAVE & EXIT
+  // FIXED SAVE & EXIT
   const handleExit = async () => {
-    await onSave(form);
-    onClose();
+    const updated = await onSave(form);
+    if (updated) onClose();
   };
 
   const handleNotSoldSelect = (reason) => {
@@ -88,7 +85,6 @@ export default function LeadModal({
     onSave(updated);
   };
 
-  // OPEN MAPS
   const handleMaps = () => {
     const query = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
     window.open(
@@ -99,9 +95,6 @@ export default function LeadModal({
     );
   };
 
-  // --------------------------
-  // RENDER
-  // --------------------------
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50 overflow-auto">
       <div className="bg-[#f5f6f7] rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
@@ -120,7 +113,6 @@ export default function LeadModal({
         />
 
         <div className="px-6 py-6 space-y-5">
-
           <LeadStatusBar
             form={form}
             setForm={setForm}
@@ -129,7 +121,6 @@ export default function LeadModal({
           />
 
           <LeadAddressBox form={form} onOpenMaps={handleMaps} />
-
           <LeadContactSection form={form} />
 
           <LeadAppointmentSection
@@ -151,7 +142,6 @@ export default function LeadModal({
             />
           )}
 
-          {/* FOOTER */}
           <LeadFooter
             isEditing={isEditing}
             onSave={handleSave}

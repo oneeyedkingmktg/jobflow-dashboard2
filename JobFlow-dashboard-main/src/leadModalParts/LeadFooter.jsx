@@ -14,10 +14,12 @@ export default function LeadFooter({
       
       {/* TOP ROW — EXIT LEFT / EDIT OR SAVE RIGHT */}
       <div className="flex items-center justify-between w-full">
-        
+
         {/* SAVE & EXIT — LEFT SIDE */}
         <button
-          onClick={onExit}
+          onClick={async () => {
+            await onExit(); // IMPORTANT FIX — ensure exit happens AFTER save
+          }}
           className="px-4 py-3 bg-gray-300 text-gray-900 rounded-xl font-semibold text-sm hover:bg-gray-400 transition"
         >
           Save & Exit

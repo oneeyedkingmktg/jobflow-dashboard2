@@ -1,73 +1,31 @@
 // File: src/LeadsHome.jsx
-// Updated: 2025-12-10 — Mobile tab grid + desktop row, unified card design, phone search normalization
+// Converted to modular components — 2025-12-10
 
 import React, { useState, useMemo, useEffect } from "react";
 import { apiRequest } from "./api";
+
 import LeadModal from "./LeadModal.jsx";
 import CalendarView from "./CalendarView.jsx";
 import PhoneLookupModal from "./PhoneLookupModal.jsx";
 import SettingsMenu from "./SettingsMenu.jsx";
+
 import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
-import { STATUS_COLORS } from "./leadModalParts/statusConfig.js";
 
-// ===============================
-// DATE NORMALIZATION
-// ===============================
-const normalizeDate = (d) => {
-  if (!d) return "";
-  const [datePart] = String(d).split(" ");
+import LeadTabs from "./leadComponents/LeadTabs.jsx";
+import LeadSearchBar from "./leadComponents/LeadSearchBar.jsx";
+import LeadCard from "./leadComponents/LeadCard.jsx";
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return datePart;
-  if (/^\d{2}-\d{2}-\d{2}$/.test(datePart)) {
-    const [yy, mm, dd] = datePart.split("-");
-    return `20${yy}-${mm}-${dd}`;
-  }
-  return datePart;
-};
+import { normalizePhone } from "./leadComponents/leadHelpers.js";
 
-const formatDisplayDate = (d) => {
-  if (!d) return "";
-  const iso = normalizeDate(d);
-  const [y, m, day] = iso.split("-");
-  return `${m}/${day}/${y}`;
-};
+// Convert backend → frontend
+import {
+  normalizeDate,
+} from "./leadComponents/leadHelpers.js";
 
-const formatDisplayTime = (t) => {
-  if (!t) return "";
-  let [h, m] = t.split(":");
-  h = parseInt(h, 10);
-  return `${h % 12 || 12}:${m} ${h >= 12 ? "PM" : "AM"}`;
-};
-
-const getStatusBarText = (lead) => {
-  switch (lead.status) {
-    case "appointment_set":
-      const d = formatDisplayDate(lead.apptDate);
-      const t = formatDisplayTime(lead.apptTime);
-      return d || t ? `Appointment: ${d} ${t}` : "Appointment Set";
-
-    case "sold":
-      if (lead.installDate) {
-        const ds = formatDisplayDate(lead.installDate);
-        return lead.installTentative ? `Install ${ds} (Tentative)` : `Install ${ds}`;
-      }
-      return "Sold";
-
-    case "not_sold":
-      return "Not Sold";
-
-    case "complete":
-      return "Completed";
-
-    default:
-      return "Lead";
-  }
-};
-
-// ===============================
-// CONVERT BACKEND → FRONTEND
-// ===============================
+// ---------------------------------------------
+// Backend → frontend mapping
+// ---------------------------------------------
 const convertLeadFromBackend = (lead) => ({
   id: lead.id,
   companyId: lead.companyId,
@@ -105,15 +63,16 @@ const convertLeadFromBackend = (lead) => ({
   installTentative: lead.installTentative,
 });
 
-// ===============================
+// ---------------------------------------------
 // MAIN COMPONENT
-// ===============================
+// ---------------------------------------------
 export default function LeadsHome({ currentUser }) {
   const { currentCompany } = useCompany();
   const { user } = useAuth();
 
   const [leads, setLeads] = useState([]);
   const [activeTab, setActiveTab] = useState("Leads");
+
   const [selectedLead, setSelectedLead] = useState(null);
   const [isNewLead, setIsNewLead] = useState(false);
 
@@ -123,9 +82,9 @@ export default function LeadsHome({ currentUser }) {
   const [loading, setLoading] = useState(true);
   const [showPhoneLookup, setShowPhoneLookup] = useState(false);
 
-  // ===============================
-  // FETCH LEADS
-  // ===============================
+  // ---------------------------------------------
+  // Fetch Leads
+  // ---------------------------------------------
   useEffect(() => {
     const fetchLeads = async () => {
       try {
@@ -138,47 +97,9 @@ export default function LeadsHome({ currentUser }) {
     fetchLeads();
   }, []);
 
-  // ===============================
-  // SEARCH NORMALIZATION
-  // - normalize phone to digits
-  // ===============================
-  const normalizePhone = (p) => p?.replace(/\D/g, "") || "";
-
-  // ===============================
-  // FILTERED LEADS
-  // ===============================
-  const filteredLeads = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    const termDigits = normalizePhone(searchTerm);
-
-    const matchesSearch = (lead) => {
-      const nameMatch = lead.name?.toLowerCase().includes(term);
-      const cityMatch = lead.city?.toLowerCase().includes(term);
-      const phoneMatch = normalizePhone(lead.phone || "").includes(termDigits);
-
-      return nameMatch || cityMatch || phoneMatch;
-    };
-
-    return leads.filter((lead) => {
-      let tabMatch = true;
-
-      switch (activeTab) {
-        case "Leads": tabMatch = lead.status === "lead"; break;
-        case "Booked Appt": tabMatch = lead.status === "appointment_set"; break;
-        case "Sold": tabMatch = lead.status === "sold"; break;
-        case "Not Sold": tabMatch = lead.status === "not_sold"; break;
-        case "Completed": tabMatch = lead.status === "complete"; break;
-        case "All": tabMatch = true; break;
-        case "Calendar": tabMatch = false; break;
-      }
-
-      return tabMatch && matchesSearch(lead);
-    });
-  }, [leads, activeTab, searchTerm]);
-
-  // ===============================
-  // TAB LIST + COUNTS
-  // ===============================
+  // ---------------------------------------------
+  // Tabs
+  // ---------------------------------------------
   const TABS = ["Leads", "Booked Appt", "Sold", "Not Sold", "Completed", "All"];
 
   const counts = {
@@ -190,9 +111,40 @@ export default function LeadsHome({ currentUser }) {
     All: leads.length,
   };
 
-  // ===============================
+  // ---------------------------------------------
+  // Search + Filtering
+  // ---------------------------------------------
+  const filteredLeads = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    const digits = normalizePhone(searchTerm);
+
+    const matchesSearch = (lead) => {
+      const nameMatch = lead.name?.toLowerCase().includes(term);
+      const cityMatch = lead.city?.toLowerCase().includes(term);
+      const phoneMatch = normalizePhone(lead.phone || "").includes(digits);
+      return nameMatch || cityMatch || phoneMatch;
+    };
+
+    return leads.filter((lead) => {
+      let match = true;
+
+      switch (activeTab) {
+        case "Leads": match = lead.status === "lead"; break;
+        case "Booked Appt": match = lead.status === "appointment_set"; break;
+        case "Sold": match = lead.status === "sold"; break;
+        case "Not Sold": match = lead.status === "not_sold"; break;
+        case "Completed": match = lead.status === "complete"; break;
+        case "All": match = true; break;
+        case "Calendar": match = false; break;
+      }
+
+      return match && matchesSearch(lead);
+    });
+  }, [leads, activeTab, searchTerm]);
+
+  // ---------------------------------------------
   // SAVE LEAD
-  // ===============================
+  // ---------------------------------------------
   const handleSaveLead = async (lead) => {
     const payload = {
       name: lead.name || "",
@@ -231,118 +183,56 @@ export default function LeadsHome({ currentUser }) {
     const updated = convertLeadFromBackend(response.lead);
 
     setLeads((prev) =>
-      isNewLead
-        ? [...prev, updated]
-        : prev.map((l) => (l.id === updated.id ? updated : l))
+      isNewLead ? [...prev, updated] : prev.map((l) => (l.id === updated.id ? updated : l))
     );
 
     setSelectedLead(updated);
     setIsNewLead(false);
   };
 
-  // ===============================
+  // ---------------------------------------------
   // UI
-  // ===============================
+  // ---------------------------------------------
   return (
     <div className="min-h-screen bg-gray-100">
 
-      {/* HEADER */}
+      {/* HEADER — CoatingPro360 */}
       <div className="bg-[#225ce5] text-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-5 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Lead Pipeline</h1>
+            <h1 className="text-2xl font-bold">CoatingPro360</h1>
             <p className="text-blue-100">{currentCompany?.name || ""}</p>
           </div>
           <SettingsMenu />
         </div>
       </div>
 
-      {/* TAB GRID (mobile) / ROW (desktop) */}
-      <div className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      {/* TABS */}
+      <LeadTabs
+        TABS={TABS}
+        activeTab={activeTab}
+        counts={counts}
+        onTabChange={(tab) => setActiveTab(tab)}
+        onAddLead={() => {
+          setSelectedLead(null);
+          setIsNewLead(false);
+          setShowPhoneLookup(true);
+        }}
+        onOpenCalendar={() => setActiveTab("Calendar")}
+      />
 
-          {/* MOBILE: grid 2-wide
-              DESKTOP: horizontal row */}
-          <div className="
-            grid grid-cols-2 gap-3
-            sm:flex sm:flex-wrap sm:gap-3
-          ">
-            {TABS.map((tab) => {
-              const active = activeTab === tab;
+      {/* SEARCH BAR */}
+      <LeadSearchBar
+        searchTerm={searchTerm}
+        setSearchTerm={(v) => {
+          setSearchTerm(v);
+          setActiveTab("All");
+        }}
+        searchArchived={searchArchived}
+        setSearchArchived={setSearchArchived}
+      />
 
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`
-                    w-full sm:w-auto
-                    px-4 py-3 rounded-xl font-semibold text-sm
-                    text-center shadow-sm transition-all
-                    ${active
-                      ? "bg-[#225ce5] text-white shadow-md"
-                      : "bg-white text-gray-800 border"
-                    }
-                  `}
-                >
-                  {tab} ({counts[tab]})
-                </button>
-              );
-            })}
-
-            {/* + NEW LEAD */}
-            <button
-              onClick={() => {
-                setSelectedLead(null);
-                setIsNewLead(false);
-                setShowPhoneLookup(true);
-              }}
-              className="
-                w-full sm:w-auto
-                px-4 py-3 rounded-xl font-semibold text-sm text-center
-                bg-green-600 text-white shadow-md hover:bg-green-700
-              "
-            >
-              + New Lead
-            </button>
-
-            {/* CALENDAR */}
-            <button
-              onClick={() => setActiveTab("Calendar")}
-              className="
-                w-full sm:w-auto
-                px-4 py-3 rounded-xl font-semibold text-sm text-center
-                bg-indigo-600 text-white shadow-md hover:bg-indigo-700
-              "
-            >
-              Calendar
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* SEARCH AREA */}
-      <div className="max-w-7xl mx-auto px-4 mt-5 mb-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <input
-            type="text"
-            placeholder="Search by name, phone or city"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-3 border rounded-lg shadow-sm"
-          />
-
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={searchArchived}
-              onChange={(e) => setSearchArchived(e.target.checked)}
-            />
-            Also search archived
-          </label>
-        </div>
-      </div>
-
-      {/* CONTENT */}
+      {/* MAIN CONTENT */}
       <div className="max-w-7xl mx-auto px-4 pb-10">
         {activeTab === "Calendar" ? (
           <CalendarView leads={leads} onLeadClick={setSelectedLead} />
@@ -352,52 +242,13 @@ export default function LeadsHome({ currentUser }) {
           <div className="py-10 text-center text-gray-500">No leads found.</div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-
-            {filteredLeads.map((lead) => {
-              const headerColor = STATUS_COLORS[lead.status] || STATUS_COLORS.lead;
-              const cityState = [lead.city, lead.state].filter(Boolean).join(", ");
-
-              return (
-                <div
-                  key={lead.id}
-                  onClick={() => setSelectedLead(lead)}
-                  className="bg-white rounded-xl shadow cursor-pointer hover:shadow-lg transition border overflow-hidden"
-                >
-                  <div
-                    className="px-4 py-2 text-xs font-semibold text-white uppercase tracking-wide"
-                    style={{ backgroundColor: headerColor }}
-                  >
-                    {getStatusBarText(lead)}
-                  </div>
-
-                  <div className="p-4 space-y-2">
-                    <h3 className="text-base font-bold text-gray-900 truncate">
-                      {lead.name || "Unnamed Lead"}
-                    </h3>
-
-                    {(lead.buyerType || lead.projectType) && (
-                      <div className="flex items-center gap-2 text-xs mt-1">
-                        {lead.buyerType && (
-                          <span className="px-2 py-1 bg-blue-100 rounded-full text-blue-700 font-semibold">
-                            {lead.buyerType}
-                          </span>
-                        )}
-                        {lead.projectType && (
-                          <span className="text-gray-700">
-                            Project: <span className="font-semibold">{lead.projectType}</span>
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {cityState && (
-                      <div className="pt-2 text-xs text-gray-500">{cityState}</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
+            {filteredLeads.map((lead) => (
+              <LeadCard
+                key={lead.id}
+                lead={lead}
+                onClick={() => setSelectedLead(lead)}
+              />
+            ))}
           </div>
         )}
       </div>

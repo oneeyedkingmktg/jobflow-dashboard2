@@ -1,4 +1,4 @@
-// LeadStatusBar.jsx (Updated 2025-12-10 3:49pm)
+// LeadStatusBar.jsx (Updated FIXED — JSX-safe text)
 import React from "react";
 import { STATUS_LABELS, STATUS_COLORS } from "./statusConfig.js";
 
@@ -14,9 +14,6 @@ export default function LeadStatusBar({
     setForm((prev) => ({ ...prev, status }));
   };
 
-  // ======================================
-  // NEXT STATUS MAP
-  // ======================================
   const NEXT_STATUS = {
     lead: "appointment_set",
     appointment_set: "sold",
@@ -31,9 +28,6 @@ export default function LeadStatusBar({
     complete: "Archive",
   };
 
-  // ======================================
-  // PROGRESSION HANDLER
-  // ======================================
   const handleProgression = () => {
     const next = NEXT_STATUS[currentStatus];
     if (!next) return;
@@ -47,9 +41,6 @@ export default function LeadStatusBar({
     setStatus(next);
   };
 
-  // ======================================
-  // RENDER NEXT BUTTON(S)
-  // ======================================
   const renderProgressButton = () => {
     if (currentStatus === "archived") return null;
 
@@ -61,7 +52,9 @@ export default function LeadStatusBar({
           style={{ backgroundColor: STATUS_COLORS["sold"] }}
         >
           <span className="text-[10px] uppercase opacity-80">move to</span>
-          <span className="text-sm font-semibold">>> Sold</span>
+          <span className="text-sm font-semibold">
+            {"»» Sold"}
+          </span>
         </button>
       );
     }
@@ -75,7 +68,9 @@ export default function LeadStatusBar({
             style={{ backgroundColor: STATUS_COLORS["sold"] }}
           >
             <span className="text-[10px] uppercase opacity-80">move to</span>
-            <span className="text-sm font-semibold">>> Sold</span>
+            <span className="text-sm font-semibold">
+              {"»» Sold"}
+            </span>
           </button>
 
           <button
@@ -84,7 +79,9 @@ export default function LeadStatusBar({
             style={{ backgroundColor: STATUS_COLORS["not_sold"] }}
           >
             <span className="text-[10px] uppercase opacity-80">move to</span>
-            <span className="text-sm font-semibold">>> Not Sold</span>
+            <span className="text-sm font-semibold">
+              {"»» Not Sold"}
+            </span>
           </button>
         </div>
       );
@@ -100,18 +97,15 @@ export default function LeadStatusBar({
         style={{ backgroundColor: STATUS_COLORS[next] }}
       >
         <span className="text-[10px] uppercase opacity-80">move to</span>
-        <span className="text-sm font-semibold">>> {label}</span>
+        <span className="text-sm font-semibold">
+          {"»» " + label}
+        </span>
       </button>
     );
   };
 
-  // ======================================
-  // RENDER
-  // ======================================
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-
-      {/* LABEL ABOVE DROPDOWN */}
       <div className="flex flex-col">
         <div
           className="text-black text-[10px] uppercase font-semibold mb-1"
@@ -120,7 +114,6 @@ export default function LeadStatusBar({
           CURRENT STATUS
         </div>
 
-        {/* STATUS DROPDOWN */}
         <div className="relative w-full sm:w-auto">
           <select
             value={form.status}
@@ -153,7 +146,6 @@ export default function LeadStatusBar({
             ))}
           </select>
 
-          {/* Chevron */}
           <div
             className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white"
             style={{ fontSize: "18px" }}
@@ -163,7 +155,6 @@ export default function LeadStatusBar({
         </div>
       </div>
 
-      {/* PROGRESSION BUTTON(S) */}
       {renderProgressButton()}
     </div>
   );

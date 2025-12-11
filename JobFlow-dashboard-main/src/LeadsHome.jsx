@@ -3,14 +3,18 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { apiRequest } from "./api";
+
 import LeadModal from "./LeadModal.jsx";
 import CalendarView from "./CalendarView.jsx";
 import PhoneLookupModal from "./PhoneLookupModal.jsx";
 import SettingsMenu from "./SettingsMenu.jsx";
+
 import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
-import LeadsHeader from "./leadComponents/LeadsHeader.jsx";
+// FIXED: correct filename = LeadHeader.jsx
+import LeadsHeader from "./leadComponents/LeadHeader.jsx";
+
 import LeadTabs from "./leadComponents/LeadTabs.jsx";
 import LeadSearchBar from "./leadComponents/LeadSearchBar.jsx";
 import LeadCard from "./leadComponents/LeadCard.jsx";

@@ -1,5 +1,5 @@
 // File: src/LeadsHome.jsx
-// Updated: 2025-12-11 — ISO date fix + correct case-sensitive import for LeadHeader.jsx
+// Updated: Auto-switch to ALL tab when searching + ISO date fix + correct case-sensitive imports
 
 import React, { useState, useMemo, useEffect } from "react";
 import { apiRequest } from "./api";
@@ -12,7 +12,7 @@ import SettingsMenu from "./SettingsMenu.jsx";
 import { useCompany } from "./CompanyContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
-// FIXED: correct import name (Vercel requires exact case)
+// Header component (correct case for Vercel)
 import LeadHeader from "./leadComponents/LeadHeader.jsx";
 
 import LeadTabs from "./leadComponents/LeadTabs.jsx";
@@ -106,6 +106,7 @@ export default function LeadsHome({ currentUser }) {
   const [loading, setLoading] = useState(true);
   const [showPhoneLookup, setShowPhoneLookup] = useState(false);
 
+  // Load leads
   useEffect(() => {
     const loadLeads = async () => {
       try {
@@ -118,6 +119,18 @@ export default function LeadsHome({ currentUser }) {
     loadLeads();
   }, []);
 
+  // ==================================================
+  // AUTO SWITCH TO "ALL" TAB WHEN SEARCHING
+  // ==================================================
+  useEffect(() => {
+    if (searchTerm && activeTab !== "All") {
+      setActiveTab("All");
+    }
+  }, [searchTerm]);
+
+  // ==================================================
+  // Filtering
+  // ==================================================
   const filteredLeads = useMemo(() => {
     const term = searchTerm.toLowerCase();
     const digits = normalizePhone(searchTerm);
@@ -147,6 +160,7 @@ export default function LeadsHome({ currentUser }) {
     });
   }, [leads, activeTab, searchTerm]);
 
+  // Tab counts
   const counts = {
     Leads: leads.filter((l) => l.status === "lead").length,
     "Booked Appt": leads.filter((l) => l.status === "appointment_set").length,
@@ -156,6 +170,7 @@ export default function LeadsHome({ currentUser }) {
     All: leads.length,
   };
 
+  // Save lead
   const handleSaveLead = async (lead) => {
     const body = {
       name: lead.name,
@@ -186,9 +201,15 @@ export default function LeadsHome({ currentUser }) {
 
     let resp;
     if (isNewLead) {
-      resp = await apiRequest("/leads", { method: "POST", body: JSON.stringify(body) });
+      resp = await apiRequest("/leads", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
     } else {
-      resp = await apiRequest(`/leads/${lead.id}`, { method: "PUT", body: JSON.stringify(body) });
+      resp = await apiRequest(`/leads/${lead.id}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
     }
 
     const updated = convertLeadFromBackend(resp.lead);
@@ -201,13 +222,14 @@ export default function LeadsHome({ currentUser }) {
     setIsNewLead(false);
   };
 
+  // ==================================================
+  // UI
+  // ==================================================
   return (
     <div className="min-h-screen bg-gray-100">
 
-      {/* HEADER */}
       <LeadHeader companyName={currentCompany?.name} />
 
-      {/* TABS */}
       <LeadTabs
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -219,7 +241,7 @@ export default function LeadsHome({ currentUser }) {
         }}
       />
 
-      {/* SEARCH BAR (hidden in Calendar) */}
+      {/* Search bar hidden on Calendar */}
       {activeTab !== "Calendar" && (
         <LeadSearchBar
           searchTerm={searchTerm}
@@ -229,7 +251,6 @@ export default function LeadsHome({ currentUser }) {
         />
       )}
 
-      {/* CONTENT */}
       <div className="max-w-7xl mx-auto px-4 pb-10">
         {activeTab === "Calendar" ? (
           <CalendarView leads={leads} onLeadClick={setSelectedLead} />
@@ -250,7 +271,6 @@ export default function LeadsHome({ currentUser }) {
         )}
       </div>
 
-      {/* MODALS */}
       {(selectedLead || isNewLead) && (
         <LeadModal
           lead={selectedLead}
@@ -280,6 +300,7 @@ export default function LeadsHome({ currentUser }) {
           }}
         />
       )}
+
     </div>
   );
 }

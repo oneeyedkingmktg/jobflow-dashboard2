@@ -20,6 +20,7 @@ export default function UsersHome({ onBack }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isCreateMode, setIsCreateMode] = useState(false);
 
+  // ONLY MASTER CAN MANAGE USERS
   const canManage =
     isAuthenticated && user?.role === "master" && !!currentCompany;
 
@@ -33,13 +34,9 @@ export default function UsersHome({ onBack }) {
   }, [canManage, currentCompany?.id]);
 
   const loadUsers = async () => {
-    if (!currentCompany) return;
-
     try {
       setLoading(true);
       setError("");
-
-      // For now we still use getAll() since your backend already scopes by company.
       const res = await UsersAPI.getAll();
       setUsers(res.users || []);
     } catch (err) {
@@ -150,7 +147,7 @@ export default function UsersHome({ onBack }) {
 
   return (
     <div className="p-6 space-y-4">
-      {/* HEADER BAR */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <div className="text-xs uppercase tracking-wide text-gray-400">
@@ -180,7 +177,7 @@ export default function UsersHome({ onBack }) {
 
       {/* BODY */}
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 text-red-700 px-4 py-3 text-sm">
+        <div className="rounded-lg bg-red-50 text-red-700 px-4 py-3 text-sm">
           {error}
         </div>
       )}
@@ -205,7 +202,6 @@ export default function UsersHome({ onBack }) {
         </div>
       )}
 
-      {/* FOOTER BACK BUTTON */}
       {onBack && (
         <div className="pt-6 border-t mt-4 flex justify-end">
           <button
@@ -217,7 +213,6 @@ export default function UsersHome({ onBack }) {
         </div>
       )}
 
-      {/* USER MODAL */}
       {showModal && (
         <UserModal
           isCreate={isCreateMode}

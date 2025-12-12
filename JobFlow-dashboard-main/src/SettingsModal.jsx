@@ -5,7 +5,7 @@ import { useCompany } from "./CompanyContext";
 
 import CompanyManagement from "./CompanyManagement";
 import CompanyDetails from "./CompanyDetails";
-import UsersHome from "./users/UsersHome";
+import UserManagement from "./UserManagement";
 import UserProfileModal from "./UserProfileModal";
 
 export default function SettingsModal({ onClose }) {
@@ -153,7 +153,7 @@ export default function SettingsModal({ onClose }) {
     case "manage_users":
       content = (
         <div className="p-0">
-          <UsersHome onBack={handleBack} />
+          <UserManagement onBack={handleBack} />
         </div>
       );
       break;

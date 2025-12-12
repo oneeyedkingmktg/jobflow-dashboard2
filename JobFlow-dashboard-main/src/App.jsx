@@ -1,35 +1,112 @@
-import React, { useEffect, useState } from 'react';
-import { AuthProvider, useAuth } from './AuthContext';
-import { CompanyProvider, useCompany } from './CompanyContext';
-import InitialSetup from './InitialSetup';
-import Login from './Login';
-import LeadsHome from './LeadsHome.jsx';
-import CompanyWizard from './CompanyWizard';
-import './index.css';
+import React, { useEffect, useState } from "react";
+import { AuthProvider, useAuth } from "./AuthContext";
+import { CompanyProvider, useCompany } from "./CompanyContext";
+import Login from "./Login";
+import LeadsHome from "./LeadsHome.jsx";
+import "./index.css";
 
+/* ===========================================================
+   Error Boundary (Prevents React from white-screening)
+   =========================================================== */
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, message: "" };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, message: error.message || "Unknown error" };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("React ErrorBoundary:", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-red-50">
+          <div className="p-8 bg-white rounded-xl shadow-xl max-w-lg">
+            <h1 className="text-2xl font-bold text-red-600 mb-2">App Error</h1>
+            <p className="text-gray-700 mb-4">{this.state.message}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold"
+            >
+              Reload App
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+/* ===========================================================
+   MAIN APP CONTENT
+   =========================================================== */
 function AppContent() {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const { companies, loading: companyLoading } = useCompany();
-  const [showCompanyWizard, setShowCompanyWizard] = useState(false);
+  const { currentCompany, companies, loading: companyLoading } = useCompany();
 
-  // Show loading spinner while checking authentication
-  if (isLoading || companyLoading) {
+  // Combined loading state
+  const fullyLoading = isLoading || companyLoading;
+
+  /* ---------------------------------------
+     1. Global loading spinner
+     --------------------------------------- */
+  if (fullyLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Loading data...</p>
         </div>
       </div>
     );
   }
 
-  // If not authenticated, show login
+  /* ---------------------------------------
+     2. Login screen
+     --------------------------------------- */
   if (!isAuthenticated || !user) {
     return <Login />;
   }
 
-  // User is authenticated - show main application
+  /* ---------------------------------------
+     3. No company yet (master creating first company)
+     --------------------------------------- */
+  if (user.role === "master" && companies.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="p-8 bg-white rounded-xl shadow-lg max-w-lg">
+          <h2 className="text-2xl font-bold mb-4">Welcome Master Admin</h2>
+          <p className="text-gray-700 mb-6">
+            You have no companies yet. Use the Settings menu to create the first one.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------------------------------------
+     4. Company still loading / unavailable
+     --------------------------------------- */
+  if (!currentCompany) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-700">Preparing your company workspace…</p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------------------------------------
+     5. Main App
+     --------------------------------------- */
   return (
     <div className="min-h-screen bg-gray-50">
       <LeadsHome currentUser={user} />
@@ -37,12 +114,17 @@ function AppContent() {
   );
 }
 
+/* ===========================================================
+   APP PROVIDERS + ERROR BOUNDARY
+   =========================================================== */
 export default function App() {
   return (
-    <AuthProvider>
-      <CompanyProvider>
-        <AppContent />
-      </CompanyProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <CompanyProvider>
+          <AppContent />
+        </CompanyProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

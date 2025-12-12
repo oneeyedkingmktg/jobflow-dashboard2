@@ -21,7 +21,7 @@ export default function UserModal({
 
   const [error, setError] = useState("");
 
-  const isEditing = !isCreate && user;
+  const isEditing = !isCreate && !!user;
 
   useEffect(() => {
     if (user) {
@@ -56,10 +56,11 @@ export default function UserModal({
   };
 
   const canEditRole =
-    currentUser?.role === "master" && (!isEditing || user.role !== "master");
+    currentUser?.role === "master" &&
+    (!isEditing || user?.role !== "master");
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-auto">
+    <div className="w-full flex justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
 
         {/* HEADER */}
@@ -93,7 +94,7 @@ export default function UserModal({
 
           {/* NAME */}
           <div>
-            <label className="font-semibold text-gray-700 mb-1 block">
+            <label className="block font-semibold text-gray-700 mb-1">
               Name
             </label>
             <input
@@ -105,7 +106,7 @@ export default function UserModal({
 
           {/* EMAIL */}
           <div>
-            <label className="font-semibold text-gray-700 mb-1 block">
+            <label className="block font-semibold text-gray-700 mb-1">
               Email
             </label>
             <input
@@ -118,7 +119,7 @@ export default function UserModal({
 
           {/* PHONE */}
           <div>
-            <label className="font-semibold text-gray-700 mb-1 block">
+            <label className="block font-semibold text-gray-700 mb-1">
               Phone
             </label>
             <input
@@ -131,7 +132,7 @@ export default function UserModal({
           {/* ROLE */}
           {canEditRole && (
             <div>
-              <label className="font-semibold text-gray-700 mb-1 block">
+              <label className="block font-semibold text-gray-700 mb-1">
                 Role
               </label>
               <select
@@ -148,7 +149,7 @@ export default function UserModal({
 
           {/* PASSWORD */}
           <div>
-            <label className="font-semibold text-gray-700 mb-1 block">
+            <label className="block font-semibold text-gray-700 mb-1">
               {isCreate ? "Password" : "New Password (optional)"}
             </label>
             <input

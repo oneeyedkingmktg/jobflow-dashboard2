@@ -9,6 +9,12 @@ import UserProfileModal from './UserProfileModal';
 // NEW IMPORT
 import UsersHome from './users/UsersHome';
 
+console.log("SettingsModal:", SettingsModal);
+console.log("CompanyManagement:", CompanyManagement);
+console.log("CompanyWizard:", CompanyWizard);
+console.log("UserProfileModal:", UserProfileModal);
+
+
 export default function SettingsMenu() {
   const { companies, switchCompany, currentCompany } = useCompany();
   const { isMaster, logout } = useAuth();

@@ -1,11 +1,33 @@
 /* ============================================================================
    API Configuration
    ============================================================================
-   FORCE REBUILD - Cache bust v4.0
+   FORCE REBUILD - Cache bust v5.0
 ============================================================================ */
 
 const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com';
- 
+
+/* Utility to convert camelCase → snake_case for payloads */
+const toSnake = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  const out = {};
+  for (const key in obj) {
+    const snake = key.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`);
+    out[snake] = obj[key] === '' ? null : obj[key];
+  }
+  return out;
+};
+
+/* Utility to convert snake_case → camelCase */
+const toCamel = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  const out = {};
+  for (const key in obj) {
+    const camel = key.replace(/_([a-z])/g, (_, m) => m.toUpperCase());
+    out[camel] = obj[key];
+  }
+  return out;
+};
+
 /* Generic API request handler */
 export const apiRequest = async (endpoint, options = {}) => {
   const token = localStorage.getItem('authToken');
@@ -19,7 +41,6 @@ export const apiRequest = async (endpoint, options = {}) => {
     ...options,
   });
 
-  // Error handling (safe)
   if (!response.ok) {
     let message = 'API request failed';
     try {
@@ -31,9 +52,15 @@ export const apiRequest = async (endpoint, options = {}) => {
     throw new Error(message);
   }
 
-  // Success (safe JSON)
   try {
-    return await response.json();
+    const json = await response.json();
+    if (json.company) return { company: toCamel(json.company) };
+    if (json.companies) return { companies: json.companies.map(toCamel) };
+    if (json.user) return { user: toCamel(json.user) };
+    if (json.users) return { users: json.users.map(toCamel) };
+    if (json.lead) return { lead: toCamel(json.lead) };
+    if (json.leads) return { leads: json.leads.map(toCamel) };
+    return json;
   } catch {
     return {};
   }
@@ -64,13 +91,13 @@ export const UsersAPI = {
   create: (data) =>
     apiRequest('/users', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(toSnake(data)),
     }),
 
   update: (id, data) =>
     apiRequest(`/users/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify(toSnake(data)),
     }),
 
   delete: (id) =>
@@ -93,7 +120,7 @@ export const CompaniesAPI = {
   create: (data) =>
     apiRequest('/companies', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(toSnake(data)),
     }),
 
   get: (id) => apiRequest(`/companies/${id}`),
@@ -101,7 +128,7 @@ export const CompaniesAPI = {
   update: (id, data) =>
     apiRequest(`/companies/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify(toSnake(data)),
     }),
 
   getAll: () => apiRequest('/companies'),
@@ -118,13 +145,13 @@ export const LeadsAPI = {
   create: (leadData) =>
     apiRequest('/leads', {
       method: 'POST',
-      body: JSON.stringify(leadData),
+      body: JSON.stringify(toSnake(leadData)),
     }),
 
   update: (id, leadData) =>
     apiRequest(`/leads/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(leadData),
+      body: JSON.stringify(toSnake(leadData)),
     }),
 
   delete: (id) =>
@@ -148,7 +175,7 @@ export const GHLAPI = {
     apiRequest('/ghl/sync-lead', {
       method: 'POST',
       headers: { 'x-company-id': companyId },
-      body: JSON.stringify(leadData),
+      body: JSON.stringify(toSnake(leadData)),
     }),
 
   getContact: (contactId, companyId) =>

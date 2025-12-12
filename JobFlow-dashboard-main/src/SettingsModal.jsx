@@ -4,61 +4,63 @@ import { useCompany } from "./CompanyContext";
 import UserManagement from "./UserManagement";
 
 export default function SettingsModal({ onClose }) {
-  const { isMaster, logout } = useAuth();
+  const { user, isMaster, logout } = useAuth();
   const { currentCompany, updateCompany } = useCompany();
 
-  const [apiKey, setApiKey] = useState("");
-  const [groups, setGroups] = useState({
-    lead: "",
-    appointment_set: "",
-    sold: "",
-    not_sold: "",
-    complete: "",
-  });
-
+  const [ghlApiKey, setGhlApiKey] = useState("");
   const [showSaved, setShowSaved] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testSuccess, setTestSuccess] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
-
-  // Load existing company settings
-  useEffect(() => {
-    if (!currentCompany) return;
-
-    setApiKey(currentCompany.ml_apiKey || "");
-    setGroups(
-      currentCompany.ml_groups || {
-        lead: "",
-        appointment_set: "",
-        sold: "",
-        not_sold: "",
-        complete: "",
-      }
-    );
-  }, [currentCompany]);
 
   // ================================
   // ACCESS GUARD
   // ================================
-  if (!isMaster()) {
+  // 1) Master (superadmin) should NOT use this modal for company config
+  if (isMaster()) {
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Company Settings Restricted
+          </h2>
           <p className="text-gray-600 mb-6">
-            Only the master account can access company settings.
+            The master account manages companies from the{" "}
+            <strong>Manage Companies</strong> screen instead of this Company
+            Settings panel.
           </p>
           <button
             onClick={onClose}
             className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-bold"
           >
-            Close
+            Back
           </button>
         </div>
       </div>
     );
   }
 
+  // 2) Only company admins may access this screen
+  if (!user || user.role !== "admin") {
+    return (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Access Denied
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Only company admins can access Company Settings.
+          </p>
+          <button
+            onClick={onClose}
+            className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-bold"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 3) No company selected
   if (!currentCompany) {
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -66,12 +68,14 @@ export default function SettingsModal({ onClose }) {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             No Company Selected
           </h2>
-          <p className="text-gray-600 mb-6">Please select a company first.</p>
+          <p className="text-gray-600 mb-6">
+            Please select a company first.
+          </p>
           <button
             onClick={onClose}
             className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-bold"
           >
-            Close
+            Back
           </button>
         </div>
       </div>
@@ -79,12 +83,19 @@ export default function SettingsModal({ onClose }) {
   }
 
   // ================================
+  // LOAD EXISTING COMPANY SETTINGS
+  // ================================
+  useEffect(() => {
+    if (!currentCompany) return;
+    setGhlApiKey(currentCompany.ghl_api_key || "");
+  }, [currentCompany]);
+
+  // ================================
   // SAVE COMPANY SETTINGS
   // ================================
   const handleSave = async () => {
     await updateCompany(currentCompany.id, {
-      ml_apiKey: apiKey.trim(),
-      ml_groups: groups,
+      ghl_api_key: ghlApiKey.trim(),
     });
 
     setShowSaved(true);
@@ -92,45 +103,20 @@ export default function SettingsModal({ onClose }) {
   };
 
   // ================================
-  // TEST MAILERLITE v3 API KEY
+  // TEST CONNECTION (GHL PLACEHOLDER)
   // ================================
   const handleTestConnection = async () => {
-    if (!apiKey.trim()) {
-      alert("Enter your MailerLite API key first.");
+    if (!ghlApiKey.trim()) {
+      alert("Enter your Company GHL Location Code first.");
       return;
     }
 
-    setTesting(true);
-    setTestSuccess(false);
-
-    try {
-      const response = await fetch(
-        "https://connect.mailerlite.com/api/subscribers",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey.trim()}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        setTestSuccess(true);
-        setTimeout(() => setTestSuccess(false), 3000);
-      } else {
-        const errJson = await response.json();
-        alert("Connection failed: " + (errJson.message || "Invalid API key"));
-      }
-    } catch (err) {
-      alert("Connection error: " + err.message);
-    }
-
-    setTesting(false);
+    // Placeholder – real GHL test wiring can be added later
+    alert("Test Connection is not wired up yet for GHL. This is a placeholder.");
   };
 
   // ================================
-  // USER MANAGEMENT SUB-MODAL
+  // USER MANAGEMENT SUB-SCREEN
   // ================================
   if (showUserManagement) {
     return (
@@ -139,18 +125,28 @@ export default function SettingsModal({ onClose }) {
   }
 
   // ================================
-  // MAIN SETTINGS MODAL
+  // MAIN COMPANY SETTINGS MODAL
   // ================================
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-auto max-h-[90vh] overflow-y-auto">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-6">
-          <h2 className="text-2xl font-bold text-white">Settings</h2>
-          <p className="text-blue-100 text-sm mt-1">
-            Manage settings for <strong>{currentCompany.name}</strong>
-          </p>
+        {/* HEADER */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Company Settings</h2>
+            <p className="text-blue-100 text-sm mt-1">
+              Manage settings for <strong>{currentCompany.name}</strong>
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white/80 hover:text-white text-sm font-semibold underline"
+          >
+            Back
+          </button>
         </div>
 
+        {/* BODY */}
         <div className="p-6 space-y-6">
           {/* SAVE SUCCESS */}
           {showSaved && (
@@ -161,74 +157,35 @@ export default function SettingsModal({ onClose }) {
             </div>
           )}
 
-          {/* MAILERLITE API KEY */}
+          {/* GHL API KEY - COMPANY GHL LOCATION CODE */}
           <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900">
-                MailerLite API Key
-              </h3>
+            <div className="flex justify-between items-center gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">
+                  Company GHL Location Code
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  This field is stored as <code>ghl_api_key</code> for this company.
+                </p>
+              </div>
               <button
                 onClick={handleTestConnection}
-                disabled={testing || !apiKey.trim()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-bold rounded-lg shadow-md"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-md"
               >
-                {testing ? "Testing..." : "Test Connection"}
+                Test Connection
               </button>
             </div>
 
-            {testSuccess && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <p className="text-green-800 text-sm font-semibold">
-                  ✓ Connection successful!
-                </p>
-              </div>
-            )}
-
             <input
               type="text"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="mlpat_xxxxxxxxxxxxx"
+              value={ghlApiKey}
+              onChange={(e) => setGhlApiKey(e.target.value)}
+              placeholder="Enter Company GHL Location Code"
               className="w-full px-4 py-3 font-mono text-sm rounded-lg border-2 border-gray-300 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:bg-white"
             />
           </div>
 
-          {/* MAILERLITE GROUPS */}
-          <div className="space-y-3 border-t pt-6">
-            <h3 className="text-lg font-bold text-gray-900">
-              MailerLite Group IDs
-            </h3>
-            <p className="text-sm text-gray-600">
-              Enter the MailerLite Group ID for each status.
-            </p>
-
-            <div className="grid gap-4">
-              {[
-                { key: "lead", label: "Lead" },
-                { key: "appointment_set", label: "Appointment Set" },
-                { key: "sold", label: "Sold" },
-                { key: "not_sold", label: "Not Sold" },
-                { key: "complete", label: "Complete" },
-              ].map(({ key, label }) => (
-                <div key={key}>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {label} Group ID
-                  </label>
-                  <input
-                    type="text"
-                    value={groups[key]}
-                    onChange={(e) =>
-                      setGroups({ ...groups, [key]: e.target.value })
-                    }
-                    placeholder="123456789"
-                    className="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* USER MANAGEMENT */}
+          {/* USER MANAGEMENT LINK (OPTIONAL) */}
           <div className="border-t pt-6">
             <button
               onClick={() => setShowUserManagement(true)}
@@ -244,7 +201,7 @@ export default function SettingsModal({ onClose }) {
               onClick={onClose}
               className="px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl shadow-lg"
             >
-              Close
+              Back
             </button>
 
             <button
@@ -255,7 +212,7 @@ export default function SettingsModal({ onClose }) {
             </button>
           </div>
 
-          {/* LOGOUT */}
+          {/* LOGOUT (optional quick exit) */}
           <div className="border-t pt-6 pb-2">
             <button
               onClick={logout}

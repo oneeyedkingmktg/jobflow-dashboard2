@@ -1,227 +1,237 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "./AuthContext";
 import { useCompany } from "./CompanyContext";
+
+// Screens
+import CompanyManagement from "./CompanyManagement";
+import CompanyDetails from "./CompanyDetails";
 import UserManagement from "./UserManagement";
+import UsersHome from "./users/UsersHome";
+import UserProfileModal from "./UserProfileModal";
+
+// TODO: add when ready
+// import SuperAdminDetails from "./SuperAdminDetails";
+// import CompanySettings from "./CompanySettings";
 
 export default function SettingsModal({ onClose }) {
-  const { user, isMaster, logout } = useAuth();
-  const { currentCompany, updateCompany } = useCompany();
+  const { user, logout, isMaster } = useAuth();
+  const { currentCompany } = useCompany();
 
-  const [ghlApiKey, setGhlApiKey] = useState("");
-  const [showSaved, setShowSaved] = useState(false);
-  const [showUserManagement, setShowUserManagement] = useState(false);
+  // Navigation state
+  const [screen, setScreen] = useState("home");
+  const [selectedCompany, setSelectedCompany] = useState(null);
 
-  // ================================
-  // ACCESS GUARD
-  // ================================
-  // 1) Master (superadmin) should NOT use this modal for company config
-  if (isMaster()) {
-    return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Company Settings Restricted
-          </h2>
-          <p className="text-gray-600 mb-6">
-            The master account manages companies from the{" "}
-            <strong>Manage Companies</strong> screen instead of this Company
-            Settings panel.
-          </p>
-          <button
-            onClick={onClose}
-            className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-bold"
-          >
-            Back
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // ===============================
+  // NAVIGATION HANDLERS (STACK-LIKE)
+  // ===============================
 
-  // 2) Only company admins may access this screen
-  if (!user || user.role !== "admin") {
-    return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Access Denied
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Only company admins can access Company Settings.
-          </p>
-          <button
-            onClick={onClose}
-            className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-bold"
-          >
-            Back
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 3) No company selected
-  if (!currentCompany) {
-    return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            No Company Selected
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Please select a company first.
-          </p>
-          <button
-            onClick={onClose}
-            className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-bold"
-          >
-            Back
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ================================
-  // LOAD EXISTING COMPANY SETTINGS
-  // ================================
-  useEffect(() => {
-    if (!currentCompany) return;
-    setGhlApiKey(currentCompany.ghl_api_key || "");
-  }, [currentCompany]);
-
-  // ================================
-  // SAVE COMPANY SETTINGS
-  // ================================
-  const handleSave = async () => {
-    await updateCompany(currentCompany.id, {
-      ghl_api_key: ghlApiKey.trim(),
-    });
-
-    setShowSaved(true);
-    setTimeout(() => setShowSaved(false), 2000);
+  const goHome = () => {
+    setSelectedCompany(null);
+    setScreen("home");
   };
 
-  // ================================
-  // TEST CONNECTION (GHL PLACEHOLDER)
-  // ================================
-  const handleTestConnection = async () => {
-    if (!ghlApiKey.trim()) {
-      alert("Enter your Company GHL Location Code first.");
-      return;
-    }
-
-    // Placeholder – real GHL test wiring can be added later
-    alert("Test Connection is not wired up yet for GHL. This is a placeholder.");
+  const openManageCompanies = () => {
+    setScreen("manage_companies");
   };
 
-  // ================================
-  // USER MANAGEMENT SUB-SCREEN
-  // ================================
-  if (showUserManagement) {
-    return (
-      <UserManagement onClose={() => setShowUserManagement(false)} />
-    );
+  const openCompanyDetails = (company) => {
+    setSelectedCompany(company);
+    setScreen("company_details");
+  };
+
+  const openManageUsers = () => {
+    setScreen("manage_users");
+  };
+
+  const openMyProfile = () => {
+    setScreen("my_profile");
+  };
+
+  const openCompanySettings = () => {
+    setScreen("company_settings");
+  };
+
+  const openSuperAdminDetails = () => {
+    setScreen("superadmin");
+  };
+
+  const handleBack = () => {
+    // strict single-level back rules
+    if (screen === "company_details") return setScreen("manage_companies");
+    if (screen === "manage_companies") return setScreen("home");
+    if (screen === "manage_users") return setScreen("home");
+    if (screen === "my_profile") return setScreen("home");
+    if (screen === "company_settings") return setScreen("home");
+    if (screen === "superadmin") return setScreen("home");
+
+    // fallback to close modal
+    onClose();
+  };
+
+  // ===============================
+  // SETTINGS HOME SCREEN
+  // ===============================
+
+  const renderHome = () => (
+    <div className="p-6 space-y-4">
+      <h2 className="text-2xl font-bold text-gray-900 mb-3">
+        Settings & Administration
+      </h2>
+
+      <div className="space-y-3">
+
+        {/* Manage Companies (Superadmin Only) */}
+        {isMaster() && (
+          <button
+            onClick={openManageCompanies}
+            className="w-full px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl"
+          >
+            Manage Companies
+          </button>
+        )}
+
+        {/* Manage Users (Superadmin only) */}
+        {isMaster() && (
+          <button
+            onClick={openManageUsers}
+            className="w-full px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl"
+          >
+            Manage Users
+          </button>
+        )}
+
+        {/* Super Admin Details */}
+        {isMaster() && (
+          <button
+            onClick={openSuperAdminDetails}
+            className="w-full px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl"
+          >
+            Super Admin Details
+          </button>
+        )}
+
+        {/* Company Settings (Admin Only) */}
+        {!isMaster() && (
+          <button
+            onClick={openCompanySettings}
+            className="w-full px-6 py-4 bg-gray-700 hover:bg-gray-800 text-white font-bold rounded-xl"
+          >
+            Company Settings
+          </button>
+        )}
+
+        {/* My Profile (Always) */}
+        <button
+          onClick={openMyProfile}
+          className="w-full px-6 py-4 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl"
+        >
+          My Profile
+        </button>
+
+        {/* Logout */}
+        <button
+          onClick={logout}
+          className="w-full px-6 py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl"
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+  );
+
+  // ===============================
+  // MAIN RENDER LOGIC
+  // ===============================
+
+  let content = null;
+
+  switch (screen) {
+    case "home":
+      content = renderHome();
+      break;
+
+    case "manage_companies":
+      content = (
+        <CompanyManagement
+          onClose={handleBack}
+          onSelectCompany={openCompanyDetails}
+        />
+      );
+      break;
+
+    case "company_details":
+      content = (
+        <CompanyDetails
+          company={selectedCompany}
+          onBack={handleBack}
+          onSave={() => {}}
+        />
+      );
+      break;
+
+    case "manage_users":
+      content = (
+        <div className="p-4">
+          <UsersHome />
+          <button
+            onClick={handleBack}
+            className="mt-4 px-4 py-2 bg-gray-700 text-white rounded-lg"
+          >
+            Back
+          </button>
+        </div>
+      );
+      break;
+
+    case "my_profile":
+      content = (
+        <UserProfileModal
+          onClose={handleBack}
+        />
+      );
+      break;
+
+    // Placeholder for future screens
+    case "company_settings":
+      content = (
+        <div className="p-6">
+          <p className="text-lg text-gray-700">Company Settings Coming Soon…</p>
+          <button
+            onClick={handleBack}
+            className="mt-4 px-4 py-2 bg-gray-700 text-white rounded-lg"
+          >
+            Back
+          </button>
+        </div>
+      );
+      break;
+
+    case "superadmin":
+      content = (
+        <div className="p-6">
+          <p className="text-lg text-gray-700">Super Admin Details Coming Soon…</p>
+          <button
+            onClick={handleBack}
+            className="mt-4 px-4 py-2 bg-gray-700 text-white rounded-lg"
+          >
+            Back
+          </button>
+        </div>
+      );
+      break;
+
+    default:
+      content = renderHome();
   }
 
-  // ================================
-  // MAIN COMPANY SETTINGS MODAL
-  // ================================
+  // ===============================
+  // MODAL WRAPPER
+  // ===============================
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-auto max-h-[90vh] overflow-y-auto">
-        {/* HEADER */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-white">Company Settings</h2>
-            <p className="text-blue-100 text-sm mt-1">
-              Manage settings for <strong>{currentCompany.name}</strong>
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white/80 hover:text-white text-sm font-semibold underline"
-          >
-            Back
-          </button>
-        </div>
-
-        {/* BODY */}
-        <div className="p-6 space-y-6">
-          {/* SAVE SUCCESS */}
-          {showSaved && (
-            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
-              <p className="text-green-800 font-semibold">
-                ✓ Settings saved successfully!
-              </p>
-            </div>
-          )}
-
-          {/* GHL API KEY - COMPANY GHL LOCATION CODE */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center gap-4">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">
-                  Company GHL Location Code
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  This field is stored as <code>ghl_api_key</code> for this company.
-                </p>
-              </div>
-              <button
-                onClick={handleTestConnection}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-md"
-              >
-                Test Connection
-              </button>
-            </div>
-
-            <input
-              type="text"
-              value={ghlApiKey}
-              onChange={(e) => setGhlApiKey(e.target.value)}
-              placeholder="Enter Company GHL Location Code"
-              className="w-full px-4 py-3 font-mono text-sm rounded-lg border-2 border-gray-300 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:bg-white"
-            />
-          </div>
-
-          {/* USER MANAGEMENT LINK (OPTIONAL) */}
-          <div className="border-t pt-6">
-            <button
-              onClick={() => setShowUserManagement(true)}
-              className="w-full px-6 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl"
-            >
-              Manage Users for {currentCompany.name}
-            </button>
-          </div>
-
-          {/* ACTION BUTTONS */}
-          <div className="flex justify-between items-center pt-6 border-t gap-3">
-            <button
-              onClick={onClose}
-              className="px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl shadow-lg"
-            >
-              Back
-            </button>
-
-            <button
-              onClick={handleSave}
-              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg"
-            >
-              Save Settings
-            </button>
-          </div>
-
-          {/* LOGOUT (optional quick exit) */}
-          <div className="border-t pt-6 pb-2">
-            <button
-              onClick={logout}
-              className="w-full px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[999] p-4 overflow-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl">
+        {content}
       </div>
     </div>
   );

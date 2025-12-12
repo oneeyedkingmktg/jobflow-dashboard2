@@ -1,9 +1,12 @@
+// File: src/CompanyManagement.jsx
 import React, { useState, useEffect } from "react";
 import { CompaniesAPI } from "./api";
 import { useAuth } from "./AuthContext";
+import { useCompany } from "./CompanyContext";
 
 export default function CompanyManagement({ onClose, onSelectCompany }) {
   const { user } = useAuth();
+  const { switchCompany } = useCompany();
 
   const [companies, setCompanies] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -11,9 +14,6 @@ export default function CompanyManagement({ onClose, onSelectCompany }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // =========================
-  // ACCESS GUARD – MASTER ONLY
-  // =========================
   if (!user || user.role !== "master") {
     return (
       <div className="p-6">
@@ -31,9 +31,6 @@ export default function CompanyManagement({ onClose, onSelectCompany }) {
     );
   }
 
-  // =========================
-  // LOAD COMPANIES FROM BACKEND
-  // =========================
   useEffect(() => {
     const fetchCompanies = async () => {
       setLoading(true);
@@ -61,9 +58,6 @@ export default function CompanyManagement({ onClose, onSelectCompany }) {
     fetchCompanies();
   }, []);
 
-  // =========================
-  // SEARCH
-  // =========================
   useEffect(() => {
     if (!search.trim()) {
       setFiltered(companies);
@@ -89,19 +83,22 @@ export default function CompanyManagement({ onClose, onSelectCompany }) {
     );
   }, [search, companies]);
 
-  // =========================
-  // ADD COMPANY (FUTURE)
-  // =========================
   const handleAddCompany = () => {
     alert("New Company creation will be added later.");
   };
 
-  // =========================
-  // MAIN RENDER
-  // =========================
+  const handleSelect = (company) => {
+    // keep global context in sync so Manage Users can rely on currentCompany
+    if (company?.id) {
+      switchCompany(company.id);
+    }
+    if (onSelectCompany) {
+      onSelectCompany(company);
+    }
+  };
+
   return (
     <div className="p-0">
-
       {/* HEADER */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-6 flex justify-between items-center">
         <div>
@@ -127,7 +124,7 @@ export default function CompanyManagement({ onClose, onSelectCompany }) {
           </div>
         )}
 
-        {/* Search Bar + Add Company */}
+        {/* Search + Add */}
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           <input
             type="text"
@@ -145,7 +142,7 @@ export default function CompanyManagement({ onClose, onSelectCompany }) {
           </button>
         </div>
 
-        {/* Company List */}
+        {/* List */}
         {loading ? (
           <p className="text-center py-8 text-gray-600">Loading companies...</p>
         ) : filtered.length === 0 ? (
@@ -159,16 +156,14 @@ export default function CompanyManagement({ onClose, onSelectCompany }) {
               return (
                 <button
                   key={company.id}
-                  onClick={() => onSelectCompany(company)}
+                  onClick={() => handleSelect(company)}
                   className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition text-left overflow-hidden"
                 >
-                  {/* Status Color Strip */}
                   <div
                     className={`h-2 ${
                       isSuspended ? "bg-red-500" : "bg-emerald-500"
                     }`}
                   />
-
                   <div className="p-4 space-y-1">
                     <h3 className="text-lg font-bold text-gray-900">{name}</h3>
 

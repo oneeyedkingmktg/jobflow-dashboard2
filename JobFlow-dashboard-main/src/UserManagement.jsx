@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { UsersAPI } from './api';
-import { useCompany } from './CompanyContext';
-import { useAuth } from './AuthContext';
+import React, { useState, useEffect } from "react";
+import { UsersAPI } from "./api";
+import { useCompany } from "./CompanyContext";
+import { useAuth } from "./AuthContext";
 
 export default function UserManagement({ onBack }) {
   const { currentCompany } = useCompany();
@@ -10,20 +10,22 @@ export default function UserManagement({ onBack }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const [showAddUser, setShowAddUser] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const [newUser, setNewUser] = useState({
-    name: '',
-    email: '',
-    password: '',
-    phone: '',
-    role: 'user'
+    name: "",
+    email: "",
+    password: "",
+    phone: "",
+    role: "user",
   });
+
+  const [editForm, setEditForm] = useState(null);
 
   const loadUsers = async () => {
     if (!currentCompany) return;
@@ -33,7 +35,7 @@ export default function UserManagement({ onBack }) {
       const response = await UsersAPI.getAll();
       setUsers(response.users || []);
     } catch (err) {
-      setError(err.message || 'Failed to load users');
+      setError(err.message || "Failed to load users");
     } finally {
       setLoading(false);
     }
@@ -44,11 +46,11 @@ export default function UserManagement({ onBack }) {
   }, [currentCompany]);
 
   const handleAddUser = async () => {
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     if (!newUser.name || !newUser.email || !newUser.password) {
-      setError('Name, email, and password are required');
+      setError("Name, email, and password are required");
       return;
     }
 
@@ -58,147 +60,178 @@ export default function UserManagement({ onBack }) {
         email: newUser.email.toLowerCase(),
         password: newUser.password,
         phone: newUser.phone,
-        role: newUser.role
+        role: newUser.role,
       });
 
-      setSuccess('User created successfully!');
-      setNewUser({ name: '', email: '', password: '', phone: '', role: 'user' });
+      setSuccess("User created successfully");
       setShowAddUser(false);
+      setNewUser({ name: "", email: "", password: "", phone: "", role: "user" });
       loadUsers();
-
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.message || 'Failed to create user');
+      setError(err.message || "Failed to create user");
     }
   };
 
   const handleUpdateUser = async () => {
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
-    if (!editingUser.name || !editingUser.email) {
-      setError('Name and email are required');
+    if (!editForm.name || !editForm.email) {
+      setError("Name and email are required");
       return;
     }
 
     try {
       await UsersAPI.update(editingUser.id, {
-        name: editingUser.name,
-        email: editingUser.email.toLowerCase(),
-        phone: editingUser.phone,
-        role: editingUser.role,
-        ...(editingUser.newPassword ? { password: editingUser.newPassword } : {})
+        name: editForm.name,
+        email: editForm.email.toLowerCase(),
+        phone: editForm.phone,
+        role: editForm.role,
+        ...(editForm.newPassword ? { password: editForm.newPassword } : {}),
       });
 
-      setSuccess('User updated successfully!');
+      setSuccess("User updated successfully");
       setEditingUser(null);
+      setEditForm(null);
       loadUsers();
-
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.message || 'Failed to update user');
+      setError(err.message || "Failed to update user");
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    setError('');
-    setSuccess('');
-
-    if (userId === currentUser.id) {
-      setError('You cannot delete your own account');
+  const handleDeleteUser = async (id) => {
+    if (id === currentUser.id) {
+      setError("You cannot delete your own account");
       return;
     }
 
     try {
-      await UsersAPI.delete(userId);
+      await UsersAPI.delete(id);
       setDeleteConfirm(null);
       loadUsers();
-      setSuccess('User deleted successfully!');
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.message || 'Failed to delete user');
+      setError(err.message || "Failed to delete user");
     }
   };
 
   return (
     <div className="p-6">
-      {/* HEADER */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-        <p className="text-sm text-gray-600">
-          Managing users for: <strong>{currentCompany?.name}</strong>
-        </p>
-      </div>
+      <h2 className="text-2xl font-bold mb-4">User Management</h2>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-4 p-3 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
-          {success}
-        </div>
-      )}
+      {error && <div className="mb-4 text-red-600">{error}</div>}
+      {success && <div className="mb-4 text-green-600">{success}</div>}
 
       {!showAddUser && !editingUser && (
         <button
           onClick={() => setShowAddUser(true)}
-          className="mb-6 w-full px-6 py-4 bg-emerald-600 text-white font-bold rounded-xl"
+          className="mb-6 px-6 py-3 bg-emerald-600 text-white rounded"
         >
-          + Add New User
+          + Add User
         </button>
       )}
 
-      {/* ADD / EDIT FORMS — unchanged logic, now editable */}
+      {editingUser && editForm && (
+        <div className="mb-6 space-y-3">
+          <h3 className="font-bold">Edit User</h3>
 
-      {/* USERS LIST */}
-      <div className="space-y-3">
-        <h3 className="text-lg font-bold text-gray-900">
-          Users ({users.length})
-        </h3>
+          <input
+            value={editForm.name}
+            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            placeholder="Name"
+            className="w-full border p-2"
+          />
 
-        {loading ? (
-          <div className="text-center py-8 text-gray-500">Loading...</div>
-        ) : (
-          users.map((user) => (
-            <div
-              key={user.id}
-              className="p-4 bg-gray-50 rounded-xl border"
+          <input
+            value={editForm.email}
+            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+            placeholder="Email"
+            className="w-full border p-2"
+          />
+
+          <input
+            value={editForm.phone || ""}
+            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+            placeholder="Phone"
+            className="w-full border p-2"
+          />
+
+          <select
+            value={editForm.role}
+            onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+            className="w-full border p-2"
+          >
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+            {currentUser.role === "master" && <option value="master">Master</option>}
+          </select>
+
+          <input
+            type="password"
+            value={editForm.newPassword || ""}
+            onChange={(e) =>
+              setEditForm({ ...editForm, newPassword: e.target.value })
+            }
+            placeholder="New password (optional)"
+            className="w-full border p-2"
+          />
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleUpdateUser}
+              className="px-4 py-2 bg-blue-600 text-white rounded"
             >
-              <div className="flex justify-between">
-                <div>
-                  <strong>{user.name}</strong>
-                  <div className="text-sm text-gray-600">{user.email}</div>
-                  <div className="text-xs text-gray-500">Role: {user.role}</div>
-                </div>
+              Save
+            </button>
+            <button
+              onClick={() => {
+                setEditingUser(null);
+                setEditForm(null);
+              }}
+              className="px-4 py-2 bg-gray-500 text-white rounded"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setEditingUser({ ...user })}
-                    className="px-3 py-2 bg-blue-600 text-white rounded"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(user.id)}
-                    className="px-3 py-2 bg-red-600 text-white rounded"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
+      <div className="space-y-3">
+        {users.map((u) => (
+          <div key={u.id} className="border p-3 flex justify-between">
+            <div>
+              <div className="font-bold">{u.name}</div>
+              <div className="text-sm">{u.email}</div>
+              <div className="text-xs">Role: {u.role}</div>
             </div>
-          ))
-        )}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setEditingUser(u);
+                  setEditForm({
+                    name: u.name,
+                    email: u.email,
+                    phone: u.phone || "",
+                    role: u.role,
+                    newPassword: "",
+                  });
+                }}
+                className="px-3 py-2 bg-blue-600 text-white rounded"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDeleteUser(u.id)}
+                className="px-3 py-2 bg-red-600 text-white rounded"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="flex justify-end mt-8">
-        <button
-          onClick={onBack}
-          className="px-6 py-3 bg-gray-700 text-white font-bold rounded-xl"
-        >
+      <div className="mt-6">
+        <button onClick={onBack} className="px-6 py-3 bg-gray-700 text-white rounded">
           Back
         </button>
       </div>

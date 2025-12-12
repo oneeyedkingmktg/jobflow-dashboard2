@@ -19,6 +19,13 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  /* 🔑 CRITICAL FIX: Force readable text in all form controls */
+  input,
+  textarea,
+  select {
+    @apply text-gray-900;
+  }
 }
 
 @layer components {
@@ -30,7 +37,7 @@
            bg-white focus:ring-2 focus:ring-blue-500 
            focus:border-transparent transition-all 
            shadow-sm hover:shadow-md
-           text-base text-gray-900
+           text-base
            placeholder:text-gray-400;
   }
 
@@ -64,6 +71,9 @@
            hover:bg-gray-50 hover:border-gray-400;
   }
 
+  /* ============================================ */
+  /* MODERN CARD STYLES */
+  /* ============================================ */
   .card {
     @apply bg-white rounded-2xl shadow-lg border-2 border-gray-200
            hover:shadow-xl transition-all duration-200;

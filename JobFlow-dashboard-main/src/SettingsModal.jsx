@@ -1,24 +1,19 @@
+// File: src/SettingsModal.jsx
 import React, { useState } from "react";
 import { useAuth } from "./AuthContext";
 import { useCompany } from "./CompanyContext";
 
-// Screens
 import CompanyManagement from "./CompanyManagement";
 import CompanyDetails from "./CompanyDetails";
-import UserManagement from "./UserManagement";
+import UsersHome from "./users/UsersHome";
 import UserProfileModal from "./UserProfileModal";
 
 export default function SettingsModal({ onClose }) {
   const { logout, isMaster } = useAuth();
   const { currentCompany } = useCompany();
 
-  // Navigation state
   const [screen, setScreen] = useState("home");
   const [selectedCompany, setSelectedCompany] = useState(null);
-
-  // ===============================
-  // NAVIGATION HANDLERS
-  // ===============================
 
   const goHome = () => {
     setScreen("home");
@@ -57,13 +52,8 @@ export default function SettingsModal({ onClose }) {
     if (screen === "my_profile") return goHome();
     if (screen === "company_settings") return goHome();
     if (screen === "superadmin") return goHome();
-
     onClose();
   };
-
-  // ===============================
-  // SETTINGS HOME SCREEN
-  // ===============================
 
   const renderHome = () => (
     <div className="p-6 space-y-4">
@@ -72,7 +62,6 @@ export default function SettingsModal({ onClose }) {
       </h2>
 
       <div className="space-y-3">
-
         {isMaster() && (
           <button
             onClick={openManageCompanies}
@@ -123,12 +112,17 @@ export default function SettingsModal({ onClose }) {
           Logout
         </button>
       </div>
+
+      {currentCompany && (
+        <p className="mt-4 text-sm text-gray-500">
+          Active company:{" "}
+          <span className="font-semibold">
+            {currentCompany.company_name || currentCompany.name}
+          </span>
+        </p>
+      )}
     </div>
   );
-
-  // ===============================
-  // MAIN RENDER LOGIC
-  // ===============================
 
   let content = null;
 
@@ -158,8 +152,8 @@ export default function SettingsModal({ onClose }) {
 
     case "manage_users":
       content = (
-        <div className="p-6">
-          <UserManagement onClose={handleBack} />
+        <div className="p-0">
+          <UsersHome onBack={handleBack} />
         </div>
       );
       break;
@@ -200,13 +194,9 @@ export default function SettingsModal({ onClose }) {
       content = renderHome();
   }
 
-  // ===============================
-  // MODAL WRAPPER
-  // ===============================
-
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[999] p-4 overflow-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-auto">
         {content}
       </div>
     </div>

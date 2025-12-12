@@ -6,15 +6,10 @@ import { useCompany } from "./CompanyContext";
 import CompanyManagement from "./CompanyManagement";
 import CompanyDetails from "./CompanyDetails";
 import UserManagement from "./UserManagement";
-import UsersHome from "./users/UsersHome";
 import UserProfileModal from "./UserProfileModal";
 
-// TODO: add when ready
-// import SuperAdminDetails from "./SuperAdminDetails";
-// import CompanySettings from "./CompanySettings";
-
 export default function SettingsModal({ onClose }) {
-  const { user, logout, isMaster } = useAuth();
+  const { logout, isMaster } = useAuth();
   const { currentCompany } = useCompany();
 
   // Navigation state
@@ -22,12 +17,12 @@ export default function SettingsModal({ onClose }) {
   const [selectedCompany, setSelectedCompany] = useState(null);
 
   // ===============================
-  // NAVIGATION HANDLERS (STACK-LIKE)
+  // NAVIGATION HANDLERS
   // ===============================
 
   const goHome = () => {
-    setSelectedCompany(null);
     setScreen("home");
+    setSelectedCompany(null);
   };
 
   const openManageCompanies = () => {
@@ -51,20 +46,18 @@ export default function SettingsModal({ onClose }) {
     setScreen("company_settings");
   };
 
-  const openSuperAdminDetails = () => {
+  const openSuperAdmin = () => {
     setScreen("superadmin");
   };
 
   const handleBack = () => {
-    // strict single-level back rules
     if (screen === "company_details") return setScreen("manage_companies");
-    if (screen === "manage_companies") return setScreen("home");
-    if (screen === "manage_users") return setScreen("home");
-    if (screen === "my_profile") return setScreen("home");
-    if (screen === "company_settings") return setScreen("home");
-    if (screen === "superadmin") return setScreen("home");
+    if (screen === "manage_companies") return goHome();
+    if (screen === "manage_users") return goHome();
+    if (screen === "my_profile") return goHome();
+    if (screen === "company_settings") return goHome();
+    if (screen === "superadmin") return goHome();
 
-    // fallback to close modal
     onClose();
   };
 
@@ -80,7 +73,6 @@ export default function SettingsModal({ onClose }) {
 
       <div className="space-y-3">
 
-        {/* Manage Companies (Superadmin Only) */}
         {isMaster() && (
           <button
             onClick={openManageCompanies}
@@ -90,7 +82,6 @@ export default function SettingsModal({ onClose }) {
           </button>
         )}
 
-        {/* Manage Users (Superadmin only) */}
         {isMaster() && (
           <button
             onClick={openManageUsers}
@@ -100,17 +91,15 @@ export default function SettingsModal({ onClose }) {
           </button>
         )}
 
-        {/* Super Admin Details */}
         {isMaster() && (
           <button
-            onClick={openSuperAdminDetails}
+            onClick={openSuperAdmin}
             className="w-full px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl"
           >
             Super Admin Details
           </button>
         )}
 
-        {/* Company Settings (Admin Only) */}
         {!isMaster() && (
           <button
             onClick={openCompanySettings}
@@ -120,7 +109,6 @@ export default function SettingsModal({ onClose }) {
           </button>
         )}
 
-        {/* My Profile (Always) */}
         <button
           onClick={openMyProfile}
           className="w-full px-6 py-4 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl"
@@ -128,7 +116,6 @@ export default function SettingsModal({ onClose }) {
           My Profile
         </button>
 
-        {/* Logout */}
         <button
           onClick={logout}
           className="w-full px-6 py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl"
@@ -171,27 +158,16 @@ export default function SettingsModal({ onClose }) {
 
     case "manage_users":
       content = (
-        <div className="p-4">
-          <UsersHome />
-          <button
-            onClick={handleBack}
-            className="mt-4 px-4 py-2 bg-gray-700 text-white rounded-lg"
-          >
-            Back
-          </button>
+        <div className="p-6">
+          <UserManagement onClose={handleBack} />
         </div>
       );
       break;
 
     case "my_profile":
-      content = (
-        <UserProfileModal
-          onClose={handleBack}
-        />
-      );
+      content = <UserProfileModal onClose={handleBack} />;
       break;
 
-    // Placeholder for future screens
     case "company_settings":
       content = (
         <div className="p-6">

@@ -17,15 +17,14 @@ export default function UsersHome({ company }) {
   const [isCreateMode, setIsCreateMode] = useState(false);
 
   useEffect(() => {
-    if (!company?.id) return;
     loadUsers();
-  }, [company?.id]);
+  }, []);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       setError("");
-      const res = await UsersAPI.getByCompany(company.id);
+      const res = await UsersAPI.getAll(); // ✅ RESTORED
       setUsers(res.users || []);
     } catch (err) {
       setError(err.message || "Failed to load users");
@@ -49,10 +48,7 @@ export default function UsersHome({ company }) {
   const handleSaveUser = async (form) => {
     try {
       if (isCreateMode) {
-        await UsersAPI.create({
-          ...form,
-          company_id: company.id,
-        });
+        await UsersAPI.create(form);
       } else {
         await UsersAPI.update(selectedUser.id, form);
       }
@@ -96,6 +92,8 @@ export default function UsersHome({ company }) {
 
       {loading ? (
         <p className="text-gray-500">Loading users…</p>
+      ) : users.length === 0 ? (
+        <p className="text-gray-500">No users found.</p>
       ) : (
         <div className="space-y-2">
           {users.map((u) => (

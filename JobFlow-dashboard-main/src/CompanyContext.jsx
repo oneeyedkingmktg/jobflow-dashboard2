@@ -1,5 +1,6 @@
 // ============================================================================
 // CompanyContext – Proper Multi-Company Support (Master + Regular Users)
+// Version: 3.1
 // ============================================================================
 
 import { createContext, useContext, useState, useEffect } from "react";
@@ -7,7 +8,12 @@ import { CompaniesAPI } from "./api";
 import { useAuth } from "./AuthContext";
 
 const CompanyContext = createContext(null);
-export const useCompany = () => useContext(CompanyContext);
+
+export const useCompany = () => {
+  const ctx = useContext(CompanyContext);
+  if (!ctx) throw new Error("useCompany must be used inside CompanyProvider");
+  return ctx;
+};
 
 export const CompanyProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
@@ -17,7 +23,7 @@ export const CompanyProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // ----------------------------------------------------------------------------
-  // Load companies after login
+  // Load companies as soon as the user is authenticated
   // ----------------------------------------------------------------------------
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -31,34 +37,36 @@ export const CompanyProvider = ({ children }) => {
   }, [isAuthenticated, user]);
 
   // ----------------------------------------------------------------------------
-  // Load companies (master = all companies, others = 1 company)
+  // Load companies (master = all, admin/user = only their company)
   // ----------------------------------------------------------------------------
   const loadCompanies = async () => {
     try {
       setLoading(true);
 
       if (user.role === "master") {
-        // Master can view all companies
+        // Master: load ALL companies
         const list = await CompaniesAPI.getAll();
         const all = list.companies || [];
 
         setCompanies(all);
         setCurrentCompany(all[0] || null);
       } else {
-        // Regular users: only their assigned company
+        // Admin/User: load ONLY assigned company
         if (!user.company_id) {
-          console.warn("User has no company_id");
+          console.warn("User has no company_id assigned");
           setCompanies([]);
           setCurrentCompany(null);
           return;
         }
 
-        const { company } = await CompaniesAPI.get(user.company_id);
+        const res = await CompaniesAPI.get(user.company_id);
+        const company = res.company;
+
         setCompanies([company]);
         setCurrentCompany(company);
       }
     } catch (err) {
-      console.error("Failed loading companies:", err);
+      console.error("CompanyContext load error:", err);
       setCompanies([]);
       setCurrentCompany(null);
     } finally {
@@ -71,13 +79,16 @@ export const CompanyProvider = ({ children }) => {
   // ----------------------------------------------------------------------------
   const switchCompany = async (companyId) => {
     try {
-      const { company } = await CompaniesAPI.get(companyId);
-      setCurrentCompany(company);
+      const res = await CompaniesAPI.get(companyId);
+      setCurrentCompany(res.company);
     } catch (err) {
       console.error("Failed to switch company:", err);
     }
   };
 
+  // ----------------------------------------------------------------------------
+  // Exposed values
+  // ----------------------------------------------------------------------------
   const value = {
     companies,
     currentCompany,

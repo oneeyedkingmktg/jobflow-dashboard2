@@ -6,14 +6,21 @@ import CompanyManagement from './CompanyManagement';
 import CompanyWizard from './CompanyWizard';
 import UserProfileModal from './UserProfileModal';
 
+// NEW IMPORT
+import UsersHome from './users/UsersHome';
+
 export default function SettingsMenu() {
   const { companies, switchCompany, currentCompany } = useCompany();
   const { isMaster, logout } = useAuth();
+
   const [showMenu, setShowMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showCompanyMgmt, setShowCompanyMgmt] = useState(false);
   const [showCompanyWizard, setShowCompanyWizard] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
+
+  // NEW STATE
+  const [showUserMgmt, setShowUserMgmt] = useState(false);
 
   const handleSwitchCompany = (companyId) => {
     switchCompany(companyId);
@@ -40,6 +47,12 @@ export default function SettingsMenu() {
     setShowUserProfile(true);
   };
 
+  // NEW: Manage Users
+  const handleManageUsers = () => {
+    setShowMenu(false);
+    setShowUserMgmt(true);
+  };
+
   const handleLogout = () => {
     setShowMenu(false);
     logout();
@@ -47,7 +60,7 @@ export default function SettingsMenu() {
 
   return (
     <>
-      {/* Gear Icon Button */}
+      {/* Gear Icon */}
       <div className="relative">
         <button
           onClick={() => setShowMenu(!showMenu)}
@@ -57,21 +70,17 @@ export default function SettingsMenu() {
           <span className="text-2xl">⚙️</span>
         </button>
 
-        {/* Dropdown Menu */}
+        {/* Dropdown */}
         {showMenu && (
           <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setShowMenu(false)}
-            />
+            <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
 
-            {/* Menu Panel */}
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden border-2 border-gray-200">
-              {/* Master Menu */}
+              
+              {/* MASTER MENU */}
               {isMaster() ? (
                 <>
-                  {/* Company Switcher Section */}
+                  {/* Switcher */}
                   <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100 p-4">
                     <h3 className="text-sm font-bold text-gray-700 mb-3">Switch Company</h3>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -98,8 +107,9 @@ export default function SettingsMenu() {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* ACTIONS */}
                   <div className="p-3 space-y-2">
+
                     <button
                       onClick={handleNewCompany}
                       className="w-full flex items-center gap-3 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg"
@@ -114,6 +124,15 @@ export default function SettingsMenu() {
                     >
                       <span className="text-xl">🏢</span>
                       <span>Manage Companies</span>
+                    </button>
+
+                    {/* NEW: USER MANAGEMENT */}
+                    <button
+                      onClick={handleManageUsers}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg"
+                    >
+                      <span className="text-xl">👥</span>
+                      <span>Manage Users</span>
                     </button>
 
                     <button
@@ -134,7 +153,8 @@ export default function SettingsMenu() {
                   </div>
                 </>
               ) : (
-                /* User Menu */
+                
+                /* USER MENU */
                 <div className="p-3 space-y-2">
                   <button
                     onClick={handleMyProfile}
@@ -158,7 +178,7 @@ export default function SettingsMenu() {
         )}
       </div>
 
-      {/* Modals */}
+      {/* MODALS / FULL PAGE PANELS */}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showCompanyMgmt && <CompanyManagement onClose={() => setShowCompanyMgmt(false)} />}
       {showCompanyWizard && (
@@ -168,6 +188,21 @@ export default function SettingsMenu() {
         />
       )}
       {showUserProfile && <UserProfileModal onClose={() => setShowUserProfile(false)} />}
+
+      {/* NEW: USER MANAGEMENT PANEL */}
+      {showUserMgmt && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex">
+          <div className="flex-1 bg-white shadow-xl overflow-auto">
+            <UsersHome />
+          </div>
+          <button
+            onClick={() => setShowUserMgmt(false)}
+            className="absolute top-4 right-4 px-4 py-2 bg-gray-800 text-white rounded-lg"
+          >
+            Close
+          </button>
+        </div>
+      )}
     </>
   );
 }

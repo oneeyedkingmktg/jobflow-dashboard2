@@ -101,6 +101,11 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
+  // Helper: is this user the master account?
+  const isMaster = () => {
+    return user?.role === "master";
+  };
+
   const value = {
     user,
     isAuthenticated,
@@ -108,6 +113,7 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     logout,
+    isMaster,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

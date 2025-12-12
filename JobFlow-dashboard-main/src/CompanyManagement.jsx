@@ -50,6 +50,7 @@ export default function CompanyManagement({ onClose }) {
 
       try {
         const result = await CompaniesAPI.getAll();
+
         const list = Array.isArray(result)
           ? result
           : result?.companies && Array.isArray(result.companies)
@@ -81,15 +82,16 @@ export default function CompanyManagement({ onClose }) {
     const term = search.toLowerCase();
     setFiltered(
       companies.filter((c) => {
-        const name = (c.name || "").toLowerCase();
+        const name = (c.company_name || c.name || "").toLowerCase();
         const email = (c.email || "").toLowerCase();
-        const city = (c.city || "").toLowerCase();
         const phone = (c.phone || "").toLowerCase();
+        const addr = (c.address || "").toLowerCase();
+
         return (
           name.includes(term) ||
           email.includes(term) ||
-          city.includes(term) ||
-          phone.includes(term)
+          phone.includes(term) ||
+          addr.includes(term)
         );
       })
     );
@@ -108,13 +110,18 @@ export default function CompanyManagement({ onClose }) {
         throw new Error(result.error || "Failed to update company");
       }
 
-      // Update local state so UI reflects changes
+      // update UI state
       setCompanies((prev) =>
-        prev.map((c) => (c.id === companyId ? { ...c, ...updates } : c))
+        prev.map((c) =>
+          c.id === companyId ? { ...c, ...updates } : c
+        )
       );
       setFiltered((prev) =>
-        prev.map((c) => (c.id === companyId ? { ...c, ...updates } : c))
+        prev.map((c) =>
+          c.id === companyId ? { ...c, ...updates } : c
+        )
       );
+
       if (selectedCompany && selectedCompany.id === companyId) {
         setSelectedCompany((prev) => ({ ...prev, ...updates }));
       }
@@ -126,25 +133,26 @@ export default function CompanyManagement({ onClose }) {
     }
   };
 
-  const handleAddCompany = () => {
-    // Placeholder for future "New Company" flow
-    alert("New Company creation flow is not implemented yet.");
-  };
-
+  // =========================
+  // SELECT COMPANY
+  // =========================
   const handleSelectCompany = (company) => {
     setSelectedCompany(company);
   };
 
-  const handleBackFromDetails = () => {
+  const handleBack = () => {
     setSelectedCompany(null);
   };
 
+  const handleAddCompany = () => {
+    alert("New Company creation flow not implemented yet.");
+  };
+
   // =========================
-  // RENDER LIST VIEW
+  // LIST VIEW
   // =========================
   const renderListView = () => (
     <>
-      {/* HEADER */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-6 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Manage Companies</h2>
@@ -152,6 +160,7 @@ export default function CompanyManagement({ onClose }) {
             View and manage all JobFlow companies.
           </p>
         </div>
+
         <button
           onClick={onClose}
           className="text-white/80 hover:text-white text-sm font-semibold underline"
@@ -160,7 +169,6 @@ export default function CompanyManagement({ onClose }) {
         </button>
       </div>
 
-      {/* BODY */}
       <div className="p-6 space-y-4">
         {error && (
           <div className="p-3 bg-red-50 border-l-4 border-red-600 text-red-800 rounded">
@@ -168,64 +176,60 @@ export default function CompanyManagement({ onClose }) {
           </div>
         )}
 
-        {/* CONTROLS */}
+        {/* Search + Add */}
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-          <div className="flex-1">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, phone, email, or city..."
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search companies..."
+            className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg"
+          />
+
           <button
             onClick={handleAddCompany}
-            className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-md"
+            className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold"
           >
             + Company
           </button>
         </div>
 
-        {/* LIST */}
+        {/* Companies List */}
         {loading ? (
           <p className="text-center py-8 text-gray-600">Loading companies...</p>
         ) : filtered.length === 0 ? (
-          <p className="text-center py-8 text-gray-500">
-            No companies match your search.
-          </p>
+          <p className="text-center py-8 text-gray-500">No companies found.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 max-h-[60vh] overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
             {filtered.map((company) => {
+              const activeName = company.company_name || company.name || "";
               const isSuspended = !!company.suspended;
+
               return (
                 <button
                   key={company.id}
                   onClick={() => handleSelectCompany(company)}
-                  className="relative text-left bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden"
+                  className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden text-left"
                 >
-                  {/* STATUS TAB */}
+                  {/* Status Color Tab */}
                   <div
-                    className={`h-2 w-full ${
+                    className={`h-2 ${
                       isSuspended ? "bg-red-500" : "bg-emerald-500"
                     }`}
                   />
 
                   <div className="p-4 space-y-1">
-                    <h3 className="text-lg font-bold text-gray-900 truncate">
-                      {company.name || "Unnamed Company"}
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {activeName}
                     </h3>
+
                     {company.phone && (
                       <p className="text-sm text-gray-700">
                         Phone: {company.phone}
                       </p>
                     )}
-                    {company.email && (
-                      <p className="text-sm text-gray-700 truncate">
-                        Email: {company.email}
-                      </p>
-                    )}
-                    <p className="text-sm font-semibold mt-1">
+
+                    <p className="text-sm font-semibold">
                       Status:{" "}
                       <span
                         className={
@@ -237,30 +241,25 @@ export default function CompanyManagement({ onClose }) {
                     </p>
                   </div>
                 </button>
-            );
+              );
             })}
           </div>
         )}
 
         {saving && (
-          <p className="text-xs text-gray-400 text-right">
-            Saving changes...
-          </p>
+          <p className="text-xs text-gray-500 text-right">Saving changes…</p>
         )}
       </div>
     </>
   );
 
-  // =========================
-  // MAIN MODAL WRAPPER
-  // =========================
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-8">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full">
         {selectedCompany ? (
           <CompanyDetails
             company={selectedCompany}
-            onBack={handleBackFromDetails}
+            onBack={handleBack}
             onSave={handleCompanySaved}
             saving={saving}
           />

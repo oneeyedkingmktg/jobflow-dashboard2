@@ -1,18 +1,34 @@
 // ============================================================================
-// AuthContext – Fully Updated for Backend JWT Auth (v2.0)
+// AuthContext – Correctly Maps company_id → companyId (v3.0)
 // ============================================================================
 
-import { createContext, useContext, useState, useEffect } from 'react';
-import { AuthAPI } from './api';
+import { createContext, useContext, useState, useEffect } from "react";
+import { AuthAPI } from "./api";
 
-// IMPORTANT: export AuthContext so other files can import it
 const AuthContext = createContext();
 export { AuthContext };
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
+};
+
+// Normalize backend user → frontend shape
+const normalizeUser = (u) => {
+  if (!u) return null;
+
+  return {
+    id: u.id,
+    email: u.email,
+    role: u.role,
+    isActive: u.is_active ?? true,
+
+    // Company fields (critical)
+    companyId: u.company_id ?? u.companyId ?? null,
+    companyName: u.company_name ?? u.companyName ?? null,
+    ghlLocationId: u.ghl_location_id ?? null,
+  };
 };
 
 export const AuthProvider = ({ children }) => {
@@ -21,9 +37,11 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // ------------------------------------------------------------
   // Load token + fetch user profile
+  // ------------------------------------------------------------
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem("authToken");
     if (!token) {
       setIsAuthenticated(false);
       setIsLoading(false);
@@ -33,10 +51,11 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       try {
         const me = await AuthAPI.me();
-        setUser(me.user || null);
+        const normalized = normalizeUser(me.user);
+        setUser(normalized);
         setIsAuthenticated(true);
       } catch {
-        localStorage.removeItem('authToken');
+        localStorage.removeItem("authToken");
         setUser(null);
         setIsAuthenticated(false);
       } finally {
@@ -47,7 +66,9 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-  // Login (JWT + user object)
+  // ------------------------------------------------------------
+  // Login
+  // ------------------------------------------------------------
   const login = async (email, password) => {
     try {
       setError(null);
@@ -55,16 +76,15 @@ export const AuthProvider = ({ children }) => {
 
       const res = await AuthAPI.login(email, password);
 
-      // Save token
-      localStorage.setItem('authToken', res.token);
+      localStorage.setItem("authToken", res.token);
 
-      // Set user
-      setUser(res.user || null);
+      const normalized = normalizeUser(res.user);
+      setUser(normalized);
       setIsAuthenticated(true);
 
       return { success: true };
     } catch (err) {
-      const message = err.message || 'Login failed';
+      const message = err.message || "Login failed";
       setError(message);
       return { success: false, error: message };
     } finally {
@@ -72,9 +92,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ------------------------------------------------------------
   // Logout
+  // ------------------------------------------------------------
   const logout = () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem("authToken");
     setUser(null);
     setIsAuthenticated(false);
   };

@@ -1,3 +1,4 @@
+// File: src/CompanyDetails.jsx
 import React, { useState, useEffect } from "react";
 
 export default function CompanyDetails({ company, onBack, onSave, saving }) {
@@ -64,9 +65,28 @@ export default function CompanyDetails({ company, onBack, onSave, saving }) {
 
   const isSuspended = !!formData.suspended;
 
+  if (!company) {
+    return (
+      <div className="p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">
+          No company selected
+        </h2>
+        <p className="text-gray-600 mb-4">
+          Go back to the list and choose a company to edit.
+        </p>
+        <button
+          onClick={onBack}
+          className="px-6 py-3 bg-gray-700 text-white rounded-lg font-bold"
+        >
+          Back
+        </button>
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* Header */}
+      {/* HEADER */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-6 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">
@@ -77,13 +97,13 @@ export default function CompanyDetails({ company, onBack, onSave, saving }) {
 
         <button
           onClick={onBack}
-          className="text-white/90 hover:text-white underline"
+          className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black"
         >
           Back
         </button>
       </div>
 
-      {/* Body */}
+      {/* BODY */}
       <div className="p-6 space-y-4">
         {error && (
           <div className="p-3 bg-red-50 border-l-4 border-red-600 rounded text-red-800">
@@ -122,9 +142,8 @@ export default function CompanyDetails({ company, onBack, onSave, saving }) {
           {saving && <p className="text-xs text-gray-500">Saving…</p>}
         </div>
 
-        {/* ROW 1 — BASIC INFO */}
+        {/* BASIC INFO */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Name */}
           <div>
             <label className="font-semibold">Company Name</label>
             <input
@@ -136,7 +155,6 @@ export default function CompanyDetails({ company, onBack, onSave, saving }) {
             />
           </div>
 
-          {/* Phone */}
           <div>
             <label className="font-semibold">Phone</label>
             <input
@@ -148,7 +166,6 @@ export default function CompanyDetails({ company, onBack, onSave, saving }) {
             />
           </div>
 
-          {/* Email */}
           <div>
             <label className="font-semibold">Email</label>
             <input
@@ -160,7 +177,6 @@ export default function CompanyDetails({ company, onBack, onSave, saving }) {
             />
           </div>
 
-          {/* Timezone */}
           <div>
             <label className="font-semibold">Timezone</label>
             <input

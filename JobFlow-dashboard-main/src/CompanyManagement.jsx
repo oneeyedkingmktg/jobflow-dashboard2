@@ -1,41 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { CompaniesAPI } from "./api";
-import { useCompany } from "./CompanyContext";
 import { useAuth } from "./AuthContext";
-import CompanyDetails from "./CompanyDetails";
 
-export default function CompanyManagement({ onClose }) {
+export default function CompanyManagement({ onClose, onSelectCompany }) {
   const { user } = useAuth();
-  const { updateCompany } = useCompany();
 
   const [companies, setCompanies] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [selectedCompany, setSelectedCompany] = useState(null);
 
   // =========================
   // ACCESS GUARD – MASTER ONLY
   // =========================
   if (!user || user.role !== "master") {
     return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Access Denied
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Only the master account can manage all companies.
-          </p>
-          <button
-            onClick={onClose}
-            className="w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-bold"
-          >
-            Back
-          </button>
-        </div>
+      <div className="p-6">
+        <h2 className="text-xl font-bold text-red-700 mb-4">Access Denied</h2>
+        <p className="text-gray-700 mb-6">
+          Only the master account can manage all companies.
+        </p>
+        <button
+          onClick={onClose}
+          className="px-6 py-3 bg-gray-700 text-white rounded-lg font-bold"
+        >
+          Back
+        </button>
       </div>
     );
   }
@@ -53,7 +44,7 @@ export default function CompanyManagement({ onClose }) {
 
         const list = Array.isArray(result)
           ? result
-          : result?.companies && Array.isArray(result.companies)
+          : Array.isArray(result?.companies)
           ? result.companies
           : [];
 
@@ -80,6 +71,7 @@ export default function CompanyManagement({ onClose }) {
     }
 
     const term = search.toLowerCase();
+
     setFiltered(
       companies.filter((c) => {
         const name = (c.company_name || c.name || "").toLowerCase();
@@ -98,62 +90,20 @@ export default function CompanyManagement({ onClose }) {
   }, [search, companies]);
 
   // =========================
-  // SAVE FROM DETAILS
+  // ADD COMPANY (FUTURE)
   // =========================
-  const handleCompanySaved = async (companyId, updates) => {
-    setSaving(true);
-    setError("");
-
-    try {
-      const result = await updateCompany(companyId, updates);
-      if (result && result.success === false) {
-        throw new Error(result.error || "Failed to update company");
-      }
-
-      // update UI state
-      setCompanies((prev) =>
-        prev.map((c) =>
-          c.id === companyId ? { ...c, ...updates } : c
-        )
-      );
-      setFiltered((prev) =>
-        prev.map((c) =>
-          c.id === companyId ? { ...c, ...updates } : c
-        )
-      );
-
-      if (selectedCompany && selectedCompany.id === companyId) {
-        setSelectedCompany((prev) => ({ ...prev, ...updates }));
-      }
-    } catch (err) {
-      console.error("Error saving company:", err);
-      setError(err.message || "Failed to save company");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // =========================
-  // SELECT COMPANY
-  // =========================
-  const handleSelectCompany = (company) => {
-    setSelectedCompany(company);
-  };
-
-  const handleBack = () => {
-    setSelectedCompany(null);
-  };
-
   const handleAddCompany = () => {
-    alert("New Company creation flow not implemented yet.");
+    alert("New Company creation will be added later.");
   };
 
   // =========================
-  // LIST VIEW
+  // MAIN RENDER
   // =========================
-  const renderListView = () => (
-    <>
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-6 flex items-center justify-between">
+  return (
+    <div className="p-0">
+
+      {/* HEADER */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-6 flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-white">Manage Companies</h2>
           <p className="text-blue-100 text-sm mt-1">
@@ -163,12 +113,13 @@ export default function CompanyManagement({ onClose }) {
 
         <button
           onClick={onClose}
-          className="text-white/80 hover:text-white text-sm font-semibold underline"
+          className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black"
         >
           Back
         </button>
       </div>
 
+      {/* BODY */}
       <div className="p-6 space-y-4">
         {error && (
           <div className="p-3 bg-red-50 border-l-4 border-red-600 text-red-800 rounded">
@@ -176,7 +127,7 @@ export default function CompanyManagement({ onClose }) {
           </div>
         )}
 
-        {/* Search + Add */}
+        {/* Search Bar + Add Company */}
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           <input
             type="text"
@@ -194,7 +145,7 @@ export default function CompanyManagement({ onClose }) {
           </button>
         </div>
 
-        {/* Companies List */}
+        {/* Company List */}
         {loading ? (
           <p className="text-center py-8 text-gray-600">Loading companies...</p>
         ) : filtered.length === 0 ? (
@@ -202,16 +153,16 @@ export default function CompanyManagement({ onClose }) {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
             {filtered.map((company) => {
-              const activeName = company.company_name || company.name || "";
+              const name = company.company_name || company.name || "";
               const isSuspended = !!company.suspended;
 
               return (
                 <button
                   key={company.id}
-                  onClick={() => handleSelectCompany(company)}
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition overflow-hidden text-left"
+                  onClick={() => onSelectCompany(company)}
+                  className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition text-left overflow-hidden"
                 >
-                  {/* Status Color Tab */}
+                  {/* Status Color Strip */}
                   <div
                     className={`h-2 ${
                       isSuspended ? "bg-red-500" : "bg-emerald-500"
@@ -219,9 +170,7 @@ export default function CompanyManagement({ onClose }) {
                   />
 
                   <div className="p-4 space-y-1">
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {activeName}
-                    </h3>
+                    <h3 className="text-lg font-bold text-gray-900">{name}</h3>
 
                     {company.phone && (
                       <p className="text-sm text-gray-700">
@@ -244,27 +193,6 @@ export default function CompanyManagement({ onClose }) {
               );
             })}
           </div>
-        )}
-
-        {saving && (
-          <p className="text-xs text-gray-500 text-right">Saving changes…</p>
-        )}
-      </div>
-    </>
-  );
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full">
-        {selectedCompany ? (
-          <CompanyDetails
-            company={selectedCompany}
-            onBack={handleBack}
-            onSave={handleCompanySaved}
-            saving={saving}
-          />
-        ) : (
-          renderListView()
         )}
       </div>
     </div>

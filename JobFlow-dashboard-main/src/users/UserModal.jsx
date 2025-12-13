@@ -13,7 +13,7 @@ export default function UserModal({
 }) {
   const isCreate = mode === "create";
   const isView = mode === "view";
-  const isEditing = mode === "edit";
+  const isEdit = mode === "edit";
 
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
@@ -60,31 +60,28 @@ export default function UserModal({
     (!user || user.role !== "master");
 
   const viewBox =
-    "w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-900";
+    "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900";
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
 
         {/* HEADER */}
-        <div className="bg-blue-600 text-white p-6 rounded-t-2xl">
+        <div className="bg-blue-600 text-white px-6 py-4 rounded-t-2xl">
           <h2 className="text-xl font-bold">
-            {isCreate
-              ? "Add User"
-              : isEditing
-              ? "Edit User"
-              : "User Details"}
+            {isCreate ? "Add User" : isEdit ? "Edit User" : "User Details"}
           </h2>
         </div>
 
-        {/* BODY */}
-        <div className="p-6 space-y-4 overflow-y-auto flex-1 text-gray-900">
+        {/* CONTENT */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 text-gray-900">
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800">
+            <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800 rounded">
               {error}
             </div>
           )}
 
+          {/* NAME */}
           <div>
             <label className="form-label">Name</label>
             {isView ? (
@@ -98,6 +95,7 @@ export default function UserModal({
             )}
           </div>
 
+          {/* EMAIL */}
           <div>
             <label className="form-label">Email</label>
             {isView ? (
@@ -111,6 +109,7 @@ export default function UserModal({
             )}
           </div>
 
+          {/* PHONE */}
           <div>
             <label className="form-label">Phone</label>
             {isView ? (
@@ -124,6 +123,7 @@ export default function UserModal({
             )}
           </div>
 
+          {/* ROLE */}
           <div>
             <label className="form-label">Role</label>
             {isView || !canEditRole ? (
@@ -141,6 +141,7 @@ export default function UserModal({
             )}
           </div>
 
+          {/* STATUS */}
           <div>
             <label className="form-label">Status</label>
             {isView ? (
@@ -161,6 +162,7 @@ export default function UserModal({
             )}
           </div>
 
+          {/* PASSWORD */}
           {!isView && (
             <div>
               <label className="form-label">
@@ -180,21 +182,21 @@ export default function UserModal({
             </div>
           )}
 
+          {/* META */}
           {!isCreate && (
-            <div className="text-sm text-gray-500 pt-4 border-t space-y-1">
+            <div className="pt-4 border-t text-sm text-gray-500 space-y-1">
               <div>User ID: {user.id}</div>
-              {user.created_at && <div>Created: {user.created_at}</div>}
-              {user.updated_at && <div>Updated: {user.updated_at}</div>}
               {user.last_login && <div>Last login: {user.last_login}</div>}
+              {user.created_at && <div>Created: {user.created_at}</div>}
             </div>
           )}
         </div>
 
-        {/* BOTTOM ACTION BAR */}
-        <div className="border-t p-4 bg-white flex justify-between items-center sticky bottom-0 text-gray-900">
+        {/* ACTION BAR */}
+        <div className="border-t px-6 py-4 bg-white flex justify-between items-center rounded-b-2xl">
           <button
             onClick={onClose}
-            className="btn btn-secondary text-gray-900"
+            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
           >
             Save & Exit
           </button>
@@ -210,15 +212,12 @@ export default function UserModal({
 
           <button
             onClick={() => {
-              if (isEditing || isCreate) {
-                handleSave();
-              } else {
-                onEdit();
-              }
+              if (isView) onEdit();
+              else handleSave();
             }}
-            className="btn btn-primary"
+            className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
           >
-            {isEditing || isCreate ? "Save" : "Edit"}
+            {isView ? "Edit" : "Save"}
           </button>
         </div>
       </div>

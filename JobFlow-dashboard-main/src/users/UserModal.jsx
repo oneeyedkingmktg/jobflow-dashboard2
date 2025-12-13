@@ -16,7 +16,6 @@ export default function UserModal({
 
   const isCreate = mode === "create";
   const isView = mode === "view";
-  const isEdit = mode === "edit";
 
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
@@ -46,23 +45,32 @@ export default function UserModal({
   if (!form) return null;
 
   const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm(prev => ({ ...prev, [field]: value }));
     setError("");
   };
 
-  const handleSave = () => {
+  const validate = () => {
     if (!form.name || !form.email || !form.phone) {
       setError("Name, phone, and email are required");
-      return;
+      return false;
     }
 
-    // PASSWORD REQUIRED ONLY WHEN CREATING USER
     if (isCreate && !form.password) {
       setError("Password is required for new users");
-      return;
+      return false;
     }
 
-    onSave(form);
+    return true;
+  };
+
+  const handleSave = async (closeAfter = false) => {
+    if (!validate()) return;
+
+    await onSave(form);
+
+    if (closeAfter) {
+      onClose();
+    }
   };
 
   const canEditRole =
@@ -72,22 +80,20 @@ export default function UserModal({
   const viewBox =
     "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900";
 
-  const fieldGroup = "space-y-2";
-  const formStack = "space-y-5";
-
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl flex flex-col">
 
         {/* HEADER */}
         <div className="bg-blue-600 text-white px-6 py-4 rounded-t-2xl">
           <h2 className="text-xl font-bold">
-            {isCreate ? "Add User" : isEdit ? "Edit User" : "User Details"}
+            {isCreate ? "Add User" : isView ? "User Details" : "Edit User"}
           </h2>
         </div>
 
         {/* BODY */}
-        <div className={`flex-1 overflow-y-auto px-6 py-5 ${formStack} text-gray-900`}>
+        <div className="px-6 py-5 space-y-4 text-gray-900 overflow-y-auto">
+
           {error && (
             <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800 rounded">
               {error}
@@ -95,7 +101,7 @@ export default function UserModal({
           )}
 
           {/* NAME */}
-          <div className={fieldGroup}>
+          <div>
             <label className="form-label form-label-required">Name</label>
             {isView ? (
               <div className={viewBox}>{form.name}</div>
@@ -103,13 +109,13 @@ export default function UserModal({
               <input
                 className="input"
                 value={form.name}
-                onChange={(e) => handleChange("name", e.target.value)}
+                onChange={e => handleChange("name", e.target.value)}
               />
             )}
           </div>
 
           {/* PHONE */}
-          <div className={fieldGroup}>
+          <div>
             <label className="form-label form-label-required">Phone</label>
             {isView ? (
               <div className={viewBox}>{form.phone || "—"}</div>
@@ -117,13 +123,13 @@ export default function UserModal({
               <input
                 className="input"
                 value={form.phone}
-                onChange={(e) => handleChange("phone", e.target.value)}
+                onChange={e => handleChange("phone", e.target.value)}
               />
             )}
           </div>
 
           {/* EMAIL */}
-          <div className={fieldGroup}>
+          <div>
             <label className="form-label form-label-required">Email</label>
             {isView ? (
               <div className={viewBox}>{form.email}</div>
@@ -131,13 +137,13 @@ export default function UserModal({
               <input
                 className="input"
                 value={form.email}
-                onChange={(e) => handleChange("email", e.target.value)}
+                onChange={e => handleChange("email", e.target.value)}
               />
             )}
           </div>
 
           {/* ROLE */}
-          <div className={fieldGroup}>
+          <div>
             <label className="form-label">Role</label>
             {isView || !canEditRole ? (
               <div className={viewBox}>{form.role}</div>
@@ -145,7 +151,7 @@ export default function UserModal({
               <select
                 className="input"
                 value={form.role}
-                onChange={(e) => handleChange("role", e.target.value)}
+                onChange={e => handleChange("role", e.target.value)}
               >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
@@ -155,7 +161,7 @@ export default function UserModal({
           </div>
 
           {/* ACTIVE */}
-          <div className={fieldGroup}>
+          <div>
             <label className="form-label">Active</label>
             {isView ? (
               <div className={viewBox}>
@@ -164,13 +170,11 @@ export default function UserModal({
             ) : (
               <button
                 type="button"
-                onClick={() =>
-                  handleChange("is_active", !form.is_active)
-                }
-                className={`w-full px-4 py-3 rounded-xl font-semibold border transition ${
+                onClick={() => handleChange("is_active", !form.is_active)}
+                className={`w-full px-4 py-3 rounded-xl font-semibold border ${
                   form.is_active
-                    ? "bg-emerald-600 text-white border-emerald-600"
-                    : "bg-gray-200 text-gray-700 border-gray-300"
+                    ? "bg-emerald-600 text-white"
+                    : "bg-gray-200 text-gray-700"
                 }`}
               >
                 {form.is_active ? "Active" : "Inactive"}
@@ -180,15 +184,15 @@ export default function UserModal({
 
           {/* PASSWORD */}
           {!isView && (
-            <div className={fieldGroup}>
+            <div>
               <label className="form-label">
-                {isCreate ? "Password" : "Set New Password"}
+                {isCreate ? "Password" : "New Password"}
               </label>
               <input
-                className="input"
                 type="password"
+                className="input"
                 value={form.password}
-                onChange={(e) => handleChange("password", e.target.value)}
+                onChange={e => handleChange("password", e.target.value)}
                 placeholder={
                   isCreate
                     ? "Required for new user"
@@ -201,26 +205,19 @@ export default function UserModal({
           {/* META */}
           {!isCreate && isView && (
             <div className="pt-4 border-t text-sm text-gray-500 space-y-1">
-              <div>
-                Company:{" "}
-                <span className="font-medium text-gray-700">
-                  {currentCompany?.company_name ||
-                    currentCompany?.name ||
-                    "—"}
-                </span>
-              </div>
-              {user.created_at && <div>Created: {user.created_at}</div>}
-              {user.updated_at && <div>Last Updated: {user.updated_at}</div>}
-              {user.last_login && <div>Last Login: {user.last_login}</div>}
+              <div>Company: {currentCompany?.company_name || "—"}</div>
+              {user?.created_at && <div>Created: {user.created_at}</div>}
+              {user?.updated_at && <div>Updated: {user.updated_at}</div>}
+              {user?.last_login && <div>Last Login: {user.last_login}</div>}
             </div>
           )}
         </div>
 
         {/* ACTION BAR */}
-        <div className="border-t px-6 py-4 bg-white flex justify-between items-center rounded-b-2xl">
+        <div className="border-t px-6 py-4 flex justify-between items-center rounded-b-2xl">
           <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
+            onClick={() => handleSave(true)}
+            className="px-4 py-2 rounded-lg bg-gray-200 font-semibold"
           >
             Save & Exit
           </button>
@@ -235,10 +232,7 @@ export default function UserModal({
           )}
 
           <button
-            onClick={() => {
-              if (isView) onEdit();
-              else handleSave();
-            }}
+            onClick={() => (isView ? onEdit() : handleSave(false))}
             className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
           >
             {isView ? "Edit" : "Save"}

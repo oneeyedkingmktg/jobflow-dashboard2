@@ -1,4 +1,4 @@
-// File: src/SettingsModal.jsx
+// File: src/SettingsModal.jsx 
 
 import React, { useState } from "react";
 import { useAuth } from "./AuthContext";

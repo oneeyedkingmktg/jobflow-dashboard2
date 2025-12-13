@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
 
 export default function UserModal({
-  mode, // "view" | "edit" | "create"
+  mode, // "view" | "edit" | "create" 
   user,
   currentUser,
   onEdit,

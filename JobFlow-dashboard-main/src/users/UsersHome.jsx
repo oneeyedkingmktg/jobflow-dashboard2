@@ -1,4 +1,5 @@
 // File: src/users/UsersHome.jsx
+// Version: v1.1.1 – Hydrate user with company before opening modal
 
 import React, { useEffect, useState, useMemo } from "react";
 import { UsersAPI } from "../api";
@@ -9,7 +10,7 @@ import UserModal from "./UserModal.jsx";
 
 export default function UsersHome({ onBack }) {
   const { user, isAuthenticated } = useAuth();
-  const { currentCompany } = useCompany();
+  const { currentCompany, companies } = useCompany();
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,8 +46,19 @@ export default function UsersHome({ onBack }) {
     }
   };
 
+  // 🔑 HYDRATE USER WITH COMPANY BEFORE OPENING MODAL
   const openViewUser = (u) => {
-    setSelectedUser(u);
+    const companyId = u.company_id ?? u.companyId ?? null;
+
+    const resolvedCompany = Array.isArray(companies)
+      ? companies.find((c) => c.id === companyId) || null
+      : null;
+
+    setSelectedUser({
+      ...u,
+      company: resolvedCompany,
+    });
+
     setModalMode("view");
     setShowModal(true);
   };
@@ -188,7 +200,6 @@ export default function UsersHome({ onBack }) {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {/* CREATE USER CARD */}
           <button
             onClick={openCreateUser}
             className="h-[90px] flex flex-col items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100 transition"

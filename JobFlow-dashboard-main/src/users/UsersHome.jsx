@@ -168,10 +168,7 @@ export default function UsersHome({ onBack }) {
             placeholder="Search users…"
             className="input text-sm"
           />
-          <button
-            onClick={openCreateUser}
-            className="btn btn-primary"
-          >
+          <button onClick={openCreateUser} className="btn btn-primary">
             + Add User
           </button>
         </div>
@@ -191,6 +188,17 @@ export default function UsersHome({ onBack }) {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* CREATE USER CARD */}
+          <button
+            onClick={openCreateUser}
+            className="h-[90px] flex flex-col items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100 transition"
+          >
+            <div className="text-emerald-600 text-2xl font-bold">+</div>
+            <div className="text-emerald-700 font-semibold mt-1">
+              New User
+            </div>
+          </button>
+
           {filteredUsers.map((u) => (
             <UserCard
               key={u.id}
@@ -203,10 +211,7 @@ export default function UsersHome({ onBack }) {
 
       {onBack && (
         <div className="pt-6 border-t mt-4 flex justify-end">
-          <button
-            onClick={onBack}
-            className="btn btn-secondary"
-          >
+          <button onClick={onBack} className="btn btn-secondary">
             Back
           </button>
         </div>

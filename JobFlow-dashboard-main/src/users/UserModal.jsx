@@ -1,5 +1,5 @@
 // File: src/users/UserModal.jsx
-// Version: v1.2.2 – Company label camelCase fix
+// Version: v1.2.2 – Guard rails (self-lock + last master protection)
 
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
@@ -14,10 +14,10 @@ const formatPhone = (val) => {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 };
 
-/* ✅ FIXED: camelCase-aware company label */
+/* safe company label */
 const companyLabel = (c) => {
   if (!c) return "—";
-  return c.companyName || c.company_name || c.name || `Company #${c.id}`;
+  return c.company_name || c.name || `Company #${c.id}`;
 };
 
 export default function UserModal({
@@ -33,11 +33,20 @@ export default function UserModal({
 
   const isCreate = mode === "create";
   const isView = mode === "view";
+  const isSelf = user && currentUser && user.id === currentUser.id;
 
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Count masters (frontend safety only)
+  const masterCount = Array.isArray(companies)
+    ? companies.flatMap((c) => c.users || []).filter((u) => u.role === "master").length
+    : null;
+
+  const isLastMaster =
+    user?.role === "master" && masterCount === 1;
 
   useEffect(() => {
     if (isCreate) {
@@ -88,7 +97,16 @@ export default function UserModal({
 
   const canEditRole =
     currentUser?.role === "master" &&
-    (!user || user.role !== "master");
+    (!user || user.role !== "master") &&
+    !isSelf;
+
+  const canToggleStatus = !isSelf;
+
+  const canDeleteUser =
+    !isCreate &&
+    currentUser?.role === "master" &&
+    !isSelf &&
+    !isLastMaster;
 
   const allCompanies =
     Array.isArray(companies) && companies.length > 0
@@ -144,10 +162,191 @@ export default function UserModal({
             </div>
           )}
 
-          {/* Fields unchanged — omitted for brevity */}
+          {/* NAME */}
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Name</div>
+            {isView ? (
+              <div className={viewValue}>{form.name}</div>
+            ) : (
+              <input
+                className={editBox}
+                value={form.name}
+                onChange={(e) => handleChange("name", e.target.value)}
+              />
+            )}
+          </div>
+
+          {/* PHONE */}
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Phone</div>
+            {isView ? (
+              <div className={viewValue}>{formatPhone(form.phone)}</div>
+            ) : (
+              <input
+                className={editBox}
+                value={formatPhone(form.phone)}
+                onChange={(e) => handleChange("phone", e.target.value)}
+              />
+            )}
+          </div>
+
+          {/* EMAIL */}
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Email</div>
+            {isView ? (
+              <div className={viewValue}>{form.email}</div>
+            ) : (
+              <input
+                className={editBox}
+                value={form.email}
+                onChange={(e) => handleChange("email", e.target.value)}
+              />
+            )}
+          </div>
+
+          {/* COMPANY */}
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Company</div>
+            {isView ? (
+              <div className={viewValue}>{companyLabel(selectedCompany)}</div>
+            ) : (
+              <select
+                className={editBox}
+                value={form.company_id || ""}
+                onChange={(e) =>
+                  handleChange("company_id", Number(e.target.value))
+                }
+              >
+                <option value="" disabled>
+                  Select company
+                </option>
+                {allCompanies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {companyLabel(c)}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* ROLE */}
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Role</div>
+            {isView || !canEditRole ? (
+              <div className={viewValue}>{form.role}</div>
+            ) : (
+              <select
+                className={editBox}
+                value={form.role}
+                onChange={(e) => handleChange("role", e.target.value)}
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+                <option value="master">Master</option>
+              </select>
+            )}
+          </div>
+
+          {/* STATUS */}
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Status</div>
+            {isView || !canToggleStatus ? (
+              <div className={viewValue}>
+                {form.is_active ? "Active" : "Inactive"}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleChange("is_active", !form.is_active)}
+                className={`w-full px-4 py-3 rounded-xl font-semibold border ${
+                  form.is_active
+                    ? "bg-emerald-600 text-white"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+              >
+                {form.is_active ? "Active" : "Inactive"}
+              </button>
+            )}
+          </div>
+
+          {/* PASSWORD */}
+          {!isView && (
+            <div className={fieldGroup}>
+              <div className={viewLabel}>Set New Password</div>
+              <input
+                className={editBox}
+                type="password"
+                value={form.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+                placeholder="Leave blank to keep current password"
+              />
+            </div>
+          )}
         </div>
 
-        {/* ACTION BAR unchanged */}
+        {/* ACTION BAR */}
+        <div className="border-t px-6 py-4 bg-white rounded-b-2xl">
+          {confirmDelete && (
+            <div className="mb-3 text-center space-y-2">
+              <div className="text-sm text-gray-700">
+                Are you sure you want to delete?
+              </div>
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => onDelete(user)}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white font-semibold"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => {
+                if (!isView) handleSave();
+                onClose();
+              }}
+              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
+              disabled={saving}
+            >
+              Save & Exit
+            </button>
+
+            {canDeleteUser && !confirmDelete && (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="text-red-600 text-sm font-semibold"
+              >
+                Delete User
+              </button>
+            )}
+
+            {!canDeleteUser && user?.role === "master" && (
+              <div className="text-xs text-gray-500">
+                At least one master is required
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                if (isView) onEdit();
+                else handleSave();
+              }}
+              className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
+              disabled={saving}
+            >
+              {isView ? "Edit" : saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

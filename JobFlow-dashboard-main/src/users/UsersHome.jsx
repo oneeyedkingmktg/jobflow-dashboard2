@@ -1,4 +1,4 @@
-// File: src/users/UsersHome.jsx 
+// File: src/users/UsersHome.jsx
 
 import React, { useEffect, useState, useMemo } from "react";
 import { UsersAPI } from "../api";
@@ -18,9 +18,8 @@ export default function UsersHome({ onBack }) {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [mode, setMode] = useState("view"); // view | edit | create
+  const [modalMode, setModalMode] = useState("view"); // view | edit | create
 
-  // ONLY MASTER CAN MANAGE USERS
   const canManage =
     isAuthenticated && user?.role === "master" && !!currentCompany;
 
@@ -46,41 +45,30 @@ export default function UsersHome({ onBack }) {
     }
   };
 
-  /* =========================
-     OPEN MODAL HANDLERS
-     ========================= */
-
-  const openCreate = () => {
-    setSelectedUser(null);
-    setMode("create");
-    setShowModal(true);
-  };
-
-  const openView = (u) => {
+  const openViewUser = (u) => {
     setSelectedUser(u);
-    setMode("view");
+    setModalMode("view");
     setShowModal(true);
   };
 
-  const openEdit = () => {
-    setMode("edit");
+  const openCreateUser = () => {
+    setSelectedUser(null);
+    setModalMode("create");
+    setShowModal(true);
   };
-
-  /* =========================
-     SAVE / DELETE
-     ========================= */
 
   const handleSaveUser = async (form) => {
     try {
       setError("");
 
-      if (mode === "create") {
+      if (modalMode === "create") {
         const payload = {
           name: form.name,
           email: form.email,
           phone: form.phone,
           role: form.role,
           password: form.password,
+          is_active: form.is_active,
         };
 
         const res = await UsersAPI.create(payload);
@@ -88,12 +76,13 @@ export default function UsersHome({ onBack }) {
         setUsers((prev) => [created, ...prev]);
       }
 
-      if (mode === "edit" && selectedUser) {
+      if (modalMode === "edit" && selectedUser) {
         const payload = {
           name: form.name,
+          email: form.email,
           phone: form.phone,
           role: form.role,
-          is_active: form.isActive,
+          is_active: form.is_active,
           ...(form.password ? { password: form.password } : {}),
         };
 
@@ -105,41 +94,34 @@ export default function UsersHome({ onBack }) {
         );
       }
 
-      closeModal();
+      setShowModal(false);
+      setSelectedUser(null);
+      setModalMode("view");
     } catch (err) {
       setError(err.message || "Failed to save user");
     }
   };
 
-  const handleDeleteUser = async (userToDelete) => {
+  const handleDeleteUser = async (u) => {
     try {
-      await UsersAPI.delete(userToDelete.id);
-      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
-      closeModal();
+      await UsersAPI.delete(u.id);
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+      setShowModal(false);
+      setSelectedUser(null);
+      setModalMode("view");
     } catch (err) {
       setError(err.message || "Failed to delete user");
     }
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedUser(null);
-    setMode("view");
-  };
-
-  /* =========================
-     SEARCH
-     ========================= */
-
   const filteredUsers = useMemo(() => {
     if (!search.trim()) return users;
     const term = search.toLowerCase();
     return users.filter((u) => {
-      const name = (u.name || "").toLowerCase();
-      const email = (u.email || "").toLowerCase();
-      const phone = (u.phone || "").toLowerCase();
       return (
-        name.includes(term) || email.includes(term) || phone.includes(term)
+        (u.name || "").toLowerCase().includes(term) ||
+        (u.email || "").toLowerCase().includes(term) ||
+        (u.phone || "").toLowerCase().includes(term)
       );
     });
   }, [search, users]);
@@ -179,24 +161,22 @@ export default function UsersHome({ onBack }) {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+        <div className="flex gap-2 items-center">
           <input
-            type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search users…"
-            className="px-4 py-2.5 rounded-lg border-2 border-gray-300 text-sm"
+            className="input text-sm"
           />
           <button
-            onClick={openCreate}
-            className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-blue-600 text-white shadow hover:bg-blue-700 transition"
+            onClick={openCreateUser}
+            className="btn btn-primary"
           >
             + Add User
           </button>
         </div>
       </div>
 
-      {/* BODY */}
       {error && (
         <div className="rounded-lg bg-red-50 text-red-700 px-4 py-3 text-sm">
           {error}
@@ -215,8 +195,7 @@ export default function UsersHome({ onBack }) {
             <UserCard
               key={u.id}
               user={u}
-              currentUser={user}
-              onClick={() => openView(u)}
+              onClick={() => openViewUser(u)}
             />
           ))}
         </div>
@@ -226,7 +205,7 @@ export default function UsersHome({ onBack }) {
         <div className="pt-6 border-t mt-4 flex justify-end">
           <button
             onClick={onBack}
-            className="px-8 py-3 bg-gray-700 text-white font-bold rounded-xl"
+            className="btn btn-secondary"
           >
             Back
           </button>
@@ -235,11 +214,15 @@ export default function UsersHome({ onBack }) {
 
       {showModal && (
         <UserModal
-          mode={mode}              // "view" | "edit" | "create"
+          mode={modalMode}
           user={selectedUser}
           currentUser={user}
-          onEdit={openEdit}
-          onClose={closeModal}
+          onEdit={() => setModalMode("edit")}
+          onClose={() => {
+            setShowModal(false);
+            setSelectedUser(null);
+            setModalMode("view");
+          }}
           onSave={handleSaveUser}
           onDelete={handleDeleteUser}
         />

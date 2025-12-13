@@ -1,16 +1,16 @@
 // File: src/users/UserModal.jsx
-// Version: v1.2.3 – Deterministic company resolution (no context fallback)
+// Version: v1.2.4 – Deterministic company resolution (context-first + API fallback)
 
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
+import { CompaniesAPI } from "../api";
 
 /* phone formatter */
 const formatPhone = (val) => {
   if (!val) return "—";
   const digits = val.replace(/\D/g, "").slice(0, 10);
   if (digits.length < 4) return digits;
-  if (digits.length < 7)
-    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 };
 
@@ -41,10 +41,14 @@ export default function UserModal({
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Local deterministic company resolution (context-first, API fallback)
+  const [resolvedCompany, setResolvedCompany] = useState(null);
+
   // Count masters (frontend safety only)
   const masterCount = Array.isArray(companies)
-    ? companies.flatMap((c) => c.users || []).filter((u) => u.role === "master")
-        .length
+    ? companies
+        .flatMap((c) => c.users || [])
+        .filter((u) => u.role === "master").length
     : null;
 
   const isLastMaster = user?.role === "master" && masterCount === 1;
@@ -72,6 +76,44 @@ export default function UserModal({
       });
     }
   }, [isCreate, user, currentCompany]);
+
+  // Resolve the company object deterministically for display
+  useEffect(() => {
+    let alive = true;
+
+    const run = async () => {
+      const companyId = form?.company_id;
+
+      if (!companyId) {
+        if (alive) setResolvedCompany(null);
+        return;
+      }
+
+      // 1) context first
+      const fromContext = Array.isArray(companies)
+        ? companies.find((c) => c.id === companyId)
+        : null;
+
+      if (fromContext) {
+        if (alive) setResolvedCompany(fromContext);
+        return;
+      }
+
+      // 2) API fallback
+      try {
+        const res = await CompaniesAPI.get(companyId);
+        if (alive) setResolvedCompany(res?.company || null);
+      } catch (e) {
+        if (alive) setResolvedCompany(null);
+      }
+    };
+
+    run();
+
+    return () => {
+      alive = false;
+    };
+  }, [form?.company_id, companies]);
 
   if (!form) return null;
 
@@ -104,16 +146,13 @@ export default function UserModal({
   const canToggleStatus = !isSelf;
 
   const canDeleteUser =
-    !isCreate &&
-    currentUser?.role === "master" &&
-    !isSelf &&
-    !isLastMaster;
+    !isCreate && currentUser?.role === "master" && !isSelf && !isLastMaster;
 
   const companyList = Array.isArray(companies) ? companies : [];
 
-  const selectedCompany = companyList.find(
-    (c) => c.id === form.company_id
-  );
+  // Prefer the deterministically resolved company for labels
+  const selectedCompany =
+    resolvedCompany || companyList.find((c) => c.id === form.company_id) || null;
 
   /* styles */
   const editBox =
@@ -129,15 +168,10 @@ export default function UserModal({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
-
         {/* HEADER */}
         <div className="bg-blue-600 text-white px-6 py-4 rounded-t-2xl">
           <h2 className="text-xl font-bold">
-            {isView
-              ? form.name
-              : isCreate
-              ? "Add User"
-              : `Edit ${form.name}`}
+            {isView ? form.name : isCreate ? "Add User" : `Edit ${form.name}`}
           </h2>
           <div className="text-sm text-blue-100">
             {companyLabel(selectedCompany, form.company_id)}

@@ -1,17 +1,23 @@
 // File: src/users/UserModal.jsx
-// Version: v1.2.0 – Inline delete confirmation (Lead-style)
+// Version: v1.2.1 – Company label safety fix (no blank dropdowns)
 
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
 
 /* phone formatter */
 const formatPhone = (val) => {
-  if (!val) return "";
+  if (!val) return "—";
   const digits = val.replace(/\D/g, "").slice(0, 10);
   if (digits.length < 4) return digits;
   if (digits.length < 7)
     return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+};
+
+/* safe company label */
+const companyLabel = (c) => {
+  if (!c) return "—";
+  return c.company_name || c.name || `Company #${c.id}`;
 };
 
 export default function UserModal({
@@ -23,7 +29,7 @@ export default function UserModal({
   onSave,
   onDelete,
 }) {
-  const { currentCompany, companies = [] } = useCompany();
+  const { currentCompany, companies } = useCompany();
 
   const isCreate = mode === "create";
   const isView = mode === "view";
@@ -84,8 +90,15 @@ export default function UserModal({
     currentUser?.role === "master" &&
     (!user || user.role !== "master");
 
+  const allCompanies =
+    Array.isArray(companies) && companies.length > 0
+      ? companies
+      : currentCompany
+      ? [currentCompany]
+      : [];
+
   const selectedCompany =
-    companies.find((c) => c.id === form.company_id) || currentCompany;
+    allCompanies.find((c) => c.id === form.company_id) || currentCompany;
 
   /* styles */
   const editBox =
@@ -108,7 +121,7 @@ export default function UserModal({
             <>
               <h2 className="text-xl font-bold">{form.name}</h2>
               <div className="text-sm text-blue-100">
-                {selectedCompany?.company_name || selectedCompany?.name || "—"}
+                {companyLabel(selectedCompany)}
               </div>
             </>
           ) : (
@@ -117,7 +130,7 @@ export default function UserModal({
                 {isCreate ? "Add User" : `Edit ${form.name}`}
               </h2>
               <div className="text-sm text-blue-100">
-                {selectedCompany?.company_name || selectedCompany?.name || "—"}
+                {companyLabel(selectedCompany)}
               </div>
             </>
           )}
@@ -178,9 +191,7 @@ export default function UserModal({
             <div className={viewLabel}>Company</div>
             {isView ? (
               <div className={viewValue}>
-                {selectedCompany?.company_name ||
-                  selectedCompany?.name ||
-                  "—"}
+                {companyLabel(selectedCompany)}
               </div>
             ) : (
               <select
@@ -190,10 +201,12 @@ export default function UserModal({
                   handleChange("company_id", Number(e.target.value))
                 }
               >
-                <option value="">Select company</option>
-                {companies.map((c) => (
+                <option value="" disabled>
+                  Select company
+                </option>
+                {allCompanies.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.company_name || c.name}
+                    {companyLabel(c)}
                   </option>
                 ))}
               </select>
@@ -257,8 +270,6 @@ export default function UserModal({
 
         {/* ACTION BAR */}
         <div className="border-t px-6 py-4 bg-white rounded-b-2xl">
-
-          {/* DELETE CONFIRM ROW */}
           {confirmDelete && (
             <div className="mb-3 text-center space-y-2">
               <div className="text-sm text-gray-700">
@@ -281,7 +292,6 @@ export default function UserModal({
             </div>
           )}
 
-          {/* MAIN BUTTON ROW */}
           <div className="flex justify-between items-center">
             <button
               onClick={() => {

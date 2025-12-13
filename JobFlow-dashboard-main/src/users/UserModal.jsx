@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 
 export default function UserModal({
-  mode,              // "view" | "edit" | "create"
+  mode, // "view" | "edit" | "create"
   user,
   currentUser,
   onEdit,
@@ -59,6 +59,9 @@ export default function UserModal({
     currentUser?.role === "master" &&
     (!user || user.role !== "master");
 
+  const viewBox =
+    "w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-900";
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
@@ -75,7 +78,7 @@ export default function UserModal({
         </div>
 
         {/* BODY */}
-        <div className="p-6 space-y-4 overflow-y-auto text-gray-900 flex-1">
+        <div className="p-6 space-y-4 overflow-y-auto flex-1 text-gray-900">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800">
               {error}
@@ -85,7 +88,7 @@ export default function UserModal({
           <div>
             <label className="form-label">Name</label>
             {isView ? (
-              <div>{form.name}</div>
+              <div className={viewBox}>{form.name}</div>
             ) : (
               <input
                 className="input"
@@ -98,7 +101,7 @@ export default function UserModal({
           <div>
             <label className="form-label">Email</label>
             {isView ? (
-              <div>{form.email}</div>
+              <div className={viewBox}>{form.email}</div>
             ) : (
               <input
                 className="input"
@@ -111,7 +114,7 @@ export default function UserModal({
           <div>
             <label className="form-label">Phone</label>
             {isView ? (
-              <div>{form.phone || "—"}</div>
+              <div className={viewBox}>{form.phone || "—"}</div>
             ) : (
               <input
                 className="input"
@@ -124,7 +127,7 @@ export default function UserModal({
           <div>
             <label className="form-label">Role</label>
             {isView || !canEditRole ? (
-              <div>{form.role}</div>
+              <div className={viewBox}>{form.role}</div>
             ) : (
               <select
                 className="input"
@@ -141,7 +144,9 @@ export default function UserModal({
           <div>
             <label className="form-label">Status</label>
             {isView ? (
-              <div>{form.is_active ? "Active" : "Inactive"}</div>
+              <div className={viewBox}>
+                {form.is_active ? "Active" : "Inactive"}
+              </div>
             ) : (
               <select
                 className="input"
@@ -185,16 +190,19 @@ export default function UserModal({
           )}
         </div>
 
-        {/* STICKY BOTTOM ACTION BAR */}
-        <div className="border-t p-4 bg-white flex justify-between items-center sticky bottom-0">
-          <button onClick={onClose} className="btn btn-secondary">
+        {/* BOTTOM ACTION BAR */}
+        <div className="border-t p-4 bg-white flex justify-between items-center sticky bottom-0 text-gray-900">
+          <button
+            onClick={onClose}
+            className="btn btn-secondary text-gray-900"
+          >
             Save & Exit
           </button>
 
           {!isCreate && (
             <button
               onClick={() => onDelete(user)}
-              className="text-red-600 text-sm"
+              className="text-red-600 text-sm font-semibold"
             >
               Delete User
             </button>

@@ -1,11 +1,12 @@
 // File: src/SettingsModal.jsx
+
 import React, { useState } from "react";
 import { useAuth } from "./AuthContext";
 import { useCompany } from "./CompanyContext";
 
 import CompanyManagement from "./CompanyManagement";
 import CompanyDetails from "./CompanyDetails";
-import UserManagement from "./UserManagement";
+import UsersHome from "./users/UsersHome";
 import UserProfileModal from "./UserProfileModal";
 
 export default function SettingsModal({ onClose }) {
@@ -20,38 +21,19 @@ export default function SettingsModal({ onClose }) {
     setSelectedCompany(null);
   };
 
-  const openManageCompanies = () => {
-    setScreen("manage_companies");
-  };
-
+  const openManageCompanies = () => setScreen("manage_companies");
   const openCompanyDetails = (company) => {
     setSelectedCompany(company);
     setScreen("company_details");
   };
-
-  const openManageUsers = () => {
-    setScreen("manage_users");
-  };
-
-  const openMyProfile = () => {
-    setScreen("my_profile");
-  };
-
-  const openCompanySettings = () => {
-    setScreen("company_settings");
-  };
-
-  const openSuperAdmin = () => {
-    setScreen("superadmin");
-  };
+  const openManageUsers = () => setScreen("manage_users");
+  const openMyProfile = () => setScreen("my_profile");
+  const openCompanySettings = () => setScreen("company_settings");
+  const openSuperAdmin = () => setScreen("superadmin");
 
   const handleBack = () => {
     if (screen === "company_details") return setScreen("manage_companies");
-    if (screen === "manage_companies") return goHome();
-    if (screen === "manage_users") return goHome();
-    if (screen === "my_profile") return goHome();
-    if (screen === "company_settings") return goHome();
-    if (screen === "superadmin") return goHome();
+    if (screen !== "home") return goHome();
     onClose();
   };
 
@@ -151,11 +133,7 @@ export default function SettingsModal({ onClose }) {
       break;
 
     case "manage_users":
-      content = (
-        <div className="p-0">
-          <UserManagement onBack={handleBack} />
-        </div>
-      );
+      content = <UsersHome onBack={handleBack} />;
       break;
 
     case "my_profile":

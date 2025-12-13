@@ -3,6 +3,21 @@
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
 
+const formatPhone = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  const parts = [];
+
+  if (digits.length > 0) parts.push("(" + digits.slice(0, 3));
+  if (digits.length >= 4) parts[0] += ")";
+  if (digits.length >= 4) parts.push(" " + digits.slice(3, 6));
+  if (digits.length >= 7) parts.push("-" + digits.slice(6, 10));
+
+  return parts.join("");
+};
+
+const stripPhone = (value) => value.replace(/\D/g, "");
+
 export default function UserModal({
   mode, // "view" | "edit" | "create"
   user,
@@ -19,6 +34,7 @@ export default function UserModal({
 
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (isCreate) {
@@ -34,7 +50,7 @@ export default function UserModal({
       setForm({
         name: user.name || "",
         email: user.email || "",
-        phone: user.phone || "",
+        phone: formatPhone(user.phone || ""),
         role: user.role || "user",
         password: "",
         is_active: user.is_active !== false,
@@ -45,31 +61,31 @@ export default function UserModal({
   if (!form) return null;
 
   const handleChange = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }));
+    setForm((prev) => ({ ...prev, [field]: value }));
     setError("");
   };
 
-  const validate = () => {
+  const handleSave = async () => {
     if (!form.name || !form.email || !form.phone) {
       setError("Name, phone, and email are required");
-      return false;
+      return;
     }
 
     if (isCreate && !form.password) {
       setError("Password is required for new users");
-      return false;
+      return;
     }
 
-    return true;
-  };
-
-  const handleSave = async (closeAfter = false) => {
-    if (!validate()) return;
-
-    await onSave(form);
-
-    if (closeAfter) {
-      onClose();
+    setSaving(true);
+    try {
+      await onSave({
+        ...form,
+        phone: stripPhone(form.phone),
+      });
+    } catch (err) {
+      setError("Failed to save user");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -77,12 +93,12 @@ export default function UserModal({
     currentUser?.role === "master" &&
     (!user || user.role !== "master");
 
-  const viewBox =
-    "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900";
+  const viewText = "text-sm text-gray-800";
+  const label = "form-label";
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
 
         {/* HEADER */}
         <div className="bg-blue-600 text-white px-6 py-4 rounded-t-2xl">
@@ -92,8 +108,7 @@ export default function UserModal({
         </div>
 
         {/* BODY */}
-        <div className="px-6 py-5 space-y-4 text-gray-900 overflow-y-auto">
-
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800 rounded">
               {error}
@@ -102,56 +117,58 @@ export default function UserModal({
 
           {/* NAME */}
           <div>
-            <label className="form-label form-label-required">Name</label>
+            <label className={label}>Name</label>
             {isView ? (
-              <div className={viewBox}>{form.name}</div>
+              <div className={viewText}>{form.name}</div>
             ) : (
               <input
                 className="input"
                 value={form.name}
-                onChange={e => handleChange("name", e.target.value)}
+                onChange={(e) => handleChange("name", e.target.value)}
               />
             )}
           </div>
 
           {/* PHONE */}
           <div>
-            <label className="form-label form-label-required">Phone</label>
+            <label className={label}>Phone</label>
             {isView ? (
-              <div className={viewBox}>{form.phone || "—"}</div>
+              <div className={viewText}>{form.phone}</div>
             ) : (
               <input
                 className="input"
                 value={form.phone}
-                onChange={e => handleChange("phone", e.target.value)}
+                onChange={(e) =>
+                  handleChange("phone", formatPhone(e.target.value))
+                }
               />
             )}
           </div>
 
           {/* EMAIL */}
           <div>
-            <label className="form-label form-label-required">Email</label>
+            <label className={label}>Email</label>
             {isView ? (
-              <div className={viewBox}>{form.email}</div>
+              <div className={viewText}>{form.email}</div>
             ) : (
               <input
                 className="input"
                 value={form.email}
-                onChange={e => handleChange("email", e.target.value)}
+                onChange={(e) => handleChange("email", e.target.value)}
               />
             )}
           </div>
 
           {/* ROLE */}
           <div>
-            <label className="form-label">Role</label>
+            <label className={label}>Role</label>
             {isView || !canEditRole ? (
-              <div className={viewBox}>{form.role}</div>
+              <div className={viewText}>{form.role}</div>
             ) : (
               <select
                 className="input"
                 value={form.role}
-                onChange={e => handleChange("role", e.target.value)}
+                onChange={(e) => handleChange("role", e.target.value)}
               >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
@@ -162,19 +179,21 @@ export default function UserModal({
 
           {/* ACTIVE */}
           <div>
-            <label className="form-label">Active</label>
+            <label className={label}>Active</label>
             {isView ? (
-              <div className={viewBox}>
+              <div className={viewText}>
                 {form.is_active ? "Active" : "Inactive"}
               </div>
             ) : (
               <button
                 type="button"
-                onClick={() => handleChange("is_active", !form.is_active)}
+                onClick={() =>
+                  handleChange("is_active", !form.is_active)
+                }
                 className={`w-full px-4 py-3 rounded-xl font-semibold border ${
                   form.is_active
-                    ? "bg-emerald-600 text-white"
-                    : "bg-gray-200 text-gray-700"
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : "bg-gray-200 text-gray-700 border-gray-300"
                 }`}
               >
                 {form.is_active ? "Active" : "Inactive"}
@@ -185,14 +204,14 @@ export default function UserModal({
           {/* PASSWORD */}
           {!isView && (
             <div>
-              <label className="form-label">
-                {isCreate ? "Password" : "New Password"}
+              <label className={label}>
+                {isCreate ? "Password" : "Set New Password"}
               </label>
               <input
-                type="password"
                 className="input"
+                type="password"
                 value={form.password}
-                onChange={e => handleChange("password", e.target.value)}
+                onChange={(e) => handleChange("password", e.target.value)}
                 placeholder={
                   isCreate
                     ? "Required for new user"
@@ -204,11 +223,18 @@ export default function UserModal({
 
           {/* META */}
           {!isCreate && isView && (
-            <div className="pt-4 border-t text-sm text-gray-500 space-y-1">
-              <div>Company: {currentCompany?.company_name || "—"}</div>
-              {user?.created_at && <div>Created: {user.created_at}</div>}
-              {user?.updated_at && <div>Updated: {user.updated_at}</div>}
-              {user?.last_login && <div>Last Login: {user.last_login}</div>}
+            <div className="pt-4 border-t text-xs text-gray-500 space-y-1">
+              <div>
+                Company:{" "}
+                <span className="font-medium text-gray-700">
+                  {currentCompany?.company_name ||
+                    currentCompany?.name ||
+                    "—"}
+                </span>
+              </div>
+              {user.created_at && <div>Created: {user.created_at}</div>}
+              {user.updated_at && <div>Last Updated: {user.updated_at}</div>}
+              {user.last_login && <div>Last Login: {user.last_login}</div>}
             </div>
           )}
         </div>
@@ -216,8 +242,9 @@ export default function UserModal({
         {/* ACTION BAR */}
         <div className="border-t px-6 py-4 flex justify-between items-center rounded-b-2xl">
           <button
-            onClick={() => handleSave(true)}
-            className="px-4 py-2 rounded-lg bg-gray-200 font-semibold"
+            onClick={onClose}
+            className="btn btn-secondary"
+            disabled={saving}
           >
             Save & Exit
           </button>
@@ -232,10 +259,14 @@ export default function UserModal({
           )}
 
           <button
-            onClick={() => (isView ? onEdit() : handleSave(false))}
-            className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
+            onClick={() => {
+              if (isView) onEdit();
+              else handleSave();
+            }}
+            className="btn btn-primary"
+            disabled={saving}
           >
-            {isView ? "Edit" : "Save"}
+            {isView ? "Edit" : saving ? "Saving…" : "Save"}
           </button>
         </div>
       </div>

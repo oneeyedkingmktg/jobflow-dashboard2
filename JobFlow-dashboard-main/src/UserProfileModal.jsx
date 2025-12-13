@@ -1,6 +1,8 @@
 // File: src/UserProfileModal.jsx
+// Version: v1.1.0 – Resolve company from viewed user (master-safe)
+
 import React, { useEffect, useState } from "react";
-import { UsersAPI } from "./api";
+import { UsersAPI, CompaniesAPI } from "./api";
 import { useCompany } from "./CompanyContext";
 
 export default function UserProfileModal({
@@ -10,11 +12,14 @@ export default function UserProfileModal({
   onSave,
   onDelete,
 }) {
-  const { currentCompany } = useCompany();
+  const { companies } = useCompany();
 
   const [mode, setMode] = useState("view"); // view | edit
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
+
+  // 🔑 resolved company for THIS user (not currentCompany)
+  const [resolvedCompany, setResolvedCompany] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -28,6 +33,43 @@ export default function UserProfileModal({
       password: "",
     });
   }, [user]);
+
+  // Resolve the user's company deterministically
+  useEffect(() => {
+    let alive = true;
+
+    const run = async () => {
+      const companyId = user?.companyId ?? user?.company_id ?? null;
+      if (!companyId) {
+        if (alive) setResolvedCompany(null);
+        return;
+      }
+
+      // 1) try context first
+      const fromContext = Array.isArray(companies)
+        ? companies.find((c) => c.id === companyId)
+        : null;
+
+      if (fromContext) {
+        if (alive) setResolvedCompany(fromContext);
+        return;
+      }
+
+      // 2) API fallback
+      try {
+        const res = await CompaniesAPI.get(companyId);
+        if (alive) setResolvedCompany(res?.company || null);
+      } catch {
+        if (alive) setResolvedCompany(null);
+      }
+    };
+
+    run();
+
+    return () => {
+      alive = false;
+    };
+  }, [user, companies]);
 
   if (!user || !form) return null;
 
@@ -180,7 +222,11 @@ export default function UserProfileModal({
           {/* META (VIEW ONLY) */}
           {mode === "view" && (
             <div className="pt-4 border-t space-y-2">
-              {metaRow("Company", currentCompany?.name)}
+              {metaRow(
+                "Company",
+                resolvedCompany?.company_name ||
+                  resolvedCompany?.name
+              )}
               {metaRow("Created", user.created_at)}
               {metaRow("Last Updated", user.updated_at)}
               {metaRow("Last Login", user.last_login)}

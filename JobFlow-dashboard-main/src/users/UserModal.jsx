@@ -1,5 +1,5 @@
 // File: src/users/UserModal.jsx
-// Version: v1.2.5 – Normalize companyId (camelCase) → company_id once at ingest
+// Version: v1.2.6 – Fix companyLabel to use camelCase companyName
 
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
@@ -16,7 +16,7 @@ const formatPhone = (val) => {
 
 /* safe company label */
 const companyLabel = (c, fallbackId = null) => {
-  if (c) return c.company_name || c.name || `Company #${c.id}`;
+  if (c) return c.companyName || c.name || `Company #${c.id}`;
   if (fallbackId) return `Company #${fallbackId} (not loaded)`;
   return "—";
 };
@@ -65,7 +65,6 @@ export default function UserModal({
         company_id: currentCompany?.id || null,
       });
     } else if (user) {
-      // 🔑 NORMALIZATION FIX (THIS IS THE BUG)
       const normalizedCompanyId =
         user.company_id ?? user.companyId ?? null;
 

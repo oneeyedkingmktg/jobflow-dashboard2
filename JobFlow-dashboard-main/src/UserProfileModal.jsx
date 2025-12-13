@@ -1,320 +1,224 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
-import { UsersAPI } from './api';
+// File: src/UserProfileModal.jsx
+import React, { useEffect, useState } from "react";
+import { UsersAPI } from "./api";
+import { useCompany } from "./CompanyContext";
 
-export default function UserProfileModal({ onClose, editingUser = null }) {
-  const { user: currentUser, logout } = useAuth();
+export default function UserProfileModal({
+  user,
+  currentUser,
+  onClose,
+  onSave,
+  onDelete,
+}) {
+  const { currentCompany } = useCompany();
 
-  // Determine if this modal is editing the logged-in user or another user
-  const isEditingOther = editingUser && editingUser.id !== currentUser?.id;
+  const [mode, setMode] = useState("view"); // view | edit
+  const [form, setForm] = useState(null);
+  const [error, setError] = useState("");
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: '',
-    phone: '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-
-  const [showPasswordFields, setShowPasswordFields] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
-
-  // Pre-fill user data
   useEffect(() => {
-    const target = editingUser || currentUser;
+    if (!user) return;
 
-    if (target) {
-      setFormData(prev => ({
-        ...prev,
-        name: target.name || '',
-        email: target.email || '',
-        role: target.role || '',
-        phone: target.phone || '',
-      }));
-    }
-  }, [editingUser, currentUser]);
+    setForm({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      role: user.role || "user",
+      is_active: user.is_active !== false,
+      password: "",
+    });
+  }, [user]);
+
+  if (!user || !form) return null;
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    setError('');
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setError("");
   };
 
-  // Save main profile changes
-  const handleSaveProfile = async () => {
-    setError('');
-    setSuccess('');
-
-    if (!formData.name.trim() || !formData.email.trim()) {
-      setError('Name and email are required');
+  const handleSave = () => {
+    if (!form.name || !form.email) {
+      setError("Name and email are required");
       return;
     }
 
-    try {
-      await UsersAPI.update(editingUser?.id || currentUser.id, {
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        role: editingUser ? formData.role : undefined
-      });
+    onSave({
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      role: form.role,
+      is_active: form.is_active,
+      ...(form.password ? { password: form.password } : {}),
+    });
 
-      setSuccess('Profile updated successfully!');
-      setTimeout(() => setSuccess(''), 3000);
-
-      // If editing another user, close modal after a second
-      if (isEditingOther) {
-        setTimeout(() => onClose(), 800);
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to update profile');
-    }
+    setMode("view");
   };
 
-  // Handle password update
-  const handleSavePassword = async () => {
-    setError('');
-    setSuccess('');
-
-    if (!formData.newPassword) {
-      setError('New password is required');
-      return;
-    }
-
-    if (formData.newPassword !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    try {
-      // Changing own password
-      if (!isEditingOther) {
-        if (!formData.currentPassword) {
-          setError('Current password is required');
-          return;
-        }
-
-        await UsersAPI.changePassword(
-          formData.currentPassword,
-          formData.newPassword
-        );
-      }
-      // Admin/Master changing another user's password
-      else {
-        await UsersAPI.update(editingUser.id, {
-          password: formData.newPassword
-        });
-      }
-
-      setSuccess('Password updated successfully!');
-      setShowPasswordFields(false);
-
-      setFormData(prev => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }));
-
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      setError(err.message || 'Failed to update password');
-    }
-  };
-
-  const targetUser = editingUser || currentUser;
-
-  if (!targetUser) {
-    return null;
-  }
+  const metaRow = (label, value) => (
+    <div className="text-sm text-gray-500 flex justify-between">
+      <span>{label}</span>
+      <span className="font-medium text-gray-700">
+        {value || "—"}
+      </span>
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md my-auto">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-6">
-          <h2 className="text-2xl font-bold text-white">
-            {isEditingOther ? 'Edit User' : 'My Profile'}
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        {/* HEADER */}
+        <div className="bg-blue-600 text-white p-6">
+          <h2 className="text-xl font-bold">
+            {mode === "view" ? "User Details" : "Edit User"}
           </h2>
-          <p className="text-blue-100 text-sm mt-1">
-            {isEditingOther ? `Editing: ${targetUser.name}` : 'Update your information'}
-          </p>
         </div>
 
+        {/* BODY */}
         <div className="p-6 space-y-4">
-          {/* Messages */}
-          {success && (
-            <div className="bg-green-50 border-l-4 border-green-600 p-3 rounded">
-              <p className="text-green-800 font-semibold">{success}</p>
-            </div>
-          )}
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-600 p-3 rounded">
-              <p className="text-red-800 font-semibold">{error}</p>
+            <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800">
+              {error}
             </div>
           )}
 
-          {/* --- Profile Fields --- */}
+          {/* NAME */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
               Name
             </label>
             <input
-              value={formData.name}
-              onChange={e => handleChange('name', e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border-2 border-gray-300"
+              disabled={mode === "view"}
+              value={form.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              className="w-full rounded-xl border px-4 py-3 disabled:bg-gray-50"
             />
           </div>
 
+          {/* EMAIL */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
               Email
             </label>
             <input
-              type="email"
-              value={formData.email}
-              onChange={e => handleChange('email', e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border-2 border-gray-300"
+              disabled={mode === "view"}
+              value={form.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+              className="w-full rounded-xl border px-4 py-3 disabled:bg-gray-50"
             />
           </div>
 
+          {/* PHONE */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
               Phone
             </label>
             <input
-              type="text"
-              value={formData.phone}
-              onChange={e => handleChange('phone', e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border-2 border-gray-300"
+              disabled={mode === "view"}
+              value={form.phone || ""}
+              onChange={(e) => handleChange("phone", e.target.value)}
+              className="w-full rounded-xl border px-4 py-3 disabled:bg-gray-50"
             />
           </div>
 
-          {/* ROLE only visible when editing others */}
-          {isEditingOther && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Role
-              </label>
-              <select
-                value={formData.role}
-                onChange={e => handleChange('role', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border-2 border-gray-300"
-              >
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
+          {/* ROLE */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Role
+            </label>
+            <select
+              disabled={mode === "view"}
+              value={form.role}
+              onChange={(e) => handleChange("role", e.target.value)}
+              className="w-full rounded-xl border px-4 py-3 disabled:bg-gray-50"
+            >
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+              {currentUser?.role === "master" && (
                 <option value="master">Master</option>
-              </select>
-            </div>
-          )}
+              )}
+            </select>
+          </div>
 
-          {/* --- Password Section --- */}
-          <div className="border-t pt-4">
-            {!showPasswordFields ? (
-              <button
-                onClick={() => setShowPasswordFields(true)}
-                className="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold"
-              >
-                Change Password
-              </button>
+          {/* ACTIVE TOGGLE */}
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-sm font-semibold text-gray-700">
+              Status
+            </span>
+            {mode === "view" ? (
+              <span className="font-medium">
+                {form.is_active ? "Active" : "Inactive"}
+              </span>
             ) : (
-              <div className="space-y-4">
-                {!isEditingOther && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Current Password
-                    </label>
-                    <input
-                      type="password"
-                      value={formData.currentPassword}
-                      onChange={e => handleChange('currentPassword', e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border-2 border-gray-300"
-                      placeholder="Current password"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.newPassword}
-                    onChange={e => handleChange('newPassword', e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border-2 border-gray-300"
-                    placeholder="New password"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Confirm Password
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={e => handleChange('confirmPassword', e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border-2 border-gray-300"
-                    placeholder="Confirm password"
-                  />
-                </div>
-
-                <button
-                  onClick={handleSavePassword}
-                  className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold"
-                >
-                  Save Password
-                </button>
-
-                <button
-                  onClick={() => {
-                    setShowPasswordFields(false);
-                    setFormData(prev => ({
-                      ...prev,
-                      currentPassword: '',
-                      newPassword: '',
-                      confirmPassword: ''
-                    }));
-                  }}
-                  className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 rounded-lg font-semibold"
-                >
-                  Cancel Password Change
-                </button>
-              </div>
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(e) =>
+                  handleChange("is_active", e.target.checked)
+                }
+              />
             )}
           </div>
 
-          {/* --- Footer Buttons --- */}
-          <div className="flex gap-3 pt-4 border-t">
-            <button
-              onClick={onClose}
-              className="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-bold"
-            >
-              Close
-            </button>
-            <button
-              onClick={handleSaveProfile}
-              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold"
-            >
-              Save Profile
-            </button>
-          </div>
-
-          {/* Logout only for own account */}
-          {!isEditingOther && (
-            <div className="border-t pt-4">
-              <button
-                onClick={logout}
-                className="w-full px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold"
-              >
-                Logout
-              </button>
+          {/* PASSWORD */}
+          {mode === "edit" && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Set New Password
+              </label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) =>
+                  handleChange("password", e.target.value)
+                }
+                placeholder="Leave blank to keep current"
+                className="w-full rounded-xl border px-4 py-3"
+              />
             </div>
+          )}
+
+          {/* META (VIEW ONLY) */}
+          {mode === "view" && (
+            <div className="pt-4 border-t space-y-2">
+              {metaRow("Company", currentCompany?.name)}
+              {metaRow("Created", user.created_at)}
+              {metaRow("Last Updated", user.updated_at)}
+              {metaRow("Last Login", user.last_login)}
+              {metaRow("User ID", user.id)}
+            </div>
+          )}
+        </div>
+
+        {/* FOOTER */}
+        <div className="flex items-center justify-between px-6 py-4 border-t">
+          <button
+            onClick={onClose}
+            className="text-gray-600 font-semibold"
+          >
+            Save & Exit
+          </button>
+
+          <button
+            onClick={() => onDelete(user)}
+            className="text-red-600 font-semibold"
+          >
+            Delete User
+          </button>
+
+          {mode === "view" ? (
+            <button
+              onClick={() => setMode("edit")}
+              className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold"
+            >
+              Edit
+            </button>
+          ) : (
+            <button
+              onClick={handleSave}
+              className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold"
+            >
+              Save
+            </button>
           )}
         </div>
       </div>

@@ -3,14 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
 
-/* simple phone formatter */
-const formatPhone = (val) => {
-  if (!val) return "—";
-  const digits = val.replace(/\D/g, "");
-  if (digits.length !== 10) return val;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-};
-
 export default function UserModal({
   mode, // "view" | "edit" | "create"
   user,
@@ -24,6 +16,7 @@ export default function UserModal({
 
   const isCreate = mode === "create";
   const isView = mode === "view";
+  const isEdit = mode === "edit";
 
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
@@ -62,6 +55,13 @@ export default function UserModal({
       setError("Name, phone, and email are required");
       return;
     }
+
+    // PASSWORD REQUIRED ONLY WHEN CREATING USER
+    if (isCreate && !form.password) {
+      setError("Password is required for new users");
+      return;
+    }
+
     onSave(form);
   };
 
@@ -69,13 +69,8 @@ export default function UserModal({
     currentUser?.role === "master" &&
     (!user || user.role !== "master");
 
-  /* styles */
-  const editBox =
-    "w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
-
-  const viewRow = "space-y-1";
-  const viewLabel = "text-xs text-gray-500 uppercase tracking-wide";
-  const viewValue = "text-sm font-semibold text-gray-800";
+  const viewBox =
+    "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900";
 
   const fieldGroup = "space-y-2";
   const formStack = "space-y-5";
@@ -87,12 +82,12 @@ export default function UserModal({
         {/* HEADER */}
         <div className="bg-blue-600 text-white px-6 py-4 rounded-t-2xl">
           <h2 className="text-xl font-bold">
-            {isCreate ? "Add User" : isView ? "User Details" : "Edit User"}
+            {isCreate ? "Add User" : isEdit ? "Edit User" : "User Details"}
           </h2>
         </div>
 
         {/* BODY */}
-        <div className={`flex-1 overflow-y-auto px-6 py-5 ${formStack}`}>
+        <div className={`flex-1 overflow-y-auto px-6 py-5 ${formStack} text-gray-900`}>
           {error && (
             <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800 rounded">
               {error}
@@ -100,13 +95,13 @@ export default function UserModal({
           )}
 
           {/* NAME */}
-          <div className={isView ? viewRow : fieldGroup}>
-            <div className={viewLabel}>Name</div>
+          <div className={fieldGroup}>
+            <label className="form-label form-label-required">Name</label>
             {isView ? (
-              <div className={viewValue}>{form.name}</div>
+              <div className={viewBox}>{form.name}</div>
             ) : (
               <input
-                className={editBox}
+                className="input"
                 value={form.name}
                 onChange={(e) => handleChange("name", e.target.value)}
               />
@@ -114,13 +109,13 @@ export default function UserModal({
           </div>
 
           {/* PHONE */}
-          <div className={isView ? viewRow : fieldGroup}>
-            <div className={viewLabel}>Phone</div>
+          <div className={fieldGroup}>
+            <label className="form-label form-label-required">Phone</label>
             {isView ? (
-              <div className={viewValue}>{formatPhone(form.phone)}</div>
+              <div className={viewBox}>{form.phone || "—"}</div>
             ) : (
               <input
-                className={editBox}
+                className="input"
                 value={form.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
               />
@@ -128,13 +123,13 @@ export default function UserModal({
           </div>
 
           {/* EMAIL */}
-          <div className={isView ? viewRow : fieldGroup}>
-            <div className={viewLabel}>Email</div>
+          <div className={fieldGroup}>
+            <label className="form-label form-label-required">Email</label>
             {isView ? (
-              <div className={viewValue}>{form.email}</div>
+              <div className={viewBox}>{form.email}</div>
             ) : (
               <input
-                className={editBox}
+                className="input"
                 value={form.email}
                 onChange={(e) => handleChange("email", e.target.value)}
               />
@@ -142,13 +137,13 @@ export default function UserModal({
           </div>
 
           {/* ROLE */}
-          <div className={isView ? viewRow : fieldGroup}>
-            <div className={viewLabel}>Role</div>
+          <div className={fieldGroup}>
+            <label className="form-label">Role</label>
             {isView || !canEditRole ? (
-              <div className={viewValue}>{form.role}</div>
+              <div className={viewBox}>{form.role}</div>
             ) : (
               <select
-                className={editBox}
+                className="input"
                 value={form.role}
                 onChange={(e) => handleChange("role", e.target.value)}
               >
@@ -159,21 +154,23 @@ export default function UserModal({
             )}
           </div>
 
-          {/* STATUS */}
-          <div className={isView ? viewRow : fieldGroup}>
-            <div className={viewLabel}>Status</div>
+          {/* ACTIVE */}
+          <div className={fieldGroup}>
+            <label className="form-label">Active</label>
             {isView ? (
-              <div className={viewValue}>
+              <div className={viewBox}>
                 {form.is_active ? "Active" : "Inactive"}
               </div>
             ) : (
               <button
                 type="button"
-                onClick={() => handleChange("is_active", !form.is_active)}
-                className={`w-full px-4 py-3 rounded-xl font-semibold border ${
+                onClick={() =>
+                  handleChange("is_active", !form.is_active)
+                }
+                className={`w-full px-4 py-3 rounded-xl font-semibold border transition ${
                   form.is_active
-                    ? "bg-emerald-600 text-white"
-                    : "bg-gray-200 text-gray-700"
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : "bg-gray-200 text-gray-700 border-gray-300"
                 }`}
               >
                 {form.is_active ? "Active" : "Inactive"}
@@ -181,23 +178,29 @@ export default function UserModal({
             )}
           </div>
 
-          {/* PASSWORD (EDIT / CREATE ONLY) */}
+          {/* PASSWORD */}
           {!isView && (
             <div className={fieldGroup}>
-              <div className={viewLabel}>Set New Password</div>
+              <label className="form-label">
+                {isCreate ? "Password" : "Set New Password"}
+              </label>
               <input
-                className={editBox}
+                className="input"
                 type="password"
                 value={form.password}
                 onChange={(e) => handleChange("password", e.target.value)}
-                placeholder="Leave blank to keep current password"
+                placeholder={
+                  isCreate
+                    ? "Required for new user"
+                    : "Leave blank to keep current password"
+                }
               />
             </div>
           )}
 
-          {/* META (VIEW ONLY) */}
-          {isView && (
-            <div className="pt-4 border-t text-xs text-gray-500 space-y-1">
+          {/* META */}
+          {!isCreate && isView && (
+            <div className="pt-4 border-t text-sm text-gray-500 space-y-1">
               <div>
                 Company:{" "}
                 <span className="font-medium text-gray-700">
@@ -206,9 +209,9 @@ export default function UserModal({
                     "—"}
                 </span>
               </div>
-              {user?.created_at && <div>Created: {user.created_at}</div>}
-              {user?.updated_at && <div>Last Updated: {user.updated_at}</div>}
-              {user?.last_login && <div>Last Login: {user.last_login}</div>}
+              {user.created_at && <div>Created: {user.created_at}</div>}
+              {user.updated_at && <div>Last Updated: {user.updated_at}</div>}
+              {user.last_login && <div>Last Login: {user.last_login}</div>}
             </div>
           )}
         </div>
@@ -216,10 +219,7 @@ export default function UserModal({
         {/* ACTION BAR */}
         <div className="border-t px-6 py-4 bg-white flex justify-between items-center rounded-b-2xl">
           <button
-            onClick={() => {
-              if (!isView) handleSave();
-              onClose();
-            }}
+            onClick={onClose}
             className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
           >
             Save & Exit

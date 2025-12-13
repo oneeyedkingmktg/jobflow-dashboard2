@@ -86,7 +86,7 @@ export default function UserModal({
           <div>
             <label className="form-label">Name</label>
             {isView ? (
-              <div>{form.name}</div>
+              <div className="text-gray-900">{form.name}</div>
             ) : (
               <input
                 className="input"
@@ -100,7 +100,7 @@ export default function UserModal({
           <div>
             <label className="form-label">Email</label>
             {isView ? (
-              <div>{form.email}</div>
+              <div className="text-gray-900">{form.email}</div>
             ) : (
               <input
                 className="input"
@@ -114,7 +114,7 @@ export default function UserModal({
           <div>
             <label className="form-label">Phone</label>
             {isView ? (
-              <div>{form.phone || "—"}</div>
+              <div className="text-gray-900">{form.phone || "—"}</div>
             ) : (
               <input
                 className="input"
@@ -128,7 +128,7 @@ export default function UserModal({
           <div>
             <label className="form-label">Role</label>
             {isView || !canEditRole ? (
-              <div>{form.role}</div>
+              <div className="text-gray-900">{form.role}</div>
             ) : (
               <select
                 className="input"
@@ -146,7 +146,9 @@ export default function UserModal({
           <div>
             <label className="form-label">Status</label>
             {isView ? (
-              <div>{form.is_active ? "Active" : "Inactive"}</div>
+              <div className="text-gray-900">
+                {form.is_active ? "Active" : "Inactive"}
+              </div>
             ) : (
               <select
                 className="input"
@@ -194,10 +196,7 @@ export default function UserModal({
 
         {/* BOTTOM ACTION BAR */}
         <div className="absolute bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-between items-center">
-          <button
-            onClick={onClose}
-            className="btn btn-secondary"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Save & Exit
           </button>
 

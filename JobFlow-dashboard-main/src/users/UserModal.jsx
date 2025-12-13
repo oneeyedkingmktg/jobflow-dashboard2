@@ -1,6 +1,7 @@
 // File: src/users/UserModal.jsx
 
 import React, { useEffect, useState } from "react";
+import { useCompany } from "../CompanyContext";
 
 export default function UserModal({
   mode, // "view" | "edit" | "create"
@@ -11,6 +12,8 @@ export default function UserModal({
   onSave,
   onDelete,
 }) {
+  const { currentCompany } = useCompany();
+
   const isCreate = mode === "create";
   const isView = mode === "view";
   const isEdit = mode === "edit";
@@ -73,7 +76,7 @@ export default function UserModal({
           </h2>
         </div>
 
-        {/* CONTENT */}
+        {/* BODY */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 text-gray-900">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800 rounded">
@@ -141,24 +144,27 @@ export default function UserModal({
             )}
           </div>
 
-          {/* STATUS */}
+          {/* ACTIVE STATUS */}
           <div>
-            <label className="form-label">Status</label>
+            <label className="form-label">Active</label>
             {isView ? (
               <div className={viewBox}>
                 {form.is_active ? "Active" : "Inactive"}
               </div>
             ) : (
-              <select
-                className="input"
-                value={form.is_active ? "active" : "inactive"}
-                onChange={(e) =>
-                  handleChange("is_active", e.target.value === "active")
+              <button
+                type="button"
+                onClick={() =>
+                  handleChange("is_active", !form.is_active)
                 }
+                className={`w-full px-4 py-3 rounded-xl font-semibold border ${
+                  form.is_active
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : "bg-gray-200 text-gray-700 border-gray-300"
+                }`}
               >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+                {form.is_active ? "Active" : "Inactive"}
+              </button>
             )}
           </div>
 
@@ -182,12 +188,20 @@ export default function UserModal({
             </div>
           )}
 
-          {/* META */}
-          {!isCreate && (
+          {/* META INFO — VIEW ONLY */}
+          {!isCreate && isView && (
             <div className="pt-4 border-t text-sm text-gray-500 space-y-1">
-              <div>User ID: {user.id}</div>
-              {user.last_login && <div>Last login: {user.last_login}</div>}
+              <div>
+                Company:{" "}
+                <span className="font-medium text-gray-700">
+                  {currentCompany?.company_name ||
+                    currentCompany?.name ||
+                    "—"}
+                </span>
+              </div>
               {user.created_at && <div>Created: {user.created_at}</div>}
+              {user.updated_at && <div>Last Updated: {user.updated_at}</div>}
+              {user.last_login && <div>Last Login: {user.last_login}</div>}
             </div>
           )}
         </div>
@@ -201,7 +215,7 @@ export default function UserModal({
             Save & Exit
           </button>
 
-          {!isCreate && (
+          {!isCreate && currentUser?.role === "master" && (
             <button
               onClick={() => onDelete(user)}
               className="text-red-600 text-sm font-semibold"

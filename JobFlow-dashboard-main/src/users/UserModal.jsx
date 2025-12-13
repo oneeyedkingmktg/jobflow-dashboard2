@@ -1,13 +1,16 @@
 // File: src/users/UserModal.jsx
+// Version: v1.0.1 – Phone formatting + save UX polish (no visual changes)
 
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
 
-/* simple phone formatter */
+/* simple phone formatter (display + typing-safe) */
 const formatPhone = (val) => {
-  if (!val) return "—";
-  const digits = val.replace(/\D/g, "");
-  if (digits.length !== 10) return val;
+  if (!val) return "";
+  const digits = val.replace(/\D/g, "").slice(0, 10);
+  if (digits.length < 4) return digits;
+  if (digits.length < 7)
+    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 };
 
@@ -27,6 +30,7 @@ export default function UserModal({
 
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (isCreate) {
@@ -57,19 +61,27 @@ export default function UserModal({
     setError("");
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.email || !form.phone) {
       setError("Name, phone, and email are required");
       return;
     }
-    onSave(form);
+
+    if (saving) return;
+
+    try {
+      setSaving(true);
+      await onSave(form);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const canEditRole =
     currentUser?.role === "master" &&
     (!user || user.role !== "master");
 
-  /* styles */
+  /* styles — unchanged */
   const editBox =
     "w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
@@ -121,8 +133,10 @@ export default function UserModal({
             ) : (
               <input
                 className={editBox}
-                value={form.phone}
-                onChange={(e) => handleChange("phone", e.target.value)}
+                value={formatPhone(form.phone)}
+                onChange={(e) =>
+                  handleChange("phone", e.target.value)
+                }
               />
             )}
           </div>
@@ -181,7 +195,7 @@ export default function UserModal({
             )}
           </div>
 
-          {/* PASSWORD (EDIT / CREATE ONLY) */}
+          {/* PASSWORD */}
           {!isView && (
             <div className={fieldGroup}>
               <div className={viewLabel}>Set New Password</div>
@@ -195,7 +209,7 @@ export default function UserModal({
             </div>
           )}
 
-          {/* META (VIEW ONLY) */}
+          {/* META */}
           {isView && (
             <div className="pt-4 border-t text-xs text-gray-500 space-y-1">
               <div>
@@ -221,6 +235,7 @@ export default function UserModal({
               onClose();
             }}
             className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
+            disabled={saving}
           >
             Save & Exit
           </button>
@@ -240,8 +255,9 @@ export default function UserModal({
               else handleSave();
             }}
             className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
+            disabled={saving}
           >
-            {isView ? "Edit" : "Save"}
+            {isView ? "Edit" : saving ? "Saving…" : "Save"}
           </button>
         </div>
       </div>

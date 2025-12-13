@@ -51,8 +51,8 @@ export default function UserModal({
   };
 
   const handleSave = () => {
-    if (!form.name || !form.email) {
-      setError("Name and email are required");
+    if (!form.name || !form.email || !form.phone) {
+      setError("Name, phone, and email are required");
       return;
     }
     onSave(form);
@@ -64,6 +64,9 @@ export default function UserModal({
 
   const viewBox =
     "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900";
+
+  const fieldGroup = "space-y-2";
+  const formStack = "space-y-5";
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -77,7 +80,7 @@ export default function UserModal({
         </div>
 
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 text-gray-900">
+        <div className={`flex-1 overflow-y-auto px-6 py-5 ${formStack} text-gray-900`}>
           {error && (
             <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800 rounded">
               {error}
@@ -85,8 +88,8 @@ export default function UserModal({
           )}
 
           {/* NAME */}
-          <div>
-            <label className="form-label">Name</label>
+          <div className={fieldGroup}>
+            <label className="form-label form-label-required">Name</label>
             {isView ? (
               <div className={viewBox}>{form.name}</div>
             ) : (
@@ -98,23 +101,9 @@ export default function UserModal({
             )}
           </div>
 
-          {/* EMAIL */}
-          <div>
-            <label className="form-label">Email</label>
-            {isView ? (
-              <div className={viewBox}>{form.email}</div>
-            ) : (
-              <input
-                className="input"
-                value={form.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-              />
-            )}
-          </div>
-
           {/* PHONE */}
-          <div>
-            <label className="form-label">Phone</label>
+          <div className={fieldGroup}>
+            <label className="form-label form-label-required">Phone</label>
             {isView ? (
               <div className={viewBox}>{form.phone || "—"}</div>
             ) : (
@@ -126,8 +115,22 @@ export default function UserModal({
             )}
           </div>
 
+          {/* EMAIL */}
+          <div className={fieldGroup}>
+            <label className="form-label form-label-required">Email</label>
+            {isView ? (
+              <div className={viewBox}>{form.email}</div>
+            ) : (
+              <input
+                className="input"
+                value={form.email}
+                onChange={(e) => handleChange("email", e.target.value)}
+              />
+            )}
+          </div>
+
           {/* ROLE */}
-          <div>
+          <div className={fieldGroup}>
             <label className="form-label">Role</label>
             {isView || !canEditRole ? (
               <div className={viewBox}>{form.role}</div>
@@ -144,8 +147,8 @@ export default function UserModal({
             )}
           </div>
 
-          {/* ACTIVE STATUS */}
-          <div>
+          {/* ACTIVE TOGGLE */}
+          <div className={fieldGroup}>
             <label className="form-label">Active</label>
             {isView ? (
               <div className={viewBox}>
@@ -157,7 +160,7 @@ export default function UserModal({
                 onClick={() =>
                   handleChange("is_active", !form.is_active)
                 }
-                className={`w-full px-4 py-3 rounded-xl font-semibold border ${
+                className={`w-full px-4 py-3 rounded-xl font-semibold border transition ${
                   form.is_active
                     ? "bg-emerald-600 text-white border-emerald-600"
                     : "bg-gray-200 text-gray-700 border-gray-300"
@@ -170,25 +173,19 @@ export default function UserModal({
 
           {/* PASSWORD */}
           {!isView && (
-            <div>
-              <label className="form-label">
-                {isCreate ? "Password" : "Set New Password"}
-              </label>
+            <div className={fieldGroup}>
+              <label className="form-label">Set New Password</label>
               <input
                 className="input"
                 type="password"
                 value={form.password}
                 onChange={(e) => handleChange("password", e.target.value)}
-                placeholder={
-                  isCreate
-                    ? "Enter password"
-                    : "Leave blank to keep current password"
-                }
+                placeholder="Leave blank to keep current password"
               />
             </div>
           )}
 
-          {/* META INFO — VIEW ONLY */}
+          {/* META — VIEW ONLY */}
           {!isCreate && isView && (
             <div className="pt-4 border-t text-sm text-gray-500 space-y-1">
               <div>

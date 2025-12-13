@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
 
 export default function UserModal({
-  mode, // "view" | "edit" | "create" 
+  mode, // "view" | "edit" | "create"
   user,
   currentUser,
   onEdit,
@@ -62,8 +62,12 @@ export default function UserModal({
     currentUser?.role === "master" &&
     (!user || user.role !== "master");
 
+  /* --- Shared Styles --- */
   const viewBox =
     "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900";
+
+  const editBox =
+    "w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   const fieldGroup = "space-y-2";
   const formStack = "space-y-5";
@@ -94,7 +98,7 @@ export default function UserModal({
               <div className={viewBox}>{form.name}</div>
             ) : (
               <input
-                className="input"
+                className={editBox}
                 value={form.name}
                 onChange={(e) => handleChange("name", e.target.value)}
               />
@@ -108,7 +112,7 @@ export default function UserModal({
               <div className={viewBox}>{form.phone || "—"}</div>
             ) : (
               <input
-                className="input"
+                className={editBox}
                 value={form.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
               />
@@ -122,7 +126,7 @@ export default function UserModal({
               <div className={viewBox}>{form.email}</div>
             ) : (
               <input
-                className="input"
+                className={editBox}
                 value={form.email}
                 onChange={(e) => handleChange("email", e.target.value)}
               />
@@ -136,7 +140,7 @@ export default function UserModal({
               <div className={viewBox}>{form.role}</div>
             ) : (
               <select
-                className="input"
+                className={editBox}
                 value={form.role}
                 onChange={(e) => handleChange("role", e.target.value)}
               >
@@ -147,7 +151,7 @@ export default function UserModal({
             )}
           </div>
 
-          {/* ACTIVE TOGGLE */}
+          {/* ACTIVE */}
           <div className={fieldGroup}>
             <label className="form-label">Active</label>
             {isView ? (
@@ -157,9 +161,7 @@ export default function UserModal({
             ) : (
               <button
                 type="button"
-                onClick={() =>
-                  handleChange("is_active", !form.is_active)
-                }
+                onClick={() => handleChange("is_active", !form.is_active)}
                 className={`w-full px-4 py-3 rounded-xl font-semibold border transition ${
                   form.is_active
                     ? "bg-emerald-600 text-white border-emerald-600"
@@ -176,7 +178,7 @@ export default function UserModal({
             <div className={fieldGroup}>
               <label className="form-label">Set New Password</label>
               <input
-                className="input"
+                className={editBox}
                 type="password"
                 value={form.password}
                 onChange={(e) => handleChange("password", e.target.value)}
@@ -185,7 +187,7 @@ export default function UserModal({
             </div>
           )}
 
-          {/* META — VIEW ONLY */}
+          {/* META (VIEW ONLY) */}
           {!isCreate && isView && (
             <div className="pt-4 border-t text-sm text-gray-500 space-y-1">
               <div>
@@ -206,7 +208,10 @@ export default function UserModal({
         {/* ACTION BAR */}
         <div className="border-t px-6 py-4 bg-white flex justify-between items-center rounded-b-2xl">
           <button
-            onClick={onClose}
+            onClick={() => {
+              if (!isView) handleSave();
+              onClose();
+            }}
             className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
           >
             Save & Exit

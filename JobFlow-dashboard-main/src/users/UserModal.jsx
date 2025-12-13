@@ -3,6 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
 
+/* simple phone formatter */
+const formatPhone = (val) => {
+  if (!val) return "—";
+  const digits = val.replace(/\D/g, "");
+  if (digits.length !== 10) return val;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+};
+
 export default function UserModal({
   mode, // "view" | "edit" | "create"
   user,
@@ -16,7 +24,6 @@ export default function UserModal({
 
   const isCreate = mode === "create";
   const isView = mode === "view";
-  const isEdit = mode === "edit";
 
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
@@ -62,12 +69,13 @@ export default function UserModal({
     currentUser?.role === "master" &&
     (!user || user.role !== "master");
 
-  /* --- Shared Styles --- */
-  const viewBox =
-    "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900";
-
+  /* styles */
   const editBox =
     "w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
+
+  const viewRow = "space-y-1";
+  const viewLabel = "text-xs text-gray-500 uppercase tracking-wide";
+  const viewValue = "text-sm font-semibold text-gray-800";
 
   const fieldGroup = "space-y-2";
   const formStack = "space-y-5";
@@ -79,12 +87,12 @@ export default function UserModal({
         {/* HEADER */}
         <div className="bg-blue-600 text-white px-6 py-4 rounded-t-2xl">
           <h2 className="text-xl font-bold">
-            {isCreate ? "Add User" : isEdit ? "Edit User" : "User Details"}
+            {isCreate ? "Add User" : isView ? "User Details" : "Edit User"}
           </h2>
         </div>
 
         {/* BODY */}
-        <div className={`flex-1 overflow-y-auto px-6 py-5 ${formStack} text-gray-900`}>
+        <div className={`flex-1 overflow-y-auto px-6 py-5 ${formStack}`}>
           {error && (
             <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800 rounded">
               {error}
@@ -92,10 +100,10 @@ export default function UserModal({
           )}
 
           {/* NAME */}
-          <div className={fieldGroup}>
-            <label className="form-label form-label-required">Name</label>
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Name</div>
             {isView ? (
-              <div className={viewBox}>{form.name}</div>
+              <div className={viewValue}>{form.name}</div>
             ) : (
               <input
                 className={editBox}
@@ -106,10 +114,10 @@ export default function UserModal({
           </div>
 
           {/* PHONE */}
-          <div className={fieldGroup}>
-            <label className="form-label form-label-required">Phone</label>
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Phone</div>
             {isView ? (
-              <div className={viewBox}>{form.phone || "—"}</div>
+              <div className={viewValue}>{formatPhone(form.phone)}</div>
             ) : (
               <input
                 className={editBox}
@@ -120,10 +128,10 @@ export default function UserModal({
           </div>
 
           {/* EMAIL */}
-          <div className={fieldGroup}>
-            <label className="form-label form-label-required">Email</label>
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Email</div>
             {isView ? (
-              <div className={viewBox}>{form.email}</div>
+              <div className={viewValue}>{form.email}</div>
             ) : (
               <input
                 className={editBox}
@@ -134,10 +142,10 @@ export default function UserModal({
           </div>
 
           {/* ROLE */}
-          <div className={fieldGroup}>
-            <label className="form-label">Role</label>
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Role</div>
             {isView || !canEditRole ? (
-              <div className={viewBox}>{form.role}</div>
+              <div className={viewValue}>{form.role}</div>
             ) : (
               <select
                 className={editBox}
@@ -151,21 +159,21 @@ export default function UserModal({
             )}
           </div>
 
-          {/* ACTIVE */}
-          <div className={fieldGroup}>
-            <label className="form-label">Active</label>
+          {/* STATUS */}
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Status</div>
             {isView ? (
-              <div className={viewBox}>
+              <div className={viewValue}>
                 {form.is_active ? "Active" : "Inactive"}
               </div>
             ) : (
               <button
                 type="button"
                 onClick={() => handleChange("is_active", !form.is_active)}
-                className={`w-full px-4 py-3 rounded-xl font-semibold border transition ${
+                className={`w-full px-4 py-3 rounded-xl font-semibold border ${
                   form.is_active
-                    ? "bg-emerald-600 text-white border-emerald-600"
-                    : "bg-gray-200 text-gray-700 border-gray-300"
+                    ? "bg-emerald-600 text-white"
+                    : "bg-gray-200 text-gray-700"
                 }`}
               >
                 {form.is_active ? "Active" : "Inactive"}
@@ -173,10 +181,10 @@ export default function UserModal({
             )}
           </div>
 
-          {/* PASSWORD */}
+          {/* PASSWORD (EDIT / CREATE ONLY) */}
           {!isView && (
             <div className={fieldGroup}>
-              <label className="form-label">Set New Password</label>
+              <div className={viewLabel}>Set New Password</div>
               <input
                 className={editBox}
                 type="password"
@@ -188,8 +196,8 @@ export default function UserModal({
           )}
 
           {/* META (VIEW ONLY) */}
-          {!isCreate && isView && (
-            <div className="pt-4 border-t text-sm text-gray-500 space-y-1">
+          {isView && (
+            <div className="pt-4 border-t text-xs text-gray-500 space-y-1">
               <div>
                 Company:{" "}
                 <span className="font-medium text-gray-700">
@@ -198,9 +206,9 @@ export default function UserModal({
                     "—"}
                 </span>
               </div>
-              {user.created_at && <div>Created: {user.created_at}</div>}
-              {user.updated_at && <div>Last Updated: {user.updated_at}</div>}
-              {user.last_login && <div>Last Login: {user.last_login}</div>}
+              {user?.created_at && <div>Created: {user.created_at}</div>}
+              {user?.updated_at && <div>Last Updated: {user.updated_at}</div>}
+              {user?.last_login && <div>Last Login: {user.last_login}</div>}
             </div>
           )}
         </div>

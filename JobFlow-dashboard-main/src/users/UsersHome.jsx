@@ -18,7 +18,7 @@ export default function UsersHome({ onBack }) {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [isCreateMode, setIsCreateMode] = useState(false);
+  const [mode, setMode] = useState("view"); // view | edit | create
 
   // ONLY MASTER CAN MANAGE USERS
   const canManage =
@@ -46,23 +46,35 @@ export default function UsersHome({ onBack }) {
     }
   };
 
-  const handleAddUser = () => {
+  /* =========================
+     OPEN MODAL HANDLERS
+     ========================= */
+
+  const openCreate = () => {
     setSelectedUser(null);
-    setIsCreateMode(true);
+    setMode("create");
     setShowModal(true);
   };
 
-  const handleEditUser = (u) => {
+  const openView = (u) => {
     setSelectedUser(u);
-    setIsCreateMode(false);
+    setMode("view");
     setShowModal(true);
   };
+
+  const openEdit = () => {
+    setMode("edit");
+  };
+
+  /* =========================
+     SAVE / DELETE
+     ========================= */
 
   const handleSaveUser = async (form) => {
     try {
       setError("");
 
-      if (isCreateMode) {
+      if (mode === "create") {
         const payload = {
           name: form.name,
           email: form.email,
@@ -74,12 +86,15 @@ export default function UsersHome({ onBack }) {
         const res = await UsersAPI.create(payload);
         const created = res.user || res;
         setUsers((prev) => [created, ...prev]);
-      } else if (selectedUser) {
+      }
+
+      if (mode === "edit" && selectedUser) {
         const payload = {
           name: form.name,
           phone: form.phone,
           role: form.role,
           is_active: form.isActive,
+          ...(form.password ? { password: form.password } : {}),
         };
 
         const res = await UsersAPI.update(selectedUser.id, payload);
@@ -90,9 +105,7 @@ export default function UsersHome({ onBack }) {
         );
       }
 
-      setShowModal(false);
-      setSelectedUser(null);
-      setIsCreateMode(false);
+      closeModal();
     } catch (err) {
       setError(err.message || "Failed to save user");
     }
@@ -102,13 +115,21 @@ export default function UsersHome({ onBack }) {
     try {
       await UsersAPI.delete(userToDelete.id);
       setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
-      setShowModal(false);
-      setSelectedUser(null);
-      setIsCreateMode(false);
+      closeModal();
     } catch (err) {
       setError(err.message || "Failed to delete user");
     }
   };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedUser(null);
+    setMode("view");
+  };
+
+  /* =========================
+     SEARCH
+     ========================= */
 
   const filteredUsers = useMemo(() => {
     if (!search.trim()) return users;
@@ -167,7 +188,7 @@ export default function UsersHome({ onBack }) {
             className="px-4 py-2.5 rounded-lg border-2 border-gray-300 text-sm"
           />
           <button
-            onClick={handleAddUser}
+            onClick={openCreate}
             className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-blue-600 text-white shadow hover:bg-blue-700 transition"
           >
             + Add User
@@ -195,8 +216,7 @@ export default function UsersHome({ onBack }) {
               key={u.id}
               user={u}
               currentUser={user}
-              onEdit={() => handleEditUser(u)}
-              onDelete={() => handleDeleteUser(u)}
+              onClick={() => openView(u)}
             />
           ))}
         </div>
@@ -215,14 +235,11 @@ export default function UsersHome({ onBack }) {
 
       {showModal && (
         <UserModal
-          isCreate={isCreateMode}
+          mode={mode}              // "view" | "edit" | "create"
           user={selectedUser}
           currentUser={user}
-          onClose={() => {
-            setShowModal(false);
-            setSelectedUser(null);
-            setIsCreateMode(false);
-          }}
+          onEdit={openEdit}
+          onClose={closeModal}
           onSave={handleSaveUser}
           onDelete={handleDeleteUser}
         />

@@ -1,5 +1,5 @@
 // File: src/users/UserModal.jsx
-// Version: v1.2.1 – Company label safety fix (no blank dropdowns)
+// Version: v1.2.2 – Guard rails (self-lock + last master protection)
 
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
@@ -33,11 +33,20 @@ export default function UserModal({
 
   const isCreate = mode === "create";
   const isView = mode === "view";
+  const isSelf = user && currentUser && user.id === currentUser.id;
 
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Count masters (frontend safety only)
+  const masterCount = Array.isArray(companies)
+    ? companies.flatMap((c) => c.users || []).filter((u) => u.role === "master").length
+    : null;
+
+  const isLastMaster =
+    user?.role === "master" && masterCount === 1;
 
   useEffect(() => {
     if (isCreate) {
@@ -88,7 +97,16 @@ export default function UserModal({
 
   const canEditRole =
     currentUser?.role === "master" &&
-    (!user || user.role !== "master");
+    (!user || user.role !== "master") &&
+    !isSelf;
+
+  const canToggleStatus = !isSelf;
+
+  const canDeleteUser =
+    !isCreate &&
+    currentUser?.role === "master" &&
+    !isSelf &&
+    !isLastMaster;
 
   const allCompanies =
     Array.isArray(companies) && companies.length > 0
@@ -190,9 +208,7 @@ export default function UserModal({
           <div className={isView ? viewRow : fieldGroup}>
             <div className={viewLabel}>Company</div>
             {isView ? (
-              <div className={viewValue}>
-                {companyLabel(selectedCompany)}
-              </div>
+              <div className={viewValue}>{companyLabel(selectedCompany)}</div>
             ) : (
               <select
                 className={editBox}
@@ -234,7 +250,7 @@ export default function UserModal({
           {/* STATUS */}
           <div className={isView ? viewRow : fieldGroup}>
             <div className={viewLabel}>Status</div>
-            {isView ? (
+            {isView || !canToggleStatus ? (
               <div className={viewValue}>
                 {form.is_active ? "Active" : "Inactive"}
               </div>
@@ -304,13 +320,19 @@ export default function UserModal({
               Save & Exit
             </button>
 
-            {!isCreate && currentUser?.role === "master" && !confirmDelete && (
+            {canDeleteUser && !confirmDelete && (
               <button
                 onClick={() => setConfirmDelete(true)}
                 className="text-red-600 text-sm font-semibold"
               >
                 Delete User
               </button>
+            )}
+
+            {!canDeleteUser && user?.role === "master" && (
+              <div className="text-xs text-gray-500">
+                At least one master is required
+              </div>
             )}
 
             <button

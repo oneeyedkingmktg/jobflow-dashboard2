@@ -1,7 +1,7 @@
 /* ============================================================================
    API Configuration
    ============================================================================
-   FORCE REBUILD - Cache bust v5.0
+   FORCE REBUILD - Cache bust v5.1
 ============================================================================ */
 
 const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com';
@@ -54,12 +54,22 @@ export const apiRequest = async (endpoint, options = {}) => {
 
   try {
     const json = await response.json();
+
+    // 🔑 CRITICAL FIX: preserve token when present
+    if (json.token && json.user) {
+      return {
+        token: json.token,
+        user: toCamel(json.user),
+      };
+    }
+
     if (json.company) return { company: toCamel(json.company) };
     if (json.companies) return { companies: json.companies.map(toCamel) };
     if (json.user) return { user: toCamel(json.user) };
     if (json.users) return { users: json.users.map(toCamel) };
     if (json.lead) return { lead: toCamel(json.lead) };
     if (json.leads) return { leads: json.leads.map(toCamel) };
+
     return json;
   } catch {
     return {};

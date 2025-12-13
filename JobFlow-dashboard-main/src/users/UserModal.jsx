@@ -61,7 +61,7 @@ export default function UserModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl relative">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col">
 
         {/* HEADER */}
         <div className="bg-blue-600 text-white p-6 rounded-t-2xl">
@@ -74,8 +74,8 @@ export default function UserModal({
           </h2>
         </div>
 
-        {/* BODY — 🔑 TEXT COLOR RESET HERE */}
-        <div className="p-6 space-y-4 pb-24 text-gray-900">
+        {/* BODY */}
+        <div className="p-6 space-y-4 overflow-y-auto text-gray-900 flex-1">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800">
               {error}
@@ -166,6 +166,11 @@ export default function UserModal({
                 type="password"
                 value={form.password}
                 onChange={(e) => handleChange("password", e.target.value)}
+                placeholder={
+                  isCreate
+                    ? "Enter password"
+                    : "Leave blank to keep current password"
+                }
               />
             </div>
           )}
@@ -180,8 +185,8 @@ export default function UserModal({
           )}
         </div>
 
-        {/* BOTTOM ACTION BAR */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-between items-center">
+        {/* STICKY BOTTOM ACTION BAR */}
+        <div className="border-t p-4 bg-white flex justify-between items-center sticky bottom-0">
           <button onClick={onClose} className="btn btn-secondary">
             Save & Exit
           </button>

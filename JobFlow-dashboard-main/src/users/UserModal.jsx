@@ -1,10 +1,10 @@
 // File: src/users/UserModal.jsx
-// Version: v1.0.1 – Phone formatting + save UX polish (no visual changes)
+// Version: v1.1.0 – Confirm delete + company select + header polish
 
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
 
-/* simple phone formatter (display + typing-safe) */
+/* phone formatter (display + typing-safe) */
 const formatPhone = (val) => {
   if (!val) return "";
   const digits = val.replace(/\D/g, "").slice(0, 10);
@@ -23,7 +23,7 @@ export default function UserModal({
   onSave,
   onDelete,
 }) {
-  const { currentCompany } = useCompany();
+  const { currentCompany, companies = [] } = useCompany();
 
   const isCreate = mode === "create";
   const isView = mode === "view";
@@ -41,6 +41,7 @@ export default function UserModal({
         role: "user",
         password: "",
         is_active: true,
+        company_id: currentCompany?.id || null,
       });
     } else if (user) {
       setForm({
@@ -50,9 +51,10 @@ export default function UserModal({
         role: user.role || "user",
         password: "",
         is_active: user.is_active !== false,
+        company_id: user.company_id || currentCompany?.id || null,
       });
     }
-  }, [isCreate, user]);
+  }, [isCreate, user, currentCompany]);
 
   if (!form) return null;
 
@@ -62,8 +64,8 @@ export default function UserModal({
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.email || !form.phone) {
-      setError("Name, phone, and email are required");
+    if (!form.name || !form.email || !form.phone || !form.company_id) {
+      setError("Name, phone, email, and company are required");
       return;
     }
 
@@ -77,11 +79,24 @@ export default function UserModal({
     }
   };
 
+  const confirmDelete = () => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete ${form.name}? This cannot be undone.`
+      )
+    ) {
+      onDelete(user);
+    }
+  };
+
   const canEditRole =
     currentUser?.role === "master" &&
     (!user || user.role !== "master");
 
-  /* styles — unchanged */
+  const selectedCompany =
+    companies.find((c) => c.id === form.company_id) || currentCompany;
+
+  /* styles (unchanged) */
   const editBox =
     "w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
@@ -98,9 +113,23 @@ export default function UserModal({
 
         {/* HEADER */}
         <div className="bg-blue-600 text-white px-6 py-4 rounded-t-2xl">
-          <h2 className="text-xl font-bold">
-            {isCreate ? "Add User" : isView ? "User Details" : "Edit User"}
-          </h2>
+          {isView ? (
+            <>
+              <h2 className="text-xl font-bold">{form.name}</h2>
+              <div className="text-sm text-blue-100">
+                {selectedCompany?.company_name || selectedCompany?.name || "—"}
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-xl font-bold">
+                {isCreate ? "Add User" : `Edit ${form.name}`}
+              </h2>
+              <div className="text-sm text-blue-100">
+                {selectedCompany?.company_name || selectedCompany?.name || "—"}
+              </div>
+            </>
+          )}
         </div>
 
         {/* BODY */}
@@ -134,9 +163,7 @@ export default function UserModal({
               <input
                 className={editBox}
                 value={formatPhone(form.phone)}
-                onChange={(e) =>
-                  handleChange("phone", e.target.value)
-                }
+                onChange={(e) => handleChange("phone", e.target.value)}
               />
             )}
           </div>
@@ -152,6 +179,33 @@ export default function UserModal({
                 value={form.email}
                 onChange={(e) => handleChange("email", e.target.value)}
               />
+            )}
+          </div>
+
+          {/* COMPANY */}
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Company</div>
+            {isView ? (
+              <div className={viewValue}>
+                {selectedCompany?.company_name ||
+                  selectedCompany?.name ||
+                  "—"}
+              </div>
+            ) : (
+              <select
+                className={editBox}
+                value={form.company_id || ""}
+                onChange={(e) =>
+                  handleChange("company_id", Number(e.target.value))
+                }
+              >
+                <option value="">Select company</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.company_name || c.name}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 
@@ -208,23 +262,6 @@ export default function UserModal({
               />
             </div>
           )}
-
-          {/* META */}
-          {isView && (
-            <div className="pt-4 border-t text-xs text-gray-500 space-y-1">
-              <div>
-                Company:{" "}
-                <span className="font-medium text-gray-700">
-                  {currentCompany?.company_name ||
-                    currentCompany?.name ||
-                    "—"}
-                </span>
-              </div>
-              {user?.created_at && <div>Created: {user.created_at}</div>}
-              {user?.updated_at && <div>Last Updated: {user.updated_at}</div>}
-              {user?.last_login && <div>Last Login: {user.last_login}</div>}
-            </div>
-          )}
         </div>
 
         {/* ACTION BAR */}
@@ -242,7 +279,7 @@ export default function UserModal({
 
           {!isCreate && currentUser?.role === "master" && (
             <button
-              onClick={() => onDelete(user)}
+              onClick={confirmDelete}
               className="text-red-600 text-sm font-semibold"
             >
               Delete User

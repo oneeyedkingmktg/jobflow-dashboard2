@@ -1,10 +1,10 @@
 // File: src/users/UserModal.jsx
-// Version: v1.1.0 – Confirm delete + company select + header polish
+// Version: v1.2.0 – Inline delete confirmation (Lead-style)
 
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
 
-/* phone formatter (display + typing-safe) */
+/* phone formatter */
 const formatPhone = (val) => {
   if (!val) return "";
   const digits = val.replace(/\D/g, "").slice(0, 10);
@@ -31,6 +31,7 @@ export default function UserModal({
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (isCreate) {
@@ -79,16 +80,6 @@ export default function UserModal({
     }
   };
 
-  const confirmDelete = () => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${form.name}? This cannot be undone.`
-      )
-    ) {
-      onDelete(user);
-    }
-  };
-
   const canEditRole =
     currentUser?.role === "master" &&
     (!user || user.role !== "master");
@@ -96,7 +87,7 @@ export default function UserModal({
   const selectedCompany =
     companies.find((c) => c.id === form.company_id) || currentCompany;
 
-  /* styles (unchanged) */
+  /* styles */
   const editBox =
     "w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
@@ -265,37 +256,64 @@ export default function UserModal({
         </div>
 
         {/* ACTION BAR */}
-        <div className="border-t px-6 py-4 bg-white flex justify-between items-center rounded-b-2xl">
-          <button
-            onClick={() => {
-              if (!isView) handleSave();
-              onClose();
-            }}
-            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
-            disabled={saving}
-          >
-            Save & Exit
-          </button>
+        <div className="border-t px-6 py-4 bg-white rounded-b-2xl">
 
-          {!isCreate && currentUser?.role === "master" && (
-            <button
-              onClick={confirmDelete}
-              className="text-red-600 text-sm font-semibold"
-            >
-              Delete User
-            </button>
+          {/* DELETE CONFIRM ROW */}
+          {confirmDelete && (
+            <div className="mb-3 text-center space-y-2">
+              <div className="text-sm text-gray-700">
+                Are you sure you want to delete?
+              </div>
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => onDelete(user)}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white font-semibold"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           )}
 
-          <button
-            onClick={() => {
-              if (isView) onEdit();
-              else handleSave();
-            }}
-            className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
-            disabled={saving}
-          >
-            {isView ? "Edit" : saving ? "Saving…" : "Save"}
-          </button>
+          {/* MAIN BUTTON ROW */}
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => {
+                if (!isView) handleSave();
+                onClose();
+              }}
+              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
+              disabled={saving}
+            >
+              Save & Exit
+            </button>
+
+            {!isCreate && currentUser?.role === "master" && !confirmDelete && (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="text-red-600 text-sm font-semibold"
+              >
+                Delete User
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                if (isView) onEdit();
+                else handleSave();
+              }}
+              className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
+              disabled={saving}
+            >
+              {isView ? "Edit" : saving ? "Saving…" : "Save"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 // File: src/users/UserModal.jsx
-// Version: v1.2.2 – Guard rails (self-lock + last master protection)
+// Version: v1.2.3 – Deterministic company resolution (no context fallback)
 
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
@@ -15,9 +15,10 @@ const formatPhone = (val) => {
 };
 
 /* safe company label */
-const companyLabel = (c) => {
-  if (!c) return "—";
-  return c.company_name || c.name || `Company #${c.id}`;
+const companyLabel = (c, fallbackId = null) => {
+  if (c) return c.company_name || c.name || `Company #${c.id}`;
+  if (fallbackId) return `Company #${fallbackId} (not loaded)`;
+  return "—";
 };
 
 export default function UserModal({
@@ -42,11 +43,11 @@ export default function UserModal({
 
   // Count masters (frontend safety only)
   const masterCount = Array.isArray(companies)
-    ? companies.flatMap((c) => c.users || []).filter((u) => u.role === "master").length
+    ? companies.flatMap((c) => c.users || []).filter((u) => u.role === "master")
+        .length
     : null;
 
-  const isLastMaster =
-    user?.role === "master" && masterCount === 1;
+  const isLastMaster = user?.role === "master" && masterCount === 1;
 
   useEffect(() => {
     if (isCreate) {
@@ -67,7 +68,7 @@ export default function UserModal({
         role: user.role || "user",
         password: "",
         is_active: user.is_active !== false,
-        company_id: user.company_id || currentCompany?.id || null,
+        company_id: user.company_id || null,
       });
     }
   }, [isCreate, user, currentCompany]);
@@ -108,15 +109,11 @@ export default function UserModal({
     !isSelf &&
     !isLastMaster;
 
-  const allCompanies =
-    Array.isArray(companies) && companies.length > 0
-      ? companies
-      : currentCompany
-      ? [currentCompany]
-      : [];
+  const companyList = Array.isArray(companies) ? companies : [];
 
-  const selectedCompany =
-    allCompanies.find((c) => c.id === form.company_id) || currentCompany;
+  const selectedCompany = companyList.find(
+    (c) => c.id === form.company_id
+  );
 
   /* styles */
   const editBox =
@@ -135,23 +132,16 @@ export default function UserModal({
 
         {/* HEADER */}
         <div className="bg-blue-600 text-white px-6 py-4 rounded-t-2xl">
-          {isView ? (
-            <>
-              <h2 className="text-xl font-bold">{form.name}</h2>
-              <div className="text-sm text-blue-100">
-                {companyLabel(selectedCompany)}
-              </div>
-            </>
-          ) : (
-            <>
-              <h2 className="text-xl font-bold">
-                {isCreate ? "Add User" : `Edit ${form.name}`}
-              </h2>
-              <div className="text-sm text-blue-100">
-                {companyLabel(selectedCompany)}
-              </div>
-            </>
-          )}
+          <h2 className="text-xl font-bold">
+            {isView
+              ? form.name
+              : isCreate
+              ? "Add User"
+              : `Edit ${form.name}`}
+          </h2>
+          <div className="text-sm text-blue-100">
+            {companyLabel(selectedCompany, form.company_id)}
+          </div>
         </div>
 
         {/* BODY */}
@@ -208,7 +198,9 @@ export default function UserModal({
           <div className={isView ? viewRow : fieldGroup}>
             <div className={viewLabel}>Company</div>
             {isView ? (
-              <div className={viewValue}>{companyLabel(selectedCompany)}</div>
+              <div className={viewValue}>
+                {companyLabel(selectedCompany, form.company_id)}
+              </div>
             ) : (
               <select
                 className={editBox}
@@ -220,7 +212,7 @@ export default function UserModal({
                 <option value="" disabled>
                   Select company
                 </option>
-                {allCompanies.map((c) => (
+                {companyList.map((c) => (
                   <option key={c.id} value={c.id}>
                     {companyLabel(c)}
                   </option>
@@ -286,28 +278,6 @@ export default function UserModal({
 
         {/* ACTION BAR */}
         <div className="border-t px-6 py-4 bg-white rounded-b-2xl">
-          {confirmDelete && (
-            <div className="mb-3 text-center space-y-2">
-              <div className="text-sm text-gray-700">
-                Are you sure you want to delete?
-              </div>
-              <div className="flex justify-center gap-3">
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => onDelete(user)}
-                  className="px-4 py-2 rounded-lg bg-red-600 text-white font-semibold"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          )}
-
           <div className="flex justify-between items-center">
             <button
               onClick={() => {
@@ -320,19 +290,13 @@ export default function UserModal({
               Save & Exit
             </button>
 
-            {canDeleteUser && !confirmDelete && (
+            {canDeleteUser && (
               <button
                 onClick={() => setConfirmDelete(true)}
                 className="text-red-600 text-sm font-semibold"
               >
                 Delete User
               </button>
-            )}
-
-            {!canDeleteUser && user?.role === "master" && (
-              <div className="text-xs text-gray-500">
-                At least one master is required
-              </div>
             )}
 
             <button

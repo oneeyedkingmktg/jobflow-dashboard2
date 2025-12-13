@@ -1,5 +1,5 @@
 // File: src/users/UsersHome.jsx
-// Version: v1.1.1 – Hydrate user with company before opening modal
+// Version: v1.3.0 – Header simplification + full-width search bar UI
 
 import React, { useEffect, useState, useMemo } from "react";
 import { UsersAPI } from "../api";
@@ -10,7 +10,7 @@ import UserModal from "./UserModal.jsx";
 
 export default function UsersHome({ onBack }) {
   const { user, isAuthenticated } = useAuth();
-  const { currentCompany, companies } = useCompany();
+  const { currentCompany } = useCompany();
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,19 +46,8 @@ export default function UsersHome({ onBack }) {
     }
   };
 
-  // 🔑 HYDRATE USER WITH COMPANY BEFORE OPENING MODAL
   const openViewUser = (u) => {
-    const companyId = u.company_id ?? u.companyId ?? null;
-
-    const resolvedCompany = Array.isArray(companies)
-      ? companies.find((c) => c.id === companyId) || null
-      : null;
-
-    setSelectedUser({
-      ...u,
-      company: resolvedCompany,
-    });
-
+    setSelectedUser(u);
     setModalMode("view");
     setShowModal(true);
   };
@@ -157,33 +146,30 @@ export default function UsersHome({ onBack }) {
     );
   }
 
-  const companyLabel =
-    currentCompany?.company_name || currentCompany?.name || "Current Company";
-
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-5">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <div className="text-xs uppercase tracking-wide text-gray-400">
-            Company
-          </div>
-          <div className="text-lg font-semibold text-gray-800">
-            {companyLabel}
-          </div>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-gray-800">
+          CoatingPro360 – Edit Users
+        </h1>
 
-        <div className="flex gap-2 items-center">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search users…"
-            className="input text-sm"
-          />
-          <button onClick={openCreateUser} className="btn btn-primary">
-            + Add User
-          </button>
-        </div>
+        <button
+          onClick={openCreateUser}
+          className="btn btn-primary"
+        >
+          + Add User
+        </button>
+      </div>
+
+      {/* SEARCH */}
+      <div>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search users..."
+          className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
 
       {error && (
@@ -196,10 +182,11 @@ export default function UsersHome({ onBack }) {
         <div className="py-10 text-center text-gray-500">Loading users…</div>
       ) : filteredUsers.length === 0 ? (
         <div className="py-10 text-center text-gray-500">
-          No users found for this company.
+          No users found.
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* CREATE USER CARD */}
           <button
             onClick={openCreateUser}
             className="h-[90px] flex flex-col items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100 transition"

@@ -1,5 +1,5 @@
 // File: src/users/UserModal.jsx
-// Version: v1.2.4 – Deterministic company resolution (context-first + API fallback)
+// Version: v1.2.5 – Normalize companyId (camelCase) → company_id once at ingest
 
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
@@ -65,6 +65,10 @@ export default function UserModal({
         company_id: currentCompany?.id || null,
       });
     } else if (user) {
+      // 🔑 NORMALIZATION FIX (THIS IS THE BUG)
+      const normalizedCompanyId =
+        user.company_id ?? user.companyId ?? null;
+
       setForm({
         name: user.name || "",
         email: user.email || "",
@@ -72,7 +76,7 @@ export default function UserModal({
         role: user.role || "user",
         password: "",
         is_active: user.is_active !== false,
-        company_id: user.company_id || null,
+        company_id: normalizedCompanyId,
       });
     }
   }, [isCreate, user, currentCompany]);
@@ -103,7 +107,7 @@ export default function UserModal({
       try {
         const res = await CompaniesAPI.get(companyId);
         if (alive) setResolvedCompany(res?.company || null);
-      } catch (e) {
+      } catch {
         if (alive) setResolvedCompany(null);
       }
     };
@@ -150,9 +154,10 @@ export default function UserModal({
 
   const companyList = Array.isArray(companies) ? companies : [];
 
-  // Prefer the deterministically resolved company for labels
   const selectedCompany =
-    resolvedCompany || companyList.find((c) => c.id === form.company_id) || null;
+    resolvedCompany ||
+    companyList.find((c) => c.id === form.company_id) ||
+    null;
 
   /* styles */
   const editBox =

@@ -74,19 +74,18 @@ export default function UserModal({
           </h2>
         </div>
 
-        {/* BODY */}
-        <div className="p-6 space-y-4 pb-24">
+        {/* BODY — 🔑 TEXT COLOR RESET HERE */}
+        <div className="p-6 space-y-4 pb-24 text-gray-900">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800">
               {error}
             </div>
           )}
 
-          {/* Name */}
           <div>
             <label className="form-label">Name</label>
             {isView ? (
-              <div className="text-gray-900">{form.name}</div>
+              <div>{form.name}</div>
             ) : (
               <input
                 className="input"
@@ -96,11 +95,10 @@ export default function UserModal({
             )}
           </div>
 
-          {/* Email */}
           <div>
             <label className="form-label">Email</label>
             {isView ? (
-              <div className="text-gray-900">{form.email}</div>
+              <div>{form.email}</div>
             ) : (
               <input
                 className="input"
@@ -110,11 +108,10 @@ export default function UserModal({
             )}
           </div>
 
-          {/* Phone */}
           <div>
             <label className="form-label">Phone</label>
             {isView ? (
-              <div className="text-gray-900">{form.phone || "—"}</div>
+              <div>{form.phone || "—"}</div>
             ) : (
               <input
                 className="input"
@@ -124,11 +121,10 @@ export default function UserModal({
             )}
           </div>
 
-          {/* Role */}
           <div>
             <label className="form-label">Role</label>
             {isView || !canEditRole ? (
-              <div className="text-gray-900">{form.role}</div>
+              <div>{form.role}</div>
             ) : (
               <select
                 className="input"
@@ -142,13 +138,10 @@ export default function UserModal({
             )}
           </div>
 
-          {/* Status */}
           <div>
             <label className="form-label">Status</label>
             {isView ? (
-              <div className="text-gray-900">
-                {form.is_active ? "Active" : "Inactive"}
-              </div>
+              <div>{form.is_active ? "Active" : "Inactive"}</div>
             ) : (
               <select
                 className="input"
@@ -163,7 +156,6 @@ export default function UserModal({
             )}
           </div>
 
-          {/* Password */}
           {!isView && (
             <div>
               <label className="form-label">
@@ -174,16 +166,10 @@ export default function UserModal({
                 type="password"
                 value={form.password}
                 onChange={(e) => handleChange("password", e.target.value)}
-                placeholder={
-                  isCreate
-                    ? "Enter password"
-                    : "Leave blank to keep current password"
-                }
               />
             </div>
           )}
 
-          {/* META */}
           {!isCreate && (
             <div className="text-sm text-gray-500 pt-4 border-t space-y-1">
               <div>User ID: {user.id}</div>

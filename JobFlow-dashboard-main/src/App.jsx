@@ -1,8 +1,12 @@
-import React from "react";
+// File: src/App.jsx
+// Version: v1.1.0 – App-level screen override foundation (non-breaking)
+
+import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { CompanyProvider, useCompany } from "./CompanyContext";
 import Login from "./Login";
 import LeadsHome from "./LeadsHome.jsx";
+import CompaniesHome from "./company/CompaniesHome.jsx";
 import "./index.css";
 
 /* ===========================================================
@@ -51,6 +55,16 @@ function AppContent() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { currentCompany, companies, loading: companyLoading } = useCompany();
 
+  // -----------------------------------------------------------
+  // App-level screen control (default = leads)
+  // -----------------------------------------------------------
+  const [activeScreen, setActiveScreen] = useState("leads");
+
+  // Expose setter safely for controlled admin use (no auto triggers)
+  if (typeof window !== "undefined") {
+    window.__setAppScreen = setActiveScreen;
+  }
+
   const fullyLoading = isLoading || companyLoading;
 
   /* ---------------------------------------
@@ -92,7 +106,6 @@ function AppContent() {
 
   /* ---------------------------------------
      4. Company still loading / unavailable
-     IMPORTANT: do NOT block master users
      --------------------------------------- */
   if (!currentCompany && user.role !== "master") {
     return (
@@ -105,7 +118,18 @@ function AppContent() {
   }
 
   /* ---------------------------------------
-     5. Main App
+     5. Screen selection (SAFE OVERRIDE)
+     --------------------------------------- */
+  if (activeScreen === "companies") {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <CompaniesHome onBack={() => setActiveScreen("leads")} />
+      </div>
+    );
+  }
+
+  /* ---------------------------------------
+     6. Main App (default)
      --------------------------------------- */
   return (
     <div className="min-h-screen bg-gray-50">

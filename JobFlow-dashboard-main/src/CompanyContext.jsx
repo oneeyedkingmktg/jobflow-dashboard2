@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/CompanyContext.jsx
-// Version: 4.4 – Add GHL fields support for create/update
+// Version: v4.4 - Add GHL fields support for create/update
 // ============================================================================
 
 import { createContext, useContext, useState, useEffect } from "react";

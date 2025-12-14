@@ -1,5 +1,5 @@
 // File: src/company/CompaniesHome.jsx
-// Version: v1.0.5 – Header cleanup (Close button, 50/50 actions)
+// Version: v1.0.6 – App-level Close wiring (no modal assumptions)
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../AuthContext";
@@ -7,7 +7,7 @@ import { useCompany } from "../CompanyContext";
 import CompanyCard from "./CompanyCard.jsx";
 import CompanyModal from "./CompanyModal.jsx";
 
-export default function CompaniesHome({ onBack }) {
+export default function CompaniesHome() {
   const { user, isAuthenticated } = useAuth();
   const {
     companies,
@@ -29,7 +29,7 @@ export default function CompaniesHome({ onBack }) {
   const canManage = isAuthenticated && user?.role === "master";
 
   // ------------------------------------------------------------
-  // LOAD companies when screen is opened
+  // LOAD companies
   // ------------------------------------------------------------
   useEffect(() => {
     if (!canManage) {
@@ -104,14 +104,6 @@ export default function CompaniesHome({ onBack }) {
         <p className="text-gray-600 mb-4">
           Only the master account can manage companies.
         </p>
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="px-6 py-3 bg-gray-700 text-white rounded-lg font-bold"
-          >
-            Back
-          </button>
-        )}
       </div>
     );
   }
@@ -125,7 +117,7 @@ export default function CompaniesHome({ onBack }) {
         </div>
 
         <button
-          onClick={onBack}
+          onClick={() => window.__setAppScreen?.("main")}
           className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg font-semibold"
         >
           Close

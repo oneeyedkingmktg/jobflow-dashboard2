@@ -1,5 +1,4 @@
 // File: src/company/CompanyCard.jsx
-// Version: v1.0.2 – Use company_name instead of name
 
 import React from "react";
 
@@ -13,7 +12,7 @@ export default function CompanyCard({ company, onClick }) {
     >
       <div>
         <h4 className="font-bold text-gray-900">
-          {company.company_name}
+          {company.company_name || company.name}
         </h4>
 
         {company.email && (

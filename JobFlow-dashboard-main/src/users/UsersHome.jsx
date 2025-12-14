@@ -1,5 +1,5 @@
 // File: src/users/UsersHome.jsx
-// Version: v1.4.1 – Pass companyId to API for company-scoped user queries
+// Version: v1.5.0 – Always pass company_id in create/update for proper company assignment
 
 import React, { useEffect, useState, useMemo } from "react";
 import { UsersAPI } from "../api";
@@ -82,12 +82,19 @@ export default function UsersHome({ onBack, scopedCompany }) {
           role: form.role,
           password: form.password,
           is_active: form.is_active,
-          company_id: activeCompany.id,
+          // Always pass company_id from form (user can select different company)
+          company_id: form.company_id || activeCompany.id,
         };
+
+        console.log("Creating user with payload:", payload);
 
         const res = await UsersAPI.create(payload);
         const created = res.user || res;
-        setUsers((prev) => [created, ...prev]);
+        
+        // Only add to list if user belongs to the active company
+        if (created.companyId === activeCompany.id) {
+          setUsers((prev) => [created, ...prev]);
+        }
       }
 
       if (modalMode === "edit" && selectedUser) {
@@ -97,21 +104,32 @@ export default function UsersHome({ onBack, scopedCompany }) {
           phone: form.phone,
           role: form.role,
           is_active: form.is_active,
+          // Always include company_id so user can be reassigned
+          company_id: form.company_id,
           ...(form.password ? { password: form.password } : {}),
         };
+
+        console.log("Updating user with payload:", payload);
 
         const res = await UsersAPI.update(selectedUser.id, payload);
         const updated = res.user || res;
 
-        setUsers((prev) =>
-          prev.map((u) => (u.id === updated.id ? updated : u))
-        );
+        // If user was moved to different company, remove from list
+        if (updated.companyId !== activeCompany.id) {
+          setUsers((prev) => prev.filter((u) => u.id !== updated.id));
+        } else {
+          // Otherwise update in place
+          setUsers((prev) =>
+            prev.map((u) => (u.id === updated.id ? updated : u))
+          );
+        }
       }
 
       setShowModal(false);
       setSelectedUser(null);
       setModalMode("view");
     } catch (err) {
+      console.error("Save user error:", err);
       setError(err.message || "Failed to save user");
     }
   };
@@ -184,7 +202,7 @@ export default function UsersHome({ onBack, scopedCompany }) {
         <div className="py-10 text-center text-gray-500">Loading users…</div>
       ) : filteredUsers.length === 0 ? (
         <div className="py-10 text-center text-gray-500">
-          No users found.
+          No users found for this company.
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -213,6 +231,7 @@ export default function UsersHome({ onBack, scopedCompany }) {
           mode={modalMode}
           user={selectedUser}
           currentUser={user}
+          defaultCompanyId={activeCompany.id}
           onEdit={() => setModalMode("edit")}
           onClose={() => {
             setShowModal(false);

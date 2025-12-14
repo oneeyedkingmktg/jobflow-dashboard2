@@ -1,5 +1,5 @@
 // File: src/users/UserModal.jsx
-// Version: v1.2.6 – Fix companyLabel to use camelCase companyName
+// Version: v1.3.0 – Accept defaultCompanyId prop for company-scoped user creation
 
 import React, { useEffect, useState } from "react";
 import { useCompany } from "../CompanyContext";
@@ -25,6 +25,7 @@ export default function UserModal({
   mode, // "view" | "edit" | "create"
   user,
   currentUser,
+  defaultCompanyId, // NEW: allows parent to set default company for new users
   onEdit,
   onClose,
   onSave,
@@ -55,6 +56,9 @@ export default function UserModal({
 
   useEffect(() => {
     if (isCreate) {
+      // Use defaultCompanyId if provided, otherwise fall back to currentCompany
+      const initialCompanyId = defaultCompanyId || currentCompany?.id || null;
+      
       setForm({
         name: "",
         email: "",
@@ -62,7 +66,7 @@ export default function UserModal({
         role: "user",
         password: "",
         is_active: true,
-        company_id: currentCompany?.id || null,
+        company_id: initialCompanyId,
       });
     } else if (user) {
       const normalizedCompanyId =
@@ -78,7 +82,7 @@ export default function UserModal({
         company_id: normalizedCompanyId,
       });
     }
-  }, [isCreate, user, currentCompany]);
+  }, [isCreate, user, currentCompany, defaultCompanyId]);
 
   // Resolve the company object deterministically for display
   useEffect(() => {
@@ -104,8 +108,8 @@ export default function UserModal({
 
       // 2) API fallback
       try {
-        const res = await CompaniesAPI.get(companyId);
-        if (alive) setResolvedCompany(res?.company || null);
+        const result = await CompaniesAPI.get(companyId);
+        if (alive) setResolvedCompany(result.company || null);
       } catch {
         if (alive) setResolvedCompany(null);
       }
@@ -126,8 +130,18 @@ export default function UserModal({
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.email || !form.phone || !form.company_id) {
-      setError("Name, phone, email, and company are required");
+    if (!form.name) {
+      setError("Name is required");
+      return;
+    }
+
+    if (!form.email) {
+      setError("Email is required");
+      return;
+    }
+
+    if (isCreate && !form.password) {
+      setError("Password is required for new users");
       return;
     }
 
@@ -136,6 +150,8 @@ export default function UserModal({
     try {
       setSaving(true);
       await onSave(form);
+    } catch (err) {
+      setError(err.message || "Failed to save user");
     } finally {
       setSaving(false);
     }
@@ -248,7 +264,7 @@ export default function UserModal({
                 }
               >
                 <option value="" disabled>
-                  Select company
+                  Select Company
                 </option>
                 {companyList.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -262,9 +278,15 @@ export default function UserModal({
           {/* ROLE */}
           <div className={isView ? viewRow : fieldGroup}>
             <div className={viewLabel}>Role</div>
-            {isView || !canEditRole ? (
-              <div className={viewValue}>{form.role}</div>
-            ) : (
+            {isView ? (
+              <div className={viewValue}>
+                {form.role === "master"
+                  ? "Master Admin"
+                  : form.role === "admin"
+                  ? "Admin"
+                  : "User"}
+              </div>
+            ) : canEditRole ? (
               <select
                 className={editBox}
                 value={form.role}
@@ -272,84 +294,138 @@ export default function UserModal({
               >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
-                <option value="master">Master</option>
+                <option value="master">Master Admin</option>
               </select>
-            )}
-          </div>
-
-          {/* STATUS */}
-          <div className={isView ? viewRow : fieldGroup}>
-            <div className={viewLabel}>Status</div>
-            {isView || !canToggleStatus ? (
-              <div className={viewValue}>
-                {form.is_active ? "Active" : "Inactive"}
-              </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => handleChange("is_active", !form.is_active)}
-                className={`w-full px-4 py-3 rounded-xl font-semibold border ${
-                  form.is_active
-                    ? "bg-emerald-600 text-white"
-                    : "bg-gray-200 text-gray-700"
-                }`}
-              >
-                {form.is_active ? "Active" : "Inactive"}
-              </button>
+              <div className={viewValue}>
+                {form.role === "master"
+                  ? "Master Admin"
+                  : form.role === "admin"
+                  ? "Admin"
+                  : "User"}
+              </div>
             )}
           </div>
 
           {/* PASSWORD */}
           {!isView && (
             <div className={fieldGroup}>
-              <div className={viewLabel}>Set New Password</div>
+              <div className={viewLabel}>
+                Password {!isCreate && "(leave blank to keep current)"}
+              </div>
               <input
-                className={editBox}
                 type="password"
+                className={editBox}
                 value={form.password}
                 onChange={(e) => handleChange("password", e.target.value)}
-                placeholder="Leave blank to keep current password"
+                placeholder={isCreate ? "Set password" : "Leave blank to keep current"}
               />
             </div>
           )}
+
+          {/* STATUS */}
+          <div className={isView ? viewRow : fieldGroup}>
+            <div className={viewLabel}>Status</div>
+            {isView ? (
+              <div className={viewValue}>
+                {form.is_active ? (
+                  <span className="text-green-600 font-semibold">Active</span>
+                ) : (
+                  <span className="text-red-600 font-semibold">Inactive</span>
+                )}
+              </div>
+            ) : canToggleStatus ? (
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => handleChange("is_active", e.target.checked)}
+                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-gray-700">Active</span>
+              </label>
+            ) : (
+              <div className={viewValue}>
+                {form.is_active ? (
+                  <span className="text-green-600 font-semibold">Active</span>
+                ) : (
+                  <span className="text-red-600 font-semibold">Inactive</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* ACTION BAR */}
-        <div className="border-t px-6 py-4 bg-white rounded-b-2xl">
-          <div className="flex justify-between items-center">
-            <button
-              onClick={() => {
-                if (!isView) handleSave();
-                onClose();
-              }}
-              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
-              disabled={saving}
-            >
-              Save & Exit
-            </button>
+        {/* FOOTER */}
+        <div className="border-t px-6 py-4 bg-white rounded-b-2xl flex justify-between">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300"
+          >
+            {isView ? "Close" : "Cancel"}
+          </button>
 
-            {canDeleteUser && (
+          <div className="flex gap-3">
+            {canDeleteUser && isView && (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="text-red-600 text-sm font-semibold"
+                className="px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700"
               >
-                Delete User
+                Delete
               </button>
             )}
 
-            <button
-              onClick={() => {
-                if (isView) onEdit();
-                else handleSave();
-              }}
-              className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
-              disabled={saving}
-            >
-              {isView ? "Edit" : saving ? "Saving…" : "Save"}
-            </button>
+            {isView ? (
+              <button
+                onClick={onEdit}
+                className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
+              >
+                Edit
+              </button>
+            ) : (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:bg-blue-300"
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* DELETE CONFIRMATION */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md">
+            <h3 className="text-xl font-bold text-red-600 mb-3">
+              Confirm Delete
+            </h3>
+            <p className="text-gray-700 mb-5">
+              Are you sure you want to delete <strong>{form.name}</strong>? This
+              action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onDelete(user);
+                  setConfirmDelete(false);
+                }}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white font-semibold"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

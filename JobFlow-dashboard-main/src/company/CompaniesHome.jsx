@@ -1,5 +1,5 @@
 // File: src/company/CompaniesHome.jsx
-// Version: v1.0.0 – Clone of UsersHome for Company Management
+// Version: v1.0.1 – Remove local loadCompanies call to prevent overlay remount
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../AuthContext";
@@ -12,7 +12,6 @@ export default function CompaniesHome({ onBack }) {
   const {
     companies,
     currentCompany,
-    loadCompanies,
     createCompany,
     updateCompany,
     switchCompany,
@@ -26,28 +25,19 @@ export default function CompaniesHome({ onBack }) {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [modalMode, setModalMode] = useState("view"); // view | edit | create
 
-  const canManage =
-    isAuthenticated && user?.role === "master";
+  const canManage = isAuthenticated && user?.role === "master";
 
+  // IMPORTANT:
+  // Do NOT call loadCompanies() here.
+  // CompanyContext already loads companies globally.
+  // Calling it again causes SettingsMenu to remount and close this screen.
   useEffect(() => {
     if (!canManage) {
       setLoading(false);
       return;
     }
 
-    const load = async () => {
-      try {
-        setLoading(true);
-        await loadCompanies();
-      } catch (err) {
-        setError(err.message || "Failed to load companies");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setLoading(false);
   }, [canManage]);
 
   const openViewCompany = (c) => {
@@ -118,10 +108,7 @@ export default function CompaniesHome({ onBack }) {
           CoatingPro360 – Manage Companies
         </h1>
 
-        <button
-          onClick={openCreateCompany}
-          className="btn btn-primary"
-        >
+        <button onClick={openCreateCompany} className="btn btn-primary">
           + Add Company
         </button>
       </div>

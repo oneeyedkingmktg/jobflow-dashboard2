@@ -1,5 +1,5 @@
 // File: src/company/CompanyModal.jsx
-// Version: v1.2.0 – Pass company to UsersHome to show company-specific users
+// Version: v1.2.1 – Mobile-responsive tab buttons (50% width mobile, flex desktop)
 
 import React, { useEffect, useState } from "react";
 import UsersHome from "../users/UsersHome";
@@ -175,7 +175,8 @@ export default function CompanyModal({
           </h2>
         </div>
 
-        <div className="px-6 py-4 flex flex-wrap gap-2 border-b">
+        {/* TAB BUTTONS - Mobile: 2 columns (50% width), Desktop: Flexible wrap */}
+        <div className="px-6 py-4 grid grid-cols-2 sm:flex sm:flex-wrap gap-2 border-b">
           <button
             className={sectionBtn(activeSection === "info")}
             onClick={() => {

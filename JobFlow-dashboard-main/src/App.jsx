@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { CompanyProvider, useCompany } from "./CompanyContext";
 import Login from "./Login";
@@ -51,7 +51,6 @@ function AppContent() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { currentCompany, companies, loading: companyLoading } = useCompany();
 
-  // Combined loading state
   const fullyLoading = isLoading || companyLoading;
 
   /* ---------------------------------------
@@ -93,8 +92,9 @@ function AppContent() {
 
   /* ---------------------------------------
      4. Company still loading / unavailable
+     IMPORTANT: do NOT block master users
      --------------------------------------- */
-  if (!currentCompany) {
+  if (!currentCompany && user.role !== "master") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

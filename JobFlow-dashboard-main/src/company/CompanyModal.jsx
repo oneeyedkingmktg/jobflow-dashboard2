@@ -1,5 +1,5 @@
 // File: src/company/CompanyModal.jsx
-// Version: v1.1.1 – Fix JSX closing tag build error
+// Version: v1.2.0 – Pass company to UsersHome to show company-specific users
 
 import React, { useEffect, useState } from "react";
 import UsersHome from "../users/UsersHome";
@@ -221,7 +221,7 @@ export default function CompanyModal({
           {activeSection === "info" && renderCompanyInfo()}
           {activeSection === "ghl" && renderPlaceholder("GHL")}
           {activeSection === "estimator" && renderPlaceholder("Estimator")}
-          {activeSection === "users" && <UsersHome />}
+          {activeSection === "users" && <UsersHome scopedCompany={company} />}
         </div>
 
         <div className="border-t px-6 py-4 bg-white rounded-b-2xl flex justify-between">

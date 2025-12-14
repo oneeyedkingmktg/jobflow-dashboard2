@@ -1,7 +1,7 @@
 /* ============================================================================
    API Configuration
    ============================================================================
-   FORCE REBUILD - Cache bust v5.1
+   FORCE REBUILD - Cache bust v5.2
 ============================================================================ */
 
 const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com';
@@ -95,7 +95,12 @@ export const AuthAPI = {
 ============================================================================ */
 
 export const UsersAPI = {
-  getAll: () => apiRequest('/users'),
+  getAll: (companyId = null) => {
+    // Master admin can pass companyId to get users for a specific company
+    const query = companyId ? `?company_id=${companyId}` : '';
+    return apiRequest(`/users${query}`);
+  },
+
   get: (id) => apiRequest(`/users/${id}`),
 
   create: (data) =>

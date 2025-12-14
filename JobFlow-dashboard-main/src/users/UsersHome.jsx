@@ -1,5 +1,5 @@
 // File: src/users/UsersHome.jsx
-// Version: v1.3.1 – Company-scoped users + embedded-safe UI
+// Version: v1.3.2 – Fix companyId filter (camelCase)
 
 import React, { useEffect, useState, useMemo } from "react";
 import { UsersAPI } from "../api";
@@ -24,7 +24,7 @@ export default function UsersHome({ onBack }) {
   const canManage =
     isAuthenticated && user?.role === "master" && !!currentCompany;
 
-  const isEmbedded = !onBack; // embedded inside CompanyModal
+  const isEmbedded = !onBack;
 
   useEffect(() => {
     if (!canManage) {
@@ -41,9 +41,10 @@ export default function UsersHome({ onBack }) {
       setError("");
       const res = await UsersAPI.getAll();
 
+      // 🔑 FIX: correct camelCase companyId
       const scoped =
         res.users?.filter(
-          (u) => u.company_id === currentCompany.id
+          (u) => u.companyId === currentCompany.id
         ) || [];
 
       setUsers(scoped);
@@ -149,7 +150,6 @@ export default function UsersHome({ onBack }) {
 
   return (
     <div className="p-6 space-y-6">
-      {/* HEADER (hide when embedded) */}
       {!isEmbedded && (
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold text-gray-800">
@@ -162,7 +162,6 @@ export default function UsersHome({ onBack }) {
         </div>
       )}
 
-      {/* SEARCH */}
       <div>
         <input
           value={search}

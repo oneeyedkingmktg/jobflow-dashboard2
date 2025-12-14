@@ -1,6 +1,6 @@
 // ============================================================================
-// CompanyContext – FULL Multi-Company Support (Master + Regular Users)
-// Version: 4.0 (Includes createCompany + updateCompany)
+// CompanyContext – FULL Multi-Company Support (Normalized)
+// Version: 4.1 – Normalize company_name → name (single source of truth)
 // ============================================================================
 
 import { createContext, useContext, useState, useEffect } from "react";
@@ -13,6 +13,18 @@ export const useCompany = () => {
   const ctx = useContext(CompanyContext);
   if (!ctx) throw new Error("useCompany must be used inside CompanyProvider");
   return ctx;
+};
+
+// ---------------------------------------------------------------------------
+// Normalize company object ONCE here
+// ---------------------------------------------------------------------------
+const normalizeCompany = (c) => {
+  if (!c || typeof c !== "object") return null;
+
+  return {
+    ...c,
+    name: c.name ?? c.company_name ?? "",
+  };
 };
 
 export const CompanyProvider = ({ children }) => {
@@ -38,37 +50,34 @@ export const CompanyProvider = ({ children }) => {
 
   // ============================================================================
   // Load companies
-  // Master → all companies
-  // Admin/User → only their company
   // ============================================================================
   const loadCompanies = async () => {
     try {
       setLoading(true);
 
       if (user.role === "master") {
-        // MASTER: load ALL companies
         const res = await CompaniesAPI.getAll();
-        const allCompanies = res.companies || [];
+        const raw = res.companies || [];
+        const normalized = raw.map(normalizeCompany).filter(Boolean);
 
-        setCompanies(allCompanies);
+        setCompanies(normalized);
         setCurrentCompany((prev) => {
-          // Keep the previously selected company if still valid
-          if (prev && allCompanies.some((c) => c.id === prev.id)) return prev;
-          return allCompanies[0] || null;
+          if (prev && normalized.some((c) => c.id === prev.id)) {
+            return prev;
+          }
+          return normalized[0] || null;
         });
       } else {
-        // REGULAR USER: load only assigned company
         if (!user.company_id) {
-          console.warn("User has no company_id assigned.");
           setCompanies([]);
           setCurrentCompany(null);
           return;
         }
 
         const res = await CompaniesAPI.get(user.company_id);
-        const company = res.company;
+        const company = normalizeCompany(res.company);
 
-        setCompanies([company]);
+        setCompanies(company ? [company] : []);
         setCurrentCompany(company);
       }
     } catch (err) {
@@ -86,7 +95,7 @@ export const CompanyProvider = ({ children }) => {
   const switchCompany = async (companyId) => {
     try {
       const res = await CompaniesAPI.get(companyId);
-      setCurrentCompany(res.company);
+      setCurrentCompany(normalizeCompany(res.company));
     } catch (err) {
       console.error("Failed to switch company:", err);
     }
@@ -108,10 +117,8 @@ export const CompanyProvider = ({ children }) => {
         return { success: false, error: res.error || "Missing company from API" };
       }
 
-      // refresh list after creation
       await loadCompanies();
-
-      return { success: true, company: res.company };
+      return { success: true, company: normalizeCompany(res.company) };
     } catch (err) {
       console.error("createCompany error:", err);
       return { success: false, error: err.message };
@@ -119,7 +126,7 @@ export const CompanyProvider = ({ children }) => {
   };
 
   // ============================================================================
-  // UPDATE COMPANY SETTINGS
+  // UPDATE COMPANY
   // ============================================================================
   const updateCompany = async (companyId, updates) => {
     try {
@@ -129,15 +136,14 @@ export const CompanyProvider = ({ children }) => {
         return { success: false, error: res.error || "Failed to update company" };
       }
 
-      // Refresh the company's data in state
-      setCurrentCompany(res.company);
+      const normalized = normalizeCompany(res.company);
+      setCurrentCompany(normalized);
 
-      // Update list for master accounts
       if (user.role === "master") {
         await loadCompanies();
       }
 
-      return { success: true, company: res.company };
+      return { success: true, company: normalized };
     } catch (err) {
       console.error("updateCompany error:", err);
       return { success: false, error: err.message };

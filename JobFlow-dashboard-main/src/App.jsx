@@ -1,10 +1,8 @@
-import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { CompanyProvider, useCompany } from "./CompanyContext";
 import Login from "./Login";
 import LeadsHome from "./LeadsHome.jsx";
-import CompaniesHome from "./company/CompaniesHome.jsx";
 import "./index.css";
 
 /* ===========================================================
@@ -47,16 +45,17 @@ class ErrorBoundary extends React.Component {
 }
 
 /* ===========================================================
-   ROUTED APP CONTENT
+   MAIN APP CONTENT
    =========================================================== */
 function AppContent() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { currentCompany, companies, loading: companyLoading } = useCompany();
 
+  // Combined loading state
   const fullyLoading = isLoading || companyLoading;
 
   /* ---------------------------------------
-     Global loading
+     1. Global loading spinner
      --------------------------------------- */
   if (fullyLoading) {
     return (
@@ -70,14 +69,14 @@ function AppContent() {
   }
 
   /* ---------------------------------------
-     Auth gate
+     2. Login screen
      --------------------------------------- */
   if (!isAuthenticated || !user) {
     return <Login />;
   }
 
   /* ---------------------------------------
-     Master with no companies
+     3. No company yet (master creating first company)
      --------------------------------------- */
   if (user.role === "master" && companies.length === 0) {
     return (
@@ -93,48 +92,37 @@ function AppContent() {
   }
 
   /* ---------------------------------------
-     Company not ready
+     4. Company still loading / unavailable
      --------------------------------------- */
   if (!currentCompany) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-700">Preparing your company workspace…</p>
+        <div className="text-center">
+          <p className="text-gray-700">Preparing your company workspace…</p>
+        </div>
       </div>
     );
   }
 
   /* ---------------------------------------
-     Routes
+     5. Main App
      --------------------------------------- */
   return (
-    <Routes>
-      <Route path="/" element={<LeadsHome currentUser={user} />} />
-      <Route
-        path="/companies"
-        element={
-          user.role === "master" ? (
-            <CompaniesHome />
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <div className="min-h-screen bg-gray-50">
+      <LeadsHome currentUser={user} />
+    </div>
   );
 }
 
 /* ===========================================================
-   APP ROOT
+   APP PROVIDERS + ERROR BOUNDARY
    =========================================================== */
 export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
         <CompanyProvider>
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
+          <AppContent />
         </CompanyProvider>
       </AuthProvider>
     </ErrorBoundary>

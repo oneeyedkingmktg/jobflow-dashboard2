@@ -1,5 +1,5 @@
 // File: src/users/UsersHome.jsx
-// Version: v1.3.5 – Fixed: Backend already filters by company, no need for frontend filter
+// Version: v1.4.1 – Pass companyId to API for company-scoped user queries
 
 import React, { useEffect, useState, useMemo } from "react";
 import { UsersAPI } from "../api";
@@ -8,9 +8,12 @@ import { useCompany } from "../CompanyContext";
 import UserCard from "./UserCard.jsx";
 import UserModal from "./UserModal.jsx";
 
-export default function UsersHome({ onBack }) {
+export default function UsersHome({ onBack, scopedCompany }) {
   const { user, isAuthenticated } = useAuth();
   const { currentCompany } = useCompany();
+
+  // Use scopedCompany if provided (from modal), otherwise use currentCompany (from global context)
+  const activeCompany = scopedCompany || currentCompany;
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +25,7 @@ export default function UsersHome({ onBack }) {
   const [modalMode, setModalMode] = useState("view"); // view | edit | create
 
   const canManage =
-    isAuthenticated && user?.role === "master" && !!currentCompany;
+    isAuthenticated && user?.role === "master" && !!activeCompany;
 
   const isEmbedded = !onBack;
 
@@ -33,18 +36,20 @@ export default function UsersHome({ onBack }) {
     }
     loadUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canManage, currentCompany?.id]);
+  }, [canManage, activeCompany?.id]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       setError("");
-      const res = await UsersAPI.getAll();
+      
+      // Pass company ID to API so backend filters correctly
+      const res = await UsersAPI.getAll(activeCompany.id);
 
       console.log("USERS FROM API:", res.users);
+      console.log("ACTIVE COMPANY:", activeCompany);
 
-      // Backend already filters by company (WHERE company_id = $1)
-      // No need to filter again on frontend
+      // Backend already filtered by company, just set the users directly
       setUsers(res.users || []);
     } catch (err) {
       setError(err.message || "Failed to load users");
@@ -77,7 +82,7 @@ export default function UsersHome({ onBack }) {
           role: form.role,
           password: form.password,
           is_active: form.is_active,
-          company_id: currentCompany.id,
+          company_id: activeCompany.id,
         };
 
         const res = await UsersAPI.create(payload);
@@ -151,7 +156,7 @@ export default function UsersHome({ onBack }) {
       {!isEmbedded && (
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold text-gray-800">
-            CoatingPro360 – Edit Users
+            {activeCompany.name || activeCompany.companyName} – Edit Users
           </h1>
 
           <button onClick={openCreateUser} className="btn btn-primary">

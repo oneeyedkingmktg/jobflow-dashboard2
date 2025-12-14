@@ -1,5 +1,5 @@
 // File: src/company/CompaniesHome.jsx
-// Version: v1.0.7 – Mobile-responsive button sizing
+// Version: v1.0.6 – App-level Close wiring (no modal assumptions)
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../AuthContext";
@@ -110,15 +110,15 @@ export default function CompaniesHome() {
 
   return (
     <div className="p-6 space-y-5">
-      {/* HEADER - Mobile: stacked, Desktop: inline */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+      {/* HEADER */}
+      <div className="grid grid-cols-2 gap-3 items-center">
         <div className="text-lg font-semibold text-gray-800">
           CoatingPro360 – Manage Companies
         </div>
 
         <button
           onClick={() => window.__setAppScreen?.("main")}
-          className="w-full sm:w-auto px-6 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-900 transition"
+          className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg font-semibold"
         >
           Close
         </button>
@@ -149,8 +149,8 @@ export default function CompaniesHome() {
           No companies found.
         </div>
       ) : (
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
-          {/* CREATE COMPANY CARD - 50% width on mobile, 1/2 on tablet, 1/3 on desktop */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* CREATE COMPANY CARD */}
           <button
             onClick={openCreateCompany}
             className="h-[90px] flex flex-col items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100 transition"

@@ -1,5 +1,7 @@
+// ============================================================================
 // File: src/SettingsMenu.jsx
-// Version: v1.1.0 – Lift Manage Companies to App-level screen control
+// Version: v1.2.0 - Clean redesign to match leads modal styling
+// ============================================================================
 
 import React, { useState } from "react";
 import { useCompany } from "./CompanyContext";
@@ -22,14 +24,9 @@ export default function SettingsMenu() {
 
   const [showUserMgmt, setShowUserMgmt] = useState(false);
 
-  const handleSwitchCompany = (companyId) => {
+  const handleSwitchCompany = (e) => {
+    const companyId = parseInt(e.target.value, 10);
     switchCompany(companyId);
-    setShowMenu(false);
-  };
-
-  const handleNewCompany = () => {
-    setShowMenu(false);
-    setShowCompanyWizard(true);
   };
 
   const handleManageCompanies = () => {
@@ -70,7 +67,25 @@ export default function SettingsMenu() {
           className="touch-target p-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"
           aria-label="Menu"
         >
-          <span className="text-2xl">⚙️</span>
+          <svg 
+            className="w-6 h-6 text-white" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" 
+            />
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
+            />
+          </svg>
         </button>
 
         {/* Dropdown */}
@@ -81,111 +96,83 @@ export default function SettingsMenu() {
               onClick={() => setShowMenu(false)}
             />
 
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden border-2 border-gray-200">
+            <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden border border-gray-200">
               {isMaster() ? (
                 <>
-                  {/* SWITCH COMPANY */}
-                  <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100 p-4">
-                    <h3 className="text-sm font-bold text-gray-700 mb-3">
-                      Switch Company
-                    </h3>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {/* COMPANY SWITCHER - DROPDOWN */}
+                  <div className="bg-gray-600 px-6 py-4">
+                    <label className="block text-xs font-semibold text-white uppercase tracking-wide mb-2">
+                      Current Company
+                    </label>
+                    <select
+                      value={currentCompany?.id || ""}
+                      onChange={handleSwitchCompany}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
                       {companies.map((company) => (
-                        <button
-                          key={company.id}
-                          onClick={() => handleSwitchCompany(company.id)}
-                          className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
-                            currentCompany?.id === company.id
-                              ? "bg-blue-600 text-white font-bold shadow-md"
-                              : "bg-white hover:bg-blue-50 text-gray-900 border border-gray-200"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold">
-                              {company.name}
-                            </span>
-                            {currentCompany?.id === company.id && (
-                              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                                ACTIVE
-                              </span>
-                            )}
-                          </div>
-                        </button>
+                        <option key={company.id} value={company.id}>
+                          {company.name}
+                        </option>
                       ))}
-                    </div>
+                    </select>
                   </div>
 
                   {/* MASTER ACTIONS */}
-                  <div className="p-3 space-y-2">
-                    <button
-                      onClick={handleNewCompany}
-                      className="w-full flex items-center gap-3 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg"
-                    >
-                      <span className="text-xl">➕</span>
-                      <span>New Company</span>
-                    </button>
-
+                  <div className="p-4 space-y-2">
                     <button
                       onClick={handleManageCompanies}
-                      className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg"
+                      className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
                     >
-                      <span className="text-xl">🏢</span>
-                      <span>Manage Companies</span>
+                      Manage Companies
                     </button>
 
                     <button
                       onClick={handleManageUsers}
-                      className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg"
+                      className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
                     >
-                      <span className="text-xl">👥</span>
-                      <span>Manage Users</span>
+                      Manage Users
                     </button>
 
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg"
+                      className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
                     >
-                      <span className="text-xl">🚪</span>
-                      <span>Logout</span>
+                      Logout
                     </button>
                   </div>
                 </>
               ) : (
-                <div className="p-3 space-y-2">
+                <div className="p-4 space-y-2">
                   {isCompanyAdmin && (
                     <>
                       <button
                         onClick={handleSettings}
-                        className="w-full flex items-center gap-3 px-4 py-3 bg-gray-700 text-white font-bold rounded-lg"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
                       >
-                        <span className="text-xl">⚙️</span>
-                        <span>Company Settings</span>
+                        Company Settings
                       </button>
 
                       <button
                         onClick={handleManageUsers}
-                        className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white font-bold rounded-lg"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
                       >
-                        <span className="text-xl">👥</span>
-                        <span>Manage Users</span>
+                        Manage Users
                       </button>
                     </>
                   )}
 
                   <button
                     onClick={handleMyProfile}
-                    className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white font-bold rounded-lg"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
                   >
-                    <span className="text-xl">👤</span>
-                    <span>My Profile</span>
+                    My Profile
                   </button>
 
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-3 bg-red-600 text-white font-bold rounded-lg"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
                   >
-                    <span className="text-xl">🚪</span>
-                    <span>Logout</span>
+                    Logout
                   </button>
                 </div>
               )}

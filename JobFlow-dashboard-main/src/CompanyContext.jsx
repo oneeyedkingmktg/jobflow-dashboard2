@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/CompanyContext.jsx
-// Version: 4.3 – Fix create/update to handle errors and pass correct fields
+// Version: 4.4 – Add GHL fields support for create/update
 // ============================================================================
 
 import { createContext, useContext, useState, useEffect } from "react";
@@ -108,12 +108,19 @@ export const CompanyProvider = ({ children }) => {
     try {
       console.log("Creating company with data:", data);
 
-      const res = await CompaniesAPI.create({
+      const payload = {
         name: data.name,
         phone: data.phone || "",
         email: data.email || "",
         address: data.address || "",
-      });
+        // Include GHL fields if present
+        ghl_api_key: data.ghl_api_key || "",
+        ghl_location_id: data.ghl_location_id || "",
+        ghl_install_calendar: data.ghl_install_calendar || "",
+        ghl_appt_calendar: data.ghl_appt_calendar || "",
+      };
+
+      const res = await CompaniesAPI.create(payload);
 
       console.log("Create company response:", res);
 
@@ -136,7 +143,19 @@ export const CompanyProvider = ({ children }) => {
     try {
       console.log("Updating company", companyId, "with:", updates);
 
-      const res = await CompaniesAPI.update(companyId, updates);
+      const payload = {
+        name: updates.name,
+        phone: updates.phone,
+        email: updates.email,
+        address: updates.address,
+        // Include GHL fields if present
+        ghl_api_key: updates.ghl_api_key,
+        ghl_location_id: updates.ghl_location_id,
+        ghl_install_calendar: updates.ghl_install_calendar,
+        ghl_appt_calendar: updates.ghl_appt_calendar,
+      };
+
+      const res = await CompaniesAPI.update(companyId, payload);
 
       console.log("Update company response:", res);
 

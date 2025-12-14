@@ -1,6 +1,6 @@
 // ============================================================================
-// CompanyContext – FULL Multi-Company Support (Normalized)
-// Version: 4.1 – Normalize company_name → name (single source of truth)
+// File: src/CompanyContext.jsx
+// Version: 4.2 – Fix camelCase normalization (companyName → name)
 // ============================================================================
 
 import { createContext, useContext, useState, useEffect } from "react";
@@ -23,7 +23,7 @@ const normalizeCompany = (c) => {
 
   return {
     ...c,
-    name: c.name ?? c.company_name ?? "",
+    name: c.name ?? c.companyName ?? "",
   };
 };
 

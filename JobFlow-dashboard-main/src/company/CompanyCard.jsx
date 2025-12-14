@@ -1,35 +1,34 @@
-// File: src/users/UserCard.jsx
+// File: src/company/CompanyCard.jsx
+// Version: v1.0.2 – Use company_name instead of name
+
 import React from "react";
 
-export default function UserCard({ user, onClick }) {
+export default function CompanyCard({ company, onClick }) {
+  if (!company) return null;
+
   return (
     <div
       onClick={onClick}
       className="p-4 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl border border-gray-200 hover:shadow-md transition-all cursor-pointer"
     >
       <div>
-        <h4 className="font-bold text-gray-900">{user.name}</h4>
-        <p className="text-sm text-gray-600">{user.email}</p>
+        <h4 className="font-bold text-gray-900">
+          {company.company_name}
+        </h4>
 
-        {user.phone && (
+        {company.email && (
+          <p className="text-sm text-gray-600">{company.email}</p>
+        )}
+
+        {company.phone && (
           <p className="text-xs text-gray-500 mt-1">
-            Phone: {user.phone}
+            Phone: {company.phone}
           </p>
         )}
 
-        <p className="text-xs text-gray-500 mt-1">
-          Role: <span className="font-semibold">{user.role}</span>
-        </p>
-
-        {user.is_active === false && (
+        {company.is_active === false && (
           <p className="text-xs text-red-600 font-semibold mt-1">
             Inactive
-          </p>
-        )}
-
-        {user.last_login && (
-          <p className="text-xs text-gray-400 mt-1">
-            Last login: {user.last_login}
           </p>
         )}
       </div>

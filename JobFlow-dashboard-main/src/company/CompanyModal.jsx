@@ -1,5 +1,5 @@
 // File: src/company/CompanyModal.jsx
-// Version: v1.1.0 – Section buttons (Leads-style) + Users tab
+// Version: v1.1.1 – Fix JSX closing tag build error
 
 import React, { useEffect, useState } from "react";
 import UsersHome from "../users/UsersHome";
@@ -76,7 +76,7 @@ export default function CompanyModal({
   };
 
   // ------------------------------------------------------------
-  // UI CLASSES (REUSED STYLE)
+  // UI CLASSES
   // ------------------------------------------------------------
   const sectionBtn = (active) =>
     `px-4 py-2 rounded-lg font-semibold transition ${
@@ -102,7 +102,6 @@ export default function CompanyModal({
         </div>
       )}
 
-      {/* NAME */}
       <div>
         <div className={viewLabel}>Company Name</div>
         {sectionMode === "view" ? (
@@ -116,7 +115,6 @@ export default function CompanyModal({
         )}
       </div>
 
-      {/* PHONE */}
       <div>
         <div className={viewLabel}>Phone</div>
         {sectionMode === "view" ? (
@@ -130,7 +128,6 @@ export default function CompanyModal({
         )}
       </div>
 
-      {/* EMAIL */}
       <div>
         <div className={viewLabel}>Email</div>
         {sectionMode === "view" ? (
@@ -144,7 +141,6 @@ export default function CompanyModal({
         )}
       </div>
 
-      {/* ADDRESS */}
       <div>
         <div className={viewLabel}>Address</div>
         {sectionMode === "view" ? (
@@ -173,14 +169,12 @@ export default function CompanyModal({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        {/* HEADER */}
         <div className="bg-blue-600 text-white px-6 py-4 rounded-t-2xl">
           <h2 className="text-xl font-bold">
             {isCreate ? "Add Company" : form.name}
           </h2>
         </div>
 
-        {/* SECTION BUTTONS */}
         <div className="px-6 py-4 flex flex-wrap gap-2 border-b">
           <button
             className={sectionBtn(activeSection === "info")}
@@ -223,7 +217,6 @@ export default function CompanyModal({
           </button>
         </div>
 
-        {/* BODY */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {activeSection === "info" && renderCompanyInfo()}
           {activeSection === "ghl" && renderPlaceholder("GHL")}
@@ -231,7 +224,6 @@ export default function CompanyModal({
           {activeSection === "users" && <UsersHome />}
         </div>
 
-        {/* ACTION BAR */}
         <div className="border-t px-6 py-4 bg-white rounded-b-2xl flex justify-between">
           <button
             onClick={onClose}
@@ -255,4 +247,10 @@ export default function CompanyModal({
                 : saving
                 ? "Saving…"
                 : "Save"}
-            </butt
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

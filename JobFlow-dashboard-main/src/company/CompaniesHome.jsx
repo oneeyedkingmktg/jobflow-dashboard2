@@ -1,5 +1,5 @@
 // File: src/company/CompaniesHome.jsx
-// Version: v1.0.2 – Guard against undefined company entries
+// Version: v1.0.3 – Normalize company_name → name
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../AuthContext";
@@ -33,7 +33,6 @@ export default function CompaniesHome({ onBack }) {
       return;
     }
 
-    // Companies already loaded by CompanyContext
     setLoading(false);
   }, [canManage]);
 
@@ -70,20 +69,26 @@ export default function CompaniesHome({ onBack }) {
     }
   };
 
-  const filteredCompanies = useMemo(() => {
+  // NORMALIZE company_name → name
+  const normalizedCompanies = useMemo(() => {
     if (!Array.isArray(companies)) return [];
 
-    const validCompanies = companies.filter(
-      (c) => c && typeof c === "object" && c.id
-    );
+    return companies
+      .filter((c) => c && typeof c === "object" && c.id)
+      .map((c) => ({
+        ...c,
+        name: c.name ?? c.company_name ?? "",
+      }));
+  }, [companies]);
 
-    if (!search.trim()) return validCompanies;
+  const filteredCompanies = useMemo(() => {
+    if (!search.trim()) return normalizedCompanies;
 
     const term = search.toLowerCase();
-    return validCompanies.filter((c) =>
-      (c.name || "").toLowerCase().includes(term)
+    return normalizedCompanies.filter((c) =>
+      c.name.toLowerCase().includes(term)
     );
-  }, [search, companies]);
+  }, [search, normalizedCompanies]);
 
   if (!canManage) {
     return (

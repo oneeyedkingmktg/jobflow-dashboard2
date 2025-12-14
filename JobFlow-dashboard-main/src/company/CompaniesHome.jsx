@@ -1,5 +1,5 @@
 // File: src/company/CompaniesHome.jsx
-// Version: v1.0.1 – Remove local loadCompanies call to prevent overlay remount
+// Version: v1.0.2 – Guard against undefined company entries
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../AuthContext";
@@ -27,20 +27,18 @@ export default function CompaniesHome({ onBack }) {
 
   const canManage = isAuthenticated && user?.role === "master";
 
-  // IMPORTANT:
-  // Do NOT call loadCompanies() here.
-  // CompanyContext already loads companies globally.
-  // Calling it again causes SettingsMenu to remount and close this screen.
   useEffect(() => {
     if (!canManage) {
       setLoading(false);
       return;
     }
 
+    // Companies already loaded by CompanyContext
     setLoading(false);
   }, [canManage]);
 
   const openViewCompany = (c) => {
+    if (!c) return;
     setSelectedCompany(c);
     setModalMode("view");
     setShowModal(true);
@@ -73,10 +71,16 @@ export default function CompaniesHome({ onBack }) {
   };
 
   const filteredCompanies = useMemo(() => {
-    if (!search.trim()) return companies;
-    const term = search.toLowerCase();
+    if (!Array.isArray(companies)) return [];
 
-    return companies.filter((c) =>
+    const validCompanies = companies.filter(
+      (c) => c && typeof c === "object" && c.id
+    );
+
+    if (!search.trim()) return validCompanies;
+
+    const term = search.toLowerCase();
+    return validCompanies.filter((c) =>
       (c.name || "").toLowerCase().includes(term)
     );
   }, [search, companies]);
@@ -159,14 +163,6 @@ export default function CompaniesHome({ onBack }) {
               onSetActive={() => switchCompany(c.id)}
             />
           ))}
-        </div>
-      )}
-
-      {onBack && (
-        <div className="pt-6 border-t mt-4 flex justify-end">
-          <button onClick={onBack} className="btn btn-secondary">
-            Back
-          </button>
         </div>
       )}
 

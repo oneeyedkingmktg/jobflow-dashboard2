@@ -1,257 +1,252 @@
-// File: src/company/CompanyModal.jsx
-// Version: v1.2.1 – Mobile-responsive tab buttons (50% width mobile, flex desktop)
+// ============================================================================
+// Companies Routes - Master admin company management (v2.1)
+// FIX: Match actual DB schema - no ghl_calendar_id, use ghl_install_calendar & ghl_appt_calendar
+// ============================================================================
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const CryptoJS = require('crypto-js');
+const db = require('../config/database');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 
-import React, { useEffect, useState } from "react";
-import UsersHome from "../users/UsersHome";
+const router = express.Router();
 
-export default function CompanyModal({
-  mode, // "view" | "edit" | "create"
-  company,
-  onEdit,
-  onClose,
-  onSave,
-}) {
-  const isCreate = mode === "create";
+router.use(authenticateToken);
+router.use(requireRole('master'));
 
-  // ------------------------------------------------------------
-  // SECTION STATE
-  // ------------------------------------------------------------
-  const [activeSection, setActiveSection] = useState("info"); // info | ghl | estimator | users
-  const [sectionMode, setSectionMode] = useState("view"); // view | edit (Company Info only)
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'change-this-encryption-key';
 
-  const [form, setForm] = useState(null);
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+// Encrypt API key
+const encryptApiKey = (apiKey) => {
+  return CryptoJS.AES.encrypt(apiKey, ENCRYPTION_KEY).toString();
+};
 
-  // ------------------------------------------------------------
-  // INIT FORM
-  // ------------------------------------------------------------
-  useEffect(() => {
-    if (isCreate) {
-      setActiveSection("info");
-      setSectionMode("edit");
-      setForm({
-        name: "",
-        phone: "",
-        email: "",
-        address: "",
-      });
-    } else if (company) {
-      setActiveSection("info");
-      setSectionMode("view");
-      setForm({
-        name: company.name || "",
-        phone: company.phone || "",
-        email: company.email || "",
-        address: company.address || "",
-      });
+// Decrypt API key (used only by ghlAPI.js)
+const decryptApiKey = (encryptedKey) => {
+  if (!encryptedKey) return null;
+  const bytes = CryptoJS.AES.decrypt(encryptedKey, ENCRYPTION_KEY);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};
+
+// ============================================================================
+// GET ALL COMPANIES
+// ============================================================================
+router.get('/', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT 
+        c.*,
+        COUNT(DISTINCT u.id) AS user_count,
+        COUNT(DISTINCT l.id) AS lead_count
+       FROM companies c
+       LEFT JOIN users u ON c.id = u.company_id AND u.deleted_at IS NULL
+       LEFT JOIN leads l ON c.id = l.company_id AND l.deleted_at IS NULL
+       WHERE c.deleted_at IS NULL
+       GROUP BY c.id
+       ORDER BY c.created_at DESC`
+    );
+
+    const companies = result.rows.map((company) => ({
+      ...company,
+      ghl_api_key: company.ghl_api_key ? '***hidden***' : null
+    }));
+
+    res.json({ companies });
+  } catch (error) {
+    console.error('Get companies error:', error);
+    res.status(500).json({ error: 'Failed to fetch companies' });
+  }
+});
+
+// ============================================================================
+// GET SINGLE COMPANY
+// ============================================================================
+router.get('/:id', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT *
+       FROM companies
+       WHERE id = $1 AND deleted_at IS NULL`,
+      [req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Company not found' });
     }
-  }, [isCreate, company]);
 
-  if (!form) return null;
+    const company = result.rows[0];
+    company.ghl_api_key = company.ghl_api_key ? '***hidden***' : null;
 
-  // ------------------------------------------------------------
-  // HANDLERS
-  // ------------------------------------------------------------
-  const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    setError("");
-  };
+    res.json({ company });
+  } catch (error) {
+    console.error('Get company error:', error);
+    res.status(500).json({ error: 'Failed to fetch company' });
+  }
+});
 
-  const handleSave = async () => {
-    if (!form.name) {
-      setError("Company name is required");
-      return;
+// ============================================================================
+// CREATE COMPANY (Simplified - matches actual DB schema)
+// ============================================================================
+router.post('/', async (req, res) => {
+  try {
+    const {
+      company_name,
+      name, // Accept either company_name or name
+      phone,
+      email,
+      address,
+      ghl_api_key,
+      ghl_location_id,
+      ghl_install_calendar,
+      ghl_appt_calendar,
+      billing_status,
+      monthly_price
+    } = req.body;
+
+    const companyName = company_name || name;
+
+    if (!companyName) {
+      return res.status(400).json({ error: 'Company name is required' });
     }
 
-    if (saving) return;
+    const encryptedApiKey = ghl_api_key ? encryptApiKey(ghl_api_key) : null;
 
-    try {
-      setSaving(true);
-      await onSave(form);
-      setSectionMode("view");
-    } finally {
-      setSaving(false);
+    const result = await db.query(
+      `INSERT INTO companies (
+        company_name,
+        phone,
+        email,
+        address,
+        ghl_api_key,
+        ghl_location_id,
+        ghl_install_calendar,
+        ghl_appt_calendar,
+        billing_status,
+        monthly_price
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *`,
+      [
+        companyName,
+        phone || null,
+        email || null,
+        address || null,
+        encryptedApiKey,
+        ghl_location_id || null,
+        ghl_install_calendar || null,
+        ghl_appt_calendar || null,
+        billing_status || 'active',
+        monthly_price || null
+      ]
+    );
+
+    const company = result.rows[0];
+    company.ghl_api_key = company.ghl_api_key ? '***hidden***' : null;
+
+    res.status(201).json({ company });
+  } catch (error) {
+    console.error('Create company error:', error);
+    res.status(500).json({ error: 'Failed to create company' });
+  }
+});
+
+// ============================================================================
+// UPDATE COMPANY
+// ============================================================================
+router.put('/:id', async (req, res) => {
+  try {
+    const {
+      company_name,
+      name, // Accept either company_name or name
+      phone,
+      email,
+      address,
+      ghl_api_key,
+      ghl_location_id,
+      ghl_install_calendar,
+      ghl_appt_calendar,
+      billing_status,
+      monthly_price,
+      setup_fee_paid
+    } = req.body;
+
+    const companyName = company_name || name;
+
+    let encryptedApiKey = undefined;
+
+    // Only encrypt if a new key is provided (not the hidden placeholder)
+    if (ghl_api_key && ghl_api_key !== '***hidden***') {
+      encryptedApiKey = encryptApiKey(ghl_api_key);
     }
-  };
 
-  // ------------------------------------------------------------
-  // UI CLASSES
-  // ------------------------------------------------------------
-  const sectionBtn = (active) =>
-    `px-4 py-2 rounded-lg font-semibold transition ${
-      active
-        ? "bg-blue-600 text-white"
-        : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-    }`;
+    const result = await db.query(
+      `UPDATE companies SET
+        company_name = COALESCE($1, company_name),
+        phone = COALESCE($2, phone),
+        email = COALESCE($3, email),
+        address = COALESCE($4, address),
+        ghl_api_key = COALESCE($5, ghl_api_key),
+        ghl_location_id = COALESCE($6, ghl_location_id),
+        ghl_install_calendar = COALESCE($7, ghl_install_calendar),
+        ghl_appt_calendar = COALESCE($8, ghl_appt_calendar),
+        billing_status = COALESCE($9, billing_status),
+        monthly_price = COALESCE($10, monthly_price),
+        setup_fee_paid = COALESCE($11, setup_fee_paid),
+        updated_at = CURRENT_TIMESTAMP
+       WHERE id = $12 AND deleted_at IS NULL
+       RETURNING *`,
+      [
+        companyName,
+        phone,
+        email,
+        address,
+        encryptedApiKey,
+        ghl_location_id,
+        ghl_install_calendar,
+        ghl_appt_calendar,
+        billing_status,
+        monthly_price,
+        setup_fee_paid,
+        req.params.id
+      ]
+    );
 
-  const editBox =
-    "w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
 
-  const viewLabel = "text-xs text-gray-500 uppercase tracking-wide";
-  const viewValue = "text-sm font-semibold text-gray-800";
+    const company = result.rows[0];
+    company.ghl_api_key = company.ghl_api_key ? '***hidden***' : null;
 
-  // ------------------------------------------------------------
-  // RENDER SECTIONS
-  // ------------------------------------------------------------
-  const renderCompanyInfo = () => (
-    <div className="space-y-5">
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800 rounded">
-          {error}
-        </div>
-      )}
+    res.json({ company });
+  } catch (error) {
+    console.error('Update company error:', error);
+    res.status(500).json({ error: 'Failed to update company' });
+  }
+});
 
-      <div>
-        <div className={viewLabel}>Company Name</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{form.name}</div>
-        ) : (
-          <input
-            className={editBox}
-            value={form.name}
-            onChange={(e) => handleChange("name", e.target.value)}
-          />
-        )}
-      </div>
+// ============================================================================
+// SOFT DELETE COMPANY
+// ============================================================================
+router.delete('/:id', async (req, res) => {
+  try {
+    const result = await db.query(
+      `UPDATE companies
+       SET deleted_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND deleted_at IS NULL
+       RETURNING id`,
+      [req.params.id]
+    );
 
-      <div>
-        <div className={viewLabel}>Phone</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{form.phone || "—"}</div>
-        ) : (
-          <input
-            className={editBox}
-            value={form.phone}
-            onChange={(e) => handleChange("phone", e.target.value)}
-          />
-        )}
-      </div>
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
 
-      <div>
-        <div className={viewLabel}>Email</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{form.email || "—"}</div>
-        ) : (
-          <input
-            className={editBox}
-            value={form.email}
-            onChange={(e) => handleChange("email", e.target.value)}
-          />
-        )}
-      </div>
+    res.json({ message: 'Company deleted successfully' });
+  } catch (error) {
+    console.error('Delete company error:', error);
+    res.status(500).json({ error: 'Failed to delete company' });
+  }
+});
 
-      <div>
-        <div className={viewLabel}>Address</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{form.address || "—"}</div>
-        ) : (
-          <textarea
-            className={editBox}
-            rows={3}
-            value={form.address}
-            onChange={(e) => handleChange("address", e.target.value)}
-          />
-        )}
-      </div>
-    </div>
-  );
-
-  const renderPlaceholder = (label) => (
-    <div className="text-gray-600 text-sm">
-      {label} settings will live here.
-    </div>
-  );
-
-  // ------------------------------------------------------------
-  // MODAL
-  // ------------------------------------------------------------
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        <div className="bg-blue-600 text-white px-6 py-4 rounded-t-2xl">
-          <h2 className="text-xl font-bold">
-            {isCreate ? "Add Company" : form.name}
-          </h2>
-        </div>
-
-        {/* TAB BUTTONS - Mobile: 2 columns (50% width), Desktop: Flexible wrap */}
-        <div className="px-6 py-4 grid grid-cols-2 sm:flex sm:flex-wrap gap-2 border-b">
-          <button
-            className={sectionBtn(activeSection === "info")}
-            onClick={() => {
-              setActiveSection("info");
-              setSectionMode("view");
-            }}
-          >
-            Company Info
-          </button>
-
-          <button
-            className={sectionBtn(activeSection === "ghl")}
-            onClick={() => {
-              setActiveSection("ghl");
-              setSectionMode("edit");
-            }}
-          >
-            GHL Keys
-          </button>
-
-          <button
-            className={sectionBtn(activeSection === "estimator")}
-            onClick={() => {
-              setActiveSection("estimator");
-              setSectionMode("edit");
-            }}
-          >
-            Estimator
-          </button>
-
-          <button
-            className={sectionBtn(activeSection === "users")}
-            onClick={() => {
-              setActiveSection("users");
-              setSectionMode("view");
-            }}
-          >
-            Users
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          {activeSection === "info" && renderCompanyInfo()}
-          {activeSection === "ghl" && renderPlaceholder("GHL")}
-          {activeSection === "estimator" && renderPlaceholder("Estimator")}
-          {activeSection === "users" && <UsersHome scopedCompany={company} />}
-        </div>
-
-        <div className="border-t px-6 py-4 bg-white rounded-b-2xl flex justify-between">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
-          >
-            Close
-          </button>
-
-          {activeSection === "info" && (
-            <button
-              onClick={() =>
-                sectionMode === "view"
-                  ? setSectionMode("edit")
-                  : handleSave()
-              }
-              className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
-              disabled={saving}
-            >
-              {sectionMode === "view"
-                ? "Edit Company Info"
-                : saving
-                ? "Saving…"
-                : "Save"}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+module.exports = router;
+module.exports.decryptApiKey = decryptApiKey;

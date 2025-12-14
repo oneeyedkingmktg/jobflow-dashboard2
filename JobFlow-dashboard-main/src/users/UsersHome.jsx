@@ -1,5 +1,5 @@
 // File: src/users/UsersHome.jsx
-// Version: v1.3.3 – Fix company_id filter (snake_case)
+// Version: v1.3.4 – Add runtime verification logs (NO LOGIC CHANGE)
 
 import React, { useEffect, useState, useMemo } from "react";
 import { UsersAPI } from "../api";
@@ -41,11 +41,16 @@ export default function UsersHome({ onBack }) {
       setError("");
       const res = await UsersAPI.getAll();
 
-      // 🔑 FIX: backend returns snake_case company_id
+      // 🔍 VERIFICATION LOGS (temporary)
+      console.log("USERS RAW:", res.users);
+      console.log("CURRENT COMPANY:", currentCompany);
+
       const scoped =
         res.users?.filter(
           (u) => u.company_id === currentCompany.id
         ) || [];
+
+      console.log("SCOPED USERS:", scoped);
 
       setUsers(scoped);
     } catch (err) {

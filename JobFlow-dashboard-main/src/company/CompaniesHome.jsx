@@ -1,5 +1,5 @@
 // File: src/company/CompaniesHome.jsx
-// Version: v1.0.4 – Fix load lifecycle, rely on CompanyContext normalization
+// Version: v1.0.5 – Header cleanup (Close button, 50/50 actions)
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../AuthContext";
@@ -86,7 +86,7 @@ export default function CompaniesHome({ onBack }) {
   };
 
   // ------------------------------------------------------------
-  // FILTER (companies already normalized in CompanyContext)
+  // FILTER
   // ------------------------------------------------------------
   const filteredCompanies = useMemo(() => {
     if (!search.trim()) return companies;
@@ -119,13 +119,16 @@ export default function CompaniesHome({ onBack }) {
   return (
     <div className="p-6 space-y-5">
       {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-800">
+      <div className="grid grid-cols-2 gap-3 items-center">
+        <div className="text-lg font-semibold text-gray-800">
           CoatingPro360 – Manage Companies
-        </h1>
+        </div>
 
-        <button onClick={openCreateCompany} className="btn btn-primary">
-          + Add Company
+        <button
+          onClick={onBack}
+          className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg font-semibold"
+        >
+          Close
         </button>
       </div>
 

@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/CompanyContext.jsx
-// Version: 4.2 – Fix camelCase normalization (companyName → name)
+// Version: 4.3 – Fix create/update to handle errors and pass correct fields
 // ============================================================================
 
 import { createContext, useContext, useState, useEffect } from "react";
@@ -23,7 +23,7 @@ const normalizeCompany = (c) => {
 
   return {
     ...c,
-    name: c.name ?? c.companyName ?? "",
+    name: c.name ?? c.companyName ?? c.company_name ?? "",
   };
 };
 
@@ -106,22 +106,26 @@ export const CompanyProvider = ({ children }) => {
   // ============================================================================
   const createCompany = async (data) => {
     try {
+      console.log("Creating company with data:", data);
+
       const res = await CompaniesAPI.create({
-        company_name: data.name,
+        name: data.name,
         phone: data.phone || "",
         email: data.email || "",
         address: data.address || "",
       });
 
+      console.log("Create company response:", res);
+
       if (!res.company) {
-        return { success: false, error: res.error || "Missing company from API" };
+        throw new Error(res.error || "Failed to create company");
       }
 
       await loadCompanies();
       return { success: true, company: normalizeCompany(res.company) };
     } catch (err) {
       console.error("createCompany error:", err);
-      return { success: false, error: err.message };
+      throw err; // Re-throw so CompaniesHome can catch it
     }
   };
 
@@ -130,10 +134,14 @@ export const CompanyProvider = ({ children }) => {
   // ============================================================================
   const updateCompany = async (companyId, updates) => {
     try {
+      console.log("Updating company", companyId, "with:", updates);
+
       const res = await CompaniesAPI.update(companyId, updates);
 
+      console.log("Update company response:", res);
+
       if (!res.company) {
-        return { success: false, error: res.error || "Failed to update company" };
+        throw new Error(res.error || "Failed to update company");
       }
 
       const normalized = normalizeCompany(res.company);
@@ -146,7 +154,7 @@ export const CompanyProvider = ({ children }) => {
       return { success: true, company: normalized };
     } catch (err) {
       console.error("updateCompany error:", err);
-      return { success: false, error: err.message };
+      throw err; // Re-throw so CompaniesHome can catch it
     }
   };
 

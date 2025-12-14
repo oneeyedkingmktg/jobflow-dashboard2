@@ -1,5 +1,5 @@
 // File: src/App.jsx
-// Version: v1.1.0 – App-level screen override foundation (non-breaking)
+// Version: v1.1.1 – Bypass global loading gate for Companies screen (surgical)
 
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
@@ -55,17 +55,18 @@ function AppContent() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { currentCompany, companies, loading: companyLoading } = useCompany();
 
-  // -----------------------------------------------------------
   // App-level screen control (default = leads)
-  // -----------------------------------------------------------
   const [activeScreen, setActiveScreen] = useState("leads");
 
-  // Expose setter safely for controlled admin use (no auto triggers)
+  // Expose setter for admin navigation
   if (typeof window !== "undefined") {
     window.__setAppScreen = setActiveScreen;
   }
 
-  const fullyLoading = isLoading || companyLoading;
+  // IMPORTANT:
+  // Do NOT apply global loading gate when viewing Companies
+  const fullyLoading =
+    activeScreen !== "companies" && (isLoading || companyLoading);
 
   /* ---------------------------------------
      1. Global loading spinner
@@ -118,7 +119,7 @@ function AppContent() {
   }
 
   /* ---------------------------------------
-     5. Screen selection (SAFE OVERRIDE)
+     5. Screen selection
      --------------------------------------- */
   if (activeScreen === "companies") {
     return (

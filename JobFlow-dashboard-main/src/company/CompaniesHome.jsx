@@ -1,5 +1,5 @@
 // File: src/company/CompaniesHome.jsx
-// Version: v1.0.3 – Normalize company_name → name
+// Version: v1.0.4 – Fix load lifecycle, rely on CompanyContext normalization
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../AuthContext";
@@ -12,6 +12,7 @@ export default function CompaniesHome({ onBack }) {
   const {
     companies,
     currentCompany,
+    loadCompanies,
     createCompany,
     updateCompany,
     switchCompany,
@@ -27,13 +28,28 @@ export default function CompaniesHome({ onBack }) {
 
   const canManage = isAuthenticated && user?.role === "master";
 
+  // ------------------------------------------------------------
+  // LOAD companies when screen is opened
+  // ------------------------------------------------------------
   useEffect(() => {
     if (!canManage) {
       setLoading(false);
       return;
     }
 
-    setLoading(false);
+    const run = async () => {
+      try {
+        setLoading(true);
+        await loadCompanies();
+      } catch (err) {
+        setError(err.message || "Failed to load companies");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canManage]);
 
   const openViewCompany = (c) => {
@@ -69,26 +85,17 @@ export default function CompaniesHome({ onBack }) {
     }
   };
 
-  // NORMALIZE company_name → name
-  const normalizedCompanies = useMemo(() => {
-    if (!Array.isArray(companies)) return [];
-
-    return companies
-      .filter((c) => c && typeof c === "object" && c.id)
-      .map((c) => ({
-        ...c,
-        name: c.name ?? c.company_name ?? "",
-      }));
-  }, [companies]);
-
+  // ------------------------------------------------------------
+  // FILTER (companies already normalized in CompanyContext)
+  // ------------------------------------------------------------
   const filteredCompanies = useMemo(() => {
-    if (!search.trim()) return normalizedCompanies;
+    if (!search.trim()) return companies;
 
     const term = search.toLowerCase();
-    return normalizedCompanies.filter((c) =>
-      c.name.toLowerCase().includes(term)
+    return companies.filter((c) =>
+      (c.name || "").toLowerCase().includes(term)
     );
-  }, [search, normalizedCompanies]);
+  }, [search, companies]);
 
   if (!canManage) {
     return (

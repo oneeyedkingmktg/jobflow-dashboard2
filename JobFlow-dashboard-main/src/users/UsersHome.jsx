@@ -1,5 +1,5 @@
 // File: src/users/UsersHome.jsx
-// Version: v1.3.2 – Fix companyId filter (camelCase)
+// Version: v1.3.3 – Fix company_id filter (snake_case)
 
 import React, { useEffect, useState, useMemo } from "react";
 import { UsersAPI } from "../api";
@@ -41,10 +41,10 @@ export default function UsersHome({ onBack }) {
       setError("");
       const res = await UsersAPI.getAll();
 
-      // 🔑 FIX: correct camelCase companyId
+      // 🔑 FIX: backend returns snake_case company_id
       const scoped =
         res.users?.filter(
-          (u) => u.companyId === currentCompany.id
+          (u) => u.company_id === currentCompany.id
         ) || [];
 
       setUsers(scoped);

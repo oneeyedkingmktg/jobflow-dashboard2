@@ -1,5 +1,5 @@
 // File: src/users/UsersHome.jsx
-// Version: v1.3.4 – Add runtime verification logs (NO LOGIC CHANGE)
+// Version: v1.3.5 – Fixed: Backend already filters by company, no need for frontend filter
 
 import React, { useEffect, useState, useMemo } from "react";
 import { UsersAPI } from "../api";
@@ -41,18 +41,11 @@ export default function UsersHome({ onBack }) {
       setError("");
       const res = await UsersAPI.getAll();
 
-      // 🔍 VERIFICATION LOGS (temporary)
-      console.log("USERS RAW:", res.users);
-      console.log("CURRENT COMPANY:", currentCompany);
+      console.log("USERS FROM API:", res.users);
 
-      const scoped =
-        res.users?.filter(
-          (u) => u.company_id === currentCompany.id
-        ) || [];
-
-      console.log("SCOPED USERS:", scoped);
-
-      setUsers(scoped);
+      // Backend already filters by company (WHERE company_id = $1)
+      // No need to filter again on frontend
+      setUsers(res.users || []);
     } catch (err) {
       setError(err.message || "Failed to load users");
     } finally {

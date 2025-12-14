@@ -1,5 +1,5 @@
 // File: src/users/UsersHome.jsx
-// Version: v1.3.0 – Header simplification + full-width search bar UI
+// Version: v1.3.1 – Company-scoped users + embedded-safe UI
 
 import React, { useEffect, useState, useMemo } from "react";
 import { UsersAPI } from "../api";
@@ -24,6 +24,8 @@ export default function UsersHome({ onBack }) {
   const canManage =
     isAuthenticated && user?.role === "master" && !!currentCompany;
 
+  const isEmbedded = !onBack; // embedded inside CompanyModal
+
   useEffect(() => {
     if (!canManage) {
       setLoading(false);
@@ -38,7 +40,13 @@ export default function UsersHome({ onBack }) {
       setLoading(true);
       setError("");
       const res = await UsersAPI.getAll();
-      setUsers(res.users || []);
+
+      const scoped =
+        res.users?.filter(
+          (u) => u.company_id === currentCompany.id
+        ) || [];
+
+      setUsers(scoped);
     } catch (err) {
       setError(err.message || "Failed to load users");
     } finally {
@@ -70,6 +78,7 @@ export default function UsersHome({ onBack }) {
           role: form.role,
           password: form.password,
           is_active: form.is_active,
+          company_id: currentCompany.id,
         };
 
         const res = await UsersAPI.create(payload);
@@ -134,33 +143,24 @@ export default function UsersHome({ onBack }) {
         <p className="text-gray-600 mb-4">
           Only the master account can manage users.
         </p>
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="px-6 py-3 bg-gray-700 text-white rounded-lg font-bold"
-          >
-            Back
-          </button>
-        )}
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-5">
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-800">
-          CoatingPro360 – Edit Users
-        </h1>
+    <div className="p-6 space-y-6">
+      {/* HEADER (hide when embedded) */}
+      {!isEmbedded && (
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-gray-800">
+            CoatingPro360 – Edit Users
+          </h1>
 
-        <button
-          onClick={openCreateUser}
-          className="btn btn-primary"
-        >
-          + Add User
-        </button>
-      </div>
+          <button onClick={openCreateUser} className="btn btn-primary">
+            + Add User
+          </button>
+        </div>
+      )}
 
       {/* SEARCH */}
       <div>
@@ -186,7 +186,6 @@ export default function UsersHome({ onBack }) {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {/* CREATE USER CARD */}
           <button
             onClick={openCreateUser}
             className="h-[90px] flex flex-col items-center justify-center rounded-xl border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100 transition"
@@ -204,14 +203,6 @@ export default function UsersHome({ onBack }) {
               onClick={() => openViewUser(u)}
             />
           ))}
-        </div>
-      )}
-
-      {onBack && (
-        <div className="pt-6 border-t mt-4 flex justify-end">
-          <button onClick={onBack} className="btn btn-secondary">
-            Back
-          </button>
         </div>
       )}
 

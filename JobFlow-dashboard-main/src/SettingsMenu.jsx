@@ -1,3 +1,6 @@
+// File: src/SettingsMenu.jsx
+// Version: v1.1.0 – Lift Manage Companies to App-level screen control
+
 import React, { useState } from "react";
 import { useCompany } from "./CompanyContext";
 import { useAuth } from "./AuthContext";
@@ -7,7 +10,6 @@ import UserProfileModal from "./UserProfileModal";
 
 // IMPORT SCREENS
 import UsersHome from "./users/UsersHome";
-import CompaniesHome from "./company/CompaniesHome";
 
 export default function SettingsMenu() {
   const { companies, switchCompany, currentCompany } = useCompany();
@@ -19,7 +21,6 @@ export default function SettingsMenu() {
   const [showUserProfile, setShowUserProfile] = useState(false);
 
   const [showUserMgmt, setShowUserMgmt] = useState(false);
-  const [showCompanyMgmt, setShowCompanyMgmt] = useState(false);
 
   const handleSwitchCompany = (companyId) => {
     switchCompany(companyId);
@@ -33,7 +34,9 @@ export default function SettingsMenu() {
 
   const handleManageCompanies = () => {
     setShowMenu(false);
-    setShowCompanyMgmt(true);
+    if (window.__setAppScreen) {
+      window.__setAppScreen("companies");
+    }
   };
 
   const handleManageUsers = () => {
@@ -215,20 +218,6 @@ export default function SettingsMenu() {
           </div>
           <button
             onClick={() => setShowUserMgmt(false)}
-            className="absolute top-4 right-4 px-4 py-2 bg-gray-800 text-white rounded-lg"
-          >
-            Close
-          </button>
-        </div>
-      )}
-
-      {showCompanyMgmt && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex">
-          <div className="flex-1 bg-white shadow-xl overflow-auto">
-            <CompaniesHome />
-          </div>
-          <button
-            onClick={() => setShowCompanyMgmt(false)}
             className="absolute top-4 right-4 px-4 py-2 bg-gray-800 text-white rounded-lg"
           >
             Close

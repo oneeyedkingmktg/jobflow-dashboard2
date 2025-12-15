@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/LeadsHome.jsx
-// Version: v2.1 - Fix field mapping and company_id handling in handleSaveLead
+// Version: v2.2 - Robust field handling with empty string defaults and error handling
 // ============================================================================
 
 import React, { useState, useMemo, useEffect } from "react";
@@ -189,62 +189,83 @@ export default function LeadsHome({ currentUser }) {
     console.log("isNewLead:", isNewLead);
     console.log("currentCompany:", currentCompany);
 
+    // Build body with all fields in snake_case format
     const body = {
-      name: lead.name,
-      full_name: lead.name,
-      phone: lead.phone,
-      email: lead.email,
-      address: lead.address,
-      city: lead.city,
-      state: lead.state,
-      zip: lead.zip,
-      buyer_type: lead.buyerType,
-      company_name: lead.companyName,
-      project_type: lead.projectType,
-      lead_source: lead.leadSource,
-      referral_source: lead.referralSource,
-      preferred_contact: lead.preferredContact,
-      notes: lead.notes,
-      status: lead.status,
-      not_sold_reason: lead.notSoldReason,
-      contract_price: lead.contractPrice,
-      appointment_date: lead.apptDate,
-      appointment_time: lead.apptTime,
-      install_date: lead.installDate,
-      install_tentative: lead.installTentative,
+      // Name fields - send both formats to work with any backend version
+      name: lead.name || "",
+      full_name: lead.name || "",
+      
+      // Contact
+      phone: lead.phone || "",
+      email: lead.email || "",
+      preferred_contact: lead.preferredContact || "",
+      
+      // Address
+      address: lead.address || "",
+      city: lead.city || "",
+      state: lead.state || "",
+      zip: lead.zip || "",
+      
+      // Business info
+      buyer_type: lead.buyerType || "",
+      company_name: lead.companyName || "",
+      project_type: lead.projectType || "",
+      
+      // Lead tracking
+      lead_source: lead.leadSource || "",
+      referral_source: lead.referralSource || "",
+      
+      // Status and notes
+      status: lead.status || "lead",
+      not_sold_reason: lead.notSoldReason || "",
+      notes: lead.notes || "",
+      contract_price: lead.contractPrice || "",
+      
+      // Appointments
+      appointment_date: lead.apptDate || null,
+      appointment_time: lead.apptTime || "",
+      install_date: lead.installDate || null,
+      install_tentative: lead.installTentative || false,
+      
+      // Company assignment
       company_id: lead.companyId || currentCompany?.id,
     };
 
     console.log("Body to send:", body);
 
     let resp;
-    if (isNewLead || !lead.id) {
-      console.log("Creating new lead (POST)");
-      resp = await apiRequest("/leads", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-    } else {
-      console.log("Updating existing lead (PUT)", lead.id);
-      resp = await apiRequest(`/leads/${lead.id}`, {
-        method: "PUT",
-        body: JSON.stringify(body),
-      });
+    try {
+      if (isNewLead || !lead.id) {
+        console.log("Creating new lead (POST)");
+        resp = await apiRequest("/leads", {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+      } else {
+        console.log("Updating existing lead (PUT)", lead.id);
+        resp = await apiRequest(`/leads/${lead.id}`, {
+          method: "PUT",
+          body: JSON.stringify(body),
+        });
+      }
+
+      console.log("API response:", resp);
+
+      const updated = convertLeadFromBackend(resp.lead);
+
+      setLeads((prev) =>
+        isNewLead || !lead.id ? [...prev, updated] : prev.map((l) => (l.id === updated.id ? updated : l))
+      );
+
+      setSelectedLead(updated);
+      setIsNewLead(false);
+
+      // IMPORTANT FIX — required for Save & Exit
+      return updated;
+    } catch (error) {
+      console.error("handleSaveLead error:", error);
+      throw error;
     }
-
-    console.log("API response:", resp);
-
-    const updated = convertLeadFromBackend(resp.lead);
-
-    setLeads((prev) =>
-      isNewLead ? [...prev, updated] : prev.map((l) => (l.id === updated.id ? updated : l))
-    );
-
-    setSelectedLead(updated);
-    setIsNewLead(false);
-
-    // IMPORTANT FIX — required for Save & Exit
-    return updated;
   };
 
   // ==================================================

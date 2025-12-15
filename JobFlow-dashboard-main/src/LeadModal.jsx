@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/LeadModal.jsx
-// Version: v2.0 - Add companyId to form state for proper company assignment
+// Version: v2.1 - Add saving state and improve error handling
 // ============================================================================
 
 import React, { useState, useEffect } from "react";
@@ -59,6 +59,7 @@ export default function LeadModal({
   const [showApptModal, setShowApptModal] = useState(false);
   const [showNotSoldModal, setShowNotSoldModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Prefill phone for new leads
   useEffect(() => {
@@ -78,18 +79,36 @@ export default function LeadModal({
 
   // SAVE (stay in modal)
   const handleSave = async () => {
-    const updated = await onSave(form);
-    if (updated) {
-      setForm(updated);
-      setIsEditing(false);
+    if (saving) return;
+    
+    try {
+      setSaving(true);
+      const updated = await onSave(form);
+      if (updated) {
+        setForm(updated);
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+    } finally {
+      setSaving(false);
     }
   };
 
   // SAVE & EXIT
   const handleExit = async () => {
-    const updated = await onSave(form);
-    if (updated) {
-      onClose();
+    if (saving) return;
+    
+    try {
+      setSaving(true);
+      const updated = await onSave(form);
+      if (updated) {
+        onClose();
+      }
+    } catch (error) {
+      console.error("Save & Exit error:", error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -166,6 +185,7 @@ export default function LeadModal({
             deleteConfirm={deleteConfirm}
             setDeleteConfirm={setDeleteConfirm}
             onDelete={() => onDelete(form)}
+            saving={saving}
           />
         </div>
       </div>

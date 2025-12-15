@@ -1,6 +1,7 @@
+// ============================================================================
 // File: src/LeadsHome.jsx
-// Updated: Auto-switch to ALL tab when searching + ISO date fix + correct case-sensitive imports
-// Added: return updated; so LeadModal Save & Exit works
+// Version: v2.1 - Fix field mapping and company_id handling in handleSaveLead
+// ============================================================================
 
 import React, { useState, useMemo, useEffect } from "react";
 import { apiRequest } from "./api";
@@ -184,11 +185,13 @@ export default function LeadsHome({ currentUser }) {
   // Save lead (NOW RETURNS updated lead)
   // ==================================================
   const handleSaveLead = async (lead) => {
+    console.log("handleSaveLead called with:", lead);
+    console.log("isNewLead:", isNewLead);
+    console.log("currentCompany:", currentCompany);
+
     const body = {
       name: lead.name,
       full_name: lead.name,
-      first_name: lead.firstName,
-      last_name: lead.lastName,
       phone: lead.phone,
       email: lead.email,
       address: lead.address,
@@ -209,22 +212,27 @@ export default function LeadsHome({ currentUser }) {
       appointment_time: lead.apptTime,
       install_date: lead.installDate,
       install_tentative: lead.installTentative,
-      // Send company_id for new leads
-      company_id: currentCompany?.id,
+      company_id: lead.companyId || currentCompany?.id,
     };
 
+    console.log("Body to send:", body);
+
     let resp;
-    if (isNewLead) {
+    if (isNewLead || !lead.id) {
+      console.log("Creating new lead (POST)");
       resp = await apiRequest("/leads", {
         method: "POST",
         body: JSON.stringify(body),
       });
     } else {
+      console.log("Updating existing lead (PUT)", lead.id);
       resp = await apiRequest(`/leads/${lead.id}`, {
         method: "PUT",
         body: JSON.stringify(body),
       });
     }
+
+    console.log("API response:", resp);
 
     const updated = convertLeadFromBackend(resp.lead);
 

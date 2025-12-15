@@ -1,9 +1,10 @@
 // ============================================================================
 // File: src/company/CompanyModal.jsx
-// Version: v1.3.0 - Full GHL Keys tab with view/edit modes
+// Version: v1.4.0 - Role-based conditional tabs (Master/Admin)
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
+import { useAuth } from "../AuthContext";
 import UsersHome from "../users/UsersHome";
 
 export default function CompanyModal({
@@ -13,16 +14,20 @@ export default function CompanyModal({
   onClose,
   onSave,
 }) {
+  const { user, isMaster } = useAuth();
   const isCreate = mode === "create";
+  const isMasterUser = isMaster();
+  const isAdminUser = user?.role === "admin";
 
   // ------------------------------------------------------------
   // SECTION STATE
   // ------------------------------------------------------------
   const [activeSection, setActiveSection] = useState("info"); // info | ghl | estimator | users
-  const [sectionMode, setSectionMode] = useState("view"); // view | edit
+  const [sectionMode, setSectionMode] = useState("view"); // view | edit (Company Info only)
 
   const [form, setForm] = useState(null);
   const [ghlForm, setGhlForm] = useState(null);
+  const [estimatorForm, setEstimatorForm] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -45,25 +50,31 @@ export default function CompanyModal({
         ghlInstallCalendar: "",
         ghlApptCalendar: "",
       });
+      setEstimatorForm({
+        estimatorEnabled: false,
+      });
     } else if (company) {
       setActiveSection("info");
       setSectionMode("view");
       setForm({
-        name: company.name || company.companyName || company.company_name || "",
+        name: company.name || "",
         phone: company.phone || "",
         email: company.email || "",
         address: company.address || "",
       });
       setGhlForm({
-        ghlApiKey: company.ghlApiKey || company.ghl_api_key || "",
-        ghlLocationId: company.ghlLocationId || company.ghl_location_id || "",
-        ghlInstallCalendar: company.ghlInstallCalendar || company.ghl_install_calendar || "",
-        ghlApptCalendar: company.ghlApptCalendar || company.ghl_appt_calendar || "",
+        ghlApiKey: company.ghlApiKey || "",
+        ghlLocationId: company.ghlLocationId || "",
+        ghlInstallCalendar: company.ghlInstallCalendar || "",
+        ghlApptCalendar: company.ghlApptCalendar || "",
+      });
+      setEstimatorForm({
+        estimatorEnabled: company.estimatorEnabled || false,
       });
     }
   }, [isCreate, company]);
 
-  if (!form || !ghlForm) return null;
+  if (!form) return null;
 
   // ------------------------------------------------------------
   // HANDLERS
@@ -73,12 +84,7 @@ export default function CompanyModal({
     setError("");
   };
 
-  const handleGhlChange = (field, value) => {
-    setGhlForm((prev) => ({ ...prev, [field]: value }));
-    setError("");
-  };
-
-  const handleSaveCompanyInfo = async () => {
+  const handleSave = async () => {
     if (!form.name) {
       setError("Company name is required");
       return;
@@ -95,25 +101,31 @@ export default function CompanyModal({
     }
   };
 
-  const handleSaveGhlKeys = async () => {
+  const handleSaveGHLKeys = async () => {
     if (saving) return;
 
     try {
       setSaving(true);
-      
-      // Merge GHL data with company data
-      const payload = {
-        ...form,
-        ghl_api_key: ghlForm.ghlApiKey,
-        ghl_location_id: ghlForm.ghlLocationId,
-        ghl_install_calendar: ghlForm.ghlInstallCalendar,
-        ghl_appt_calendar: ghlForm.ghlApptCalendar,
-      };
-
-      await onSave(payload);
-      setSectionMode("view");
+      setError("");
+      await onSave({ ...form, ...ghlForm });
+      console.log("GHL Keys saved");
     } catch (err) {
       setError(err.message || "Failed to save GHL keys");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveEstimator = async () => {
+    if (saving) return;
+
+    try {
+      setSaving(true);
+      setError("");
+      await onSave({ ...form, ...estimatorForm });
+      console.log("Estimator settings saved");
+    } catch (err) {
+      setError(err.message || "Failed to save estimator settings");
     } finally {
       setSaving(false);
     }
@@ -201,71 +213,118 @@ export default function CompanyModal({
     </div>
   );
 
-  const renderGhlKeys = () => (
-    <div className="space-y-5">
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800 rounded">
-          {error}
-        </div>
-      )}
+  const renderGHLKeys = () => {
+    if (!ghlForm) return null;
 
-      <div>
-        <div className={viewLabel}>API Key</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>
-            {ghlForm.ghlApiKey ? "***hidden***" : "—"}
-          </div>
-        ) : (
+    const viewLabel = "text-xs uppercase text-gray-500 font-semibold mb-1";
+    const editBox = "w-full px-3 py-2 border rounded-lg text-sm";
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <div className={viewLabel}>API Key</div>
           <input
             type="password"
             className={editBox}
             value={ghlForm.ghlApiKey}
-            onChange={(e) => handleGhlChange("ghlApiKey", e.target.value)}
-            placeholder="Enter new API key to change"
+            onChange={(e) => setGhlForm({ ...ghlForm, ghlApiKey: e.target.value })}
+            placeholder="Enter GHL API Key"
           />
-        )}
-      </div>
+        </div>
 
-      <div>
-        <div className={viewLabel}>Location ID</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{ghlForm.ghlLocationId || "—"}</div>
-        ) : (
+        <div>
+          <div className={viewLabel}>Location ID</div>
           <input
             className={editBox}
             value={ghlForm.ghlLocationId}
-            onChange={(e) => handleGhlChange("ghlLocationId", e.target.value)}
+            onChange={(e) => setGhlForm({ ...ghlForm, ghlLocationId: e.target.value })}
+            placeholder="Enter Location ID"
           />
-        )}
-      </div>
+        </div>
 
-      <div>
-        <div className={viewLabel}>Install Calendar ID</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{ghlForm.ghlInstallCalendar || "—"}</div>
-        ) : (
+        <div>
+          <div className={viewLabel}>Install Calendar ID</div>
           <input
             className={editBox}
             value={ghlForm.ghlInstallCalendar}
-            onChange={(e) => handleGhlChange("ghlInstallCalendar", e.target.value)}
+            onChange={(e) => setGhlForm({ ...ghlForm, ghlInstallCalendar: e.target.value })}
+            placeholder="Enter Install Calendar ID"
           />
-        )}
-      </div>
+        </div>
 
-      <div>
-        <div className={viewLabel}>Appointment Calendar ID</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{ghlForm.ghlApptCalendar || "—"}</div>
-        ) : (
+        <div>
+          <div className={viewLabel}>Appointment Calendar ID</div>
           <input
             className={editBox}
             value={ghlForm.ghlApptCalendar}
-            onChange={(e) => handleGhlChange("ghlApptCalendar", e.target.value)}
+            onChange={(e) => setGhlForm({ ...ghlForm, ghlApptCalendar: e.target.value })}
+            placeholder="Enter Appointment Calendar ID"
           />
+        </div>
+
+        <div className="pt-4">
+          <button
+            onClick={handleSaveGHLKeys}
+            className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save GHL Keys"}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderEstimator = () => {
+    if (!estimatorForm) return null;
+
+    return (
+      <div className="space-y-4">
+        {/* MASTER: Show toggle */}
+        {isMasterUser && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={estimatorForm.estimatorEnabled}
+                onChange={(e) => setEstimatorForm({ ...estimatorForm, estimatorEnabled: e.target.checked })}
+                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <div>
+                <div className="font-semibold text-gray-900">Enable Estimator</div>
+                <div className="text-sm text-gray-600">
+                  Allow company admins to access and configure estimator pricing
+                </div>
+              </div>
+            </label>
+
+            <div className="mt-4">
+              <button
+                onClick={handleSaveEstimator}
+                className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                disabled={saving}
+              >
+                {saving ? "Saving..." : "Save Estimator Settings"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ADMIN: Show status */}
+        {isAdminUser && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="font-semibold text-gray-900 mb-2">Estimator Pricing</div>
+            <div className="text-sm text-gray-600 mb-4">
+              Configure pricing for your public-facing estimator tool
+            </div>
+            <div className="text-sm text-gray-500">
+              [Pricing configuration interface coming soon]
+            </div>
+          </div>
         )}
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderPlaceholder = (label) => (
     <div className="text-gray-600 text-sm">
@@ -285,8 +344,7 @@ export default function CompanyModal({
           </h2>
         </div>
 
-        {/* TAB BUTTONS - Mobile: 2 columns (50% width), Desktop: Flexible wrap */}
-        <div className="px-6 py-4 grid grid-cols-2 sm:flex sm:flex-wrap gap-2 border-b">
+        <div className="px-6 py-4 flex flex-wrap gap-2 border-b">
           <button
             className={sectionBtn(activeSection === "info")}
             onClick={() => {
@@ -297,41 +355,50 @@ export default function CompanyModal({
             Company Info
           </button>
 
-          <button
-            className={sectionBtn(activeSection === "ghl")}
-            onClick={() => {
-              setActiveSection("ghl");
-              setSectionMode("view");
-            }}
-          >
-            GHL Keys
-          </button>
+          {/* GHL KEYS - Master only */}
+          {isMasterUser && (
+            <button
+              className={sectionBtn(activeSection === "ghl")}
+              onClick={() => {
+                setActiveSection("ghl");
+                setSectionMode("edit");
+              }}
+            >
+              GHL Keys
+            </button>
+          )}
 
-          <button
-            className={sectionBtn(activeSection === "estimator")}
-            onClick={() => {
-              setActiveSection("estimator");
-              setSectionMode("view");
-            }}
-          >
-            Estimator
-          </button>
+          {/* ESTIMATOR - Master always, Admin only if enabled */}
+          {(isMasterUser || (isAdminUser && company?.estimatorEnabled)) && (
+            <button
+              className={sectionBtn(activeSection === "estimator")}
+              onClick={() => {
+                setActiveSection("estimator");
+                setSectionMode("edit");
+              }}
+            >
+              Estimator
+            </button>
+          )}
 
-          <button
-            className={sectionBtn(activeSection === "users")}
-            onClick={() => {
-              setActiveSection("users");
-              setSectionMode("view");
-            }}
-          >
-            Users
-          </button>
+          {/* USERS - Master and Admin */}
+          {(isMasterUser || isAdminUser) && !isCreate && (
+            <button
+              className={sectionBtn(activeSection === "users")}
+              onClick={() => {
+                setActiveSection("users");
+                setSectionMode("view");
+              }}
+            >
+              Users
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {activeSection === "info" && renderCompanyInfo()}
-          {activeSection === "ghl" && renderGhlKeys()}
-          {activeSection === "estimator" && renderPlaceholder("Estimator")}
+          {activeSection === "ghl" && renderGHLKeys()}
+          {activeSection === "estimator" && renderEstimator()}
           {activeSection === "users" && <UsersHome scopedCompany={company} />}
         </div>
 
@@ -348,31 +415,13 @@ export default function CompanyModal({
               onClick={() =>
                 sectionMode === "view"
                   ? setSectionMode("edit")
-                  : handleSaveCompanyInfo()
+                  : handleSave()
               }
               className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
               disabled={saving}
             >
               {sectionMode === "view"
                 ? "Edit Company Info"
-                : saving
-                ? "Saving…"
-                : "Save"}
-            </button>
-          )}
-
-          {activeSection === "ghl" && (
-            <button
-              onClick={() =>
-                sectionMode === "view"
-                  ? setSectionMode("edit")
-                  : handleSaveGhlKeys()
-              }
-              className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
-              disabled={saving}
-            >
-              {sectionMode === "view"
-                ? "Edit GHL Keys"
                 : saving
                 ? "Saving…"
                 : "Save"}

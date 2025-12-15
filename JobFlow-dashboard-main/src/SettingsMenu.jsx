@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/SettingsMenu.jsx
-// Version: v1.2.0 - Clean redesign to match leads modal styling
+// Version: v1.3.0 - Role-based conditional menus (Master/Admin/User)
 // ============================================================================
 
 import React, { useState } from "react";
@@ -41,7 +41,7 @@ export default function SettingsMenu() {
     setShowUserMgmt(true);
   };
 
-  const handleSettings = () => {
+  const handleCompanySettings = () => {
     setShowMenu(false);
     setShowSettings(true);
   };
@@ -56,7 +56,8 @@ export default function SettingsMenu() {
     logout();
   };
 
-  const isCompanyAdmin = !isMaster() && user && user.role === "admin";
+  const isAdmin = user?.role === "admin";
+  const isRegularUser = user?.role === "user";
 
   return (
     <>
@@ -97,7 +98,9 @@ export default function SettingsMenu() {
             />
 
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden border border-gray-200">
-              {isMaster() ? (
+              
+              {/* MASTER ADMIN MENU */}
+              {isMaster() && (
                 <>
                   {/* COMPANY SWITCHER - DROPDOWN */}
                   <div className="bg-gray-600 px-6 py-4">
@@ -134,6 +137,13 @@ export default function SettingsMenu() {
                     </button>
 
                     <button
+                      onClick={handleMyProfile}
+                      className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
+                    >
+                      My Profile
+                    </button>
+
+                    <button
                       onClick={handleLogout}
                       className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
                     >
@@ -141,26 +151,37 @@ export default function SettingsMenu() {
                     </button>
                   </div>
                 </>
-              ) : (
+              )}
+
+              {/* ADMIN MENU */}
+              {isAdmin && (
                 <div className="p-4 space-y-2">
-                  {isCompanyAdmin && (
-                    <>
-                      <button
-                        onClick={handleSettings}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
-                      >
-                        Company Settings
-                      </button>
+                  <button
+                    onClick={handleCompanySettings}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
+                  >
+                    Company Settings
+                  </button>
 
-                      <button
-                        onClick={handleManageUsers}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
-                      >
-                        Manage Users
-                      </button>
-                    </>
-                  )}
+                  <button
+                    onClick={handleMyProfile}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
+                  >
+                    My Profile
+                  </button>
 
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+
+              {/* USER MENU */}
+              {isRegularUser && (
+                <div className="p-4 space-y-2">
                   <button
                     onClick={handleMyProfile}
                     className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"

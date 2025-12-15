@@ -1,3 +1,8 @@
+// ============================================================================
+// File: src/LeadModal.jsx
+// Version: v2.0 - Add companyId to form state for proper company assignment
+// ============================================================================
+
 import React, { useState, useEffect } from "react";
 import { useCompany } from "./CompanyContext";
 import { formatPhoneNumber } from "./utils/formatting";
@@ -24,6 +29,7 @@ export default function LeadModal({
 
   const [form, setForm] = useState({
     id: lead?.id || null,
+    companyId: lead?.companyId || currentCompany?.id || null,
     name: lead?.name || "",
     phone: lead?.phone || "",
     email: lead?.email || "",

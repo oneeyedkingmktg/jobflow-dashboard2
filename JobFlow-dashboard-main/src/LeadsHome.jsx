@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/LeadsHome.jsx
-// Version: v2.2 - Robust field handling with empty string defaults and error handling
+// Version: v2.3 - Enhanced error handling and logging to debug save issues
 // ============================================================================
 
 import React, { useState, useMemo, useEffect } from "react";
@@ -251,14 +251,26 @@ export default function LeadsHome({ currentUser }) {
 
       console.log("API response:", resp);
 
-      const updated = convertLeadFromBackend(resp.lead);
+      if (!resp || !resp.lead) {
+        console.error("Invalid API response:", resp);
+        throw new Error("Invalid response from server");
+      }
 
-      setLeads((prev) =>
-        isNewLead || !lead.id ? [...prev, updated] : prev.map((l) => (l.id === updated.id ? updated : l))
-      );
+      const updated = convertLeadFromBackend(resp.lead);
+      console.log("Converted lead:", updated);
+
+      setLeads((prev) => {
+        const newLeads = isNewLead || !lead.id 
+          ? [...prev, updated] 
+          : prev.map((l) => (l.id === updated.id ? updated : l));
+        console.log("Updated leads array:", newLeads);
+        return newLeads;
+      });
 
       setSelectedLead(updated);
       setIsNewLead(false);
+
+      console.log("Save completed successfully");
 
       // IMPORTANT FIX — required for Save & Exit
       return updated;

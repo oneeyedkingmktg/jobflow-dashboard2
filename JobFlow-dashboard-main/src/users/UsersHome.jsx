@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/users/UsersHome.jsx
-// Version: v1.4.0 - Add showAllUsers mode for master to view all system users
+// Version: v1.5.0 - Fix layout: always show header, add user button when empty
 // ============================================================================
 
 import React, { useEffect, useState, useMemo } from "react";
@@ -49,7 +49,7 @@ export default function UsersHome({ onBack, scopedCompany, showAllUsers = false 
       setError("");
       
       if (showAllUsers) {
-        // Get ALL users from all companies (no filtering, no company_id param)
+        // Get ALL users from all companies (no filtering)
         const res = await UsersAPI.getAll();
         console.log("ALL USERS (unfiltered):", res.users);
         setUsers(res.users || []);
@@ -92,7 +92,7 @@ export default function UsersHome({ onBack, scopedCompany, showAllUsers = false 
           password: form.password,
           is_active: form.is_active,
           // Always pass company_id from form (user can select different company)
-          company_id: form.company_id || (showAllUsers ? null : activeCompany.id),
+          company_id: form.company_id || (showAllUsers ? null : activeCompany?.id),
         };
 
         console.log("Creating user with payload:", payload);
@@ -179,21 +179,21 @@ export default function UsersHome({ onBack, scopedCompany, showAllUsers = false 
 
   return (
     <div className="p-6 space-y-6">
-      {/* HEADER */}
-      {!isEmbedded && (
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-gray-800">
-            {showAllUsers 
-              ? "All System Users" 
-              : `${activeCompany.name || activeCompany.companyName} – Edit Users`
-            }
-          </h1>
+      {/* HEADER with Add User button - always show */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-gray-800">
+          {showAllUsers 
+            ? "All System Users" 
+            : activeCompany 
+              ? `${activeCompany.name || activeCompany.companyName || 'Company'} Users`
+              : "Users"
+          }
+        </h1>
 
-          <button onClick={openCreateUser} className="btn btn-primary">
-            + Add User
-          </button>
-        </div>
-      )}
+        <button onClick={openCreateUser} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+          + Add User
+        </button>
+      </div>
 
       {/* SEARCH */}
       <div>
@@ -213,12 +213,24 @@ export default function UsersHome({ onBack, scopedCompany, showAllUsers = false 
 
       {loading ? (
         <div className="py-10 text-center text-gray-500">Loading users…</div>
-      ) : filteredUsers.length === 0 ? (
+      ) : filteredUsers.length === 0 && search ? (
         <div className="py-10 text-center text-gray-500">
-          {showAllUsers 
-            ? "No users found in system."
-            : "No users found for this company."
-          }
+          No users found matching "{search}"
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="py-10 text-center">
+          <div className="text-gray-500 mb-4">
+            {showAllUsers 
+              ? "No users in system yet" 
+              : "No users in this company yet"
+            }
+          </div>
+          <button
+            onClick={openCreateUser}
+            className="px-6 py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition"
+          >
+            + Add First User
+          </button>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

@@ -1,5 +1,7 @@
+// ============================================================================
 // File: src/users/UsersHome.jsx
-// Version: v1.5.0 – Always pass company_id in create/update for proper company assignment
+// Version: v1.4.0 - Add showAllUsers mode for master to view all system users
+// ============================================================================
 
 import React, { useEffect, useState, useMemo } from "react";
 import { UsersAPI } from "../api";
@@ -8,7 +10,7 @@ import { useCompany } from "../CompanyContext";
 import UserCard from "./UserCard.jsx";
 import UserModal from "./UserModal.jsx";
 
-export default function UsersHome({ onBack, scopedCompany }) {
+export default function UsersHome({ onBack, scopedCompany, showAllUsers = false }) {
   const { user, isAuthenticated } = useAuth();
   const { currentCompany } = useCompany();
 
@@ -24,8 +26,11 @@ export default function UsersHome({ onBack, scopedCompany }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalMode, setModalMode] = useState("view"); // view | edit | create
 
-  const canManage =
-    isAuthenticated && user?.role === "master" && !!activeCompany;
+  // For "All Users" mode, only require master role
+  // For scoped mode, require master role AND a company
+  const canManage = showAllUsers 
+    ? isAuthenticated && user?.role === "master"
+    : isAuthenticated && user?.role === "master" && !!activeCompany;
 
   const isEmbedded = !onBack;
 
@@ -36,21 +41,25 @@ export default function UsersHome({ onBack, scopedCompany }) {
     }
     loadUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canManage, activeCompany?.id]);
+  }, [canManage, activeCompany?.id, showAllUsers]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       setError("");
       
-      // Pass company ID to API so backend filters correctly
-      const res = await UsersAPI.getAll(activeCompany.id);
-
-      console.log("USERS FROM API:", res.users);
-      console.log("ACTIVE COMPANY:", activeCompany);
-
-      // Backend already filtered by company, just set the users directly
-      setUsers(res.users || []);
+      if (showAllUsers) {
+        // Get ALL users from all companies (no filtering, no company_id param)
+        const res = await UsersAPI.getAll();
+        console.log("ALL USERS (unfiltered):", res.users);
+        setUsers(res.users || []);
+      } else {
+        // Get users for specific company
+        const res = await UsersAPI.getAll(activeCompany.id);
+        console.log("USERS FROM API:", res.users);
+        console.log("ACTIVE COMPANY:", activeCompany);
+        setUsers(res.users || []);
+      }
     } catch (err) {
       setError(err.message || "Failed to load users");
     } finally {
@@ -83,7 +92,7 @@ export default function UsersHome({ onBack, scopedCompany }) {
           password: form.password,
           is_active: form.is_active,
           // Always pass company_id from form (user can select different company)
-          company_id: form.company_id || activeCompany.id,
+          company_id: form.company_id || (showAllUsers ? null : activeCompany.id),
         };
 
         console.log("Creating user with payload:", payload);
@@ -91,8 +100,8 @@ export default function UsersHome({ onBack, scopedCompany }) {
         const res = await UsersAPI.create(payload);
         const created = res.user || res;
         
-        // Only add to list if user belongs to the active company
-        if (created.companyId === activeCompany.id) {
+        // Add to list if showAllUsers OR if user belongs to active company
+        if (showAllUsers || created.companyId === activeCompany?.id) {
           setUsers((prev) => [created, ...prev]);
         }
       }
@@ -104,7 +113,6 @@ export default function UsersHome({ onBack, scopedCompany }) {
           phone: form.phone,
           role: form.role,
           is_active: form.is_active,
-          // Always include company_id so user can be reassigned
           company_id: form.company_id,
           ...(form.password ? { password: form.password } : {}),
         };
@@ -114,8 +122,8 @@ export default function UsersHome({ onBack, scopedCompany }) {
         const res = await UsersAPI.update(selectedUser.id, payload);
         const updated = res.user || res;
 
-        // If user was moved to different company, remove from list
-        if (updated.companyId !== activeCompany.id) {
+        // If in scoped mode and user was moved to different company, remove from list
+        if (!showAllUsers && updated.companyId !== activeCompany?.id) {
           setUsers((prev) => prev.filter((u) => u.id !== updated.id));
         } else {
           // Otherwise update in place
@@ -171,10 +179,14 @@ export default function UsersHome({ onBack, scopedCompany }) {
 
   return (
     <div className="p-6 space-y-6">
+      {/* HEADER */}
       {!isEmbedded && (
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold text-gray-800">
-            {activeCompany.name || activeCompany.companyName} – Edit Users
+            {showAllUsers 
+              ? "All System Users" 
+              : `${activeCompany.name || activeCompany.companyName} – Edit Users`
+            }
           </h1>
 
           <button onClick={openCreateUser} className="btn btn-primary">
@@ -183,6 +195,7 @@ export default function UsersHome({ onBack, scopedCompany }) {
         </div>
       )}
 
+      {/* SEARCH */}
       <div>
         <input
           value={search}
@@ -202,7 +215,10 @@ export default function UsersHome({ onBack, scopedCompany }) {
         <div className="py-10 text-center text-gray-500">Loading users…</div>
       ) : filteredUsers.length === 0 ? (
         <div className="py-10 text-center text-gray-500">
-          No users found for this company.
+          {showAllUsers 
+            ? "No users found in system."
+            : "No users found for this company."
+          }
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -231,7 +247,7 @@ export default function UsersHome({ onBack, scopedCompany }) {
           mode={modalMode}
           user={selectedUser}
           currentUser={user}
-          defaultCompanyId={activeCompany.id}
+          defaultCompanyId={showAllUsers ? null : activeCompany?.id}
           onEdit={() => setModalMode("edit")}
           onClose={() => {
             setShowModal(false);

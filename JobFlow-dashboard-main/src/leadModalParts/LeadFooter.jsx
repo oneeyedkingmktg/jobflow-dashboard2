@@ -1,3 +1,8 @@
+// ============================================================================
+// File: src/leadModalParts/LeadFooter.jsx
+// Version: v2.0 - Add saving state to prevent double clicks
+// ============================================================================
+
 import React from "react";
 
 export default function LeadFooter({
@@ -8,6 +13,7 @@ export default function LeadFooter({
   deleteConfirm,
   setDeleteConfirm,
   onDelete,
+  saving = false,
 }) {
   return (
     <div className="pt-6 border-t border-gray-200">
@@ -17,12 +23,11 @@ export default function LeadFooter({
 
         {/* SAVE & EXIT — LEFT SIDE */}
         <button
-          onClick={async () => {
-            await onExit(); // IMPORTANT FIX — ensure exit happens AFTER save
-          }}
-          className="px-4 py-3 bg-gray-300 text-gray-900 rounded-xl font-semibold text-sm hover:bg-gray-400 transition"
+          onClick={onExit}
+          disabled={saving}
+          className="px-4 py-3 bg-gray-300 text-gray-900 rounded-xl font-semibold text-sm hover:bg-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save & Exit
+          {saving ? "Saving..." : "Save & Exit"}
         </button>
 
         {/* RIGHT SIDE — EDIT OR SAVE */}
@@ -36,9 +41,10 @@ export default function LeadFooter({
         ) : (
           <button
             onClick={onSave}
-            className="px-5 py-3 bg-green-600 text-white rounded-xl font-semibold text-sm shadow hover:bg-green-700 transition"
+            disabled={saving}
+            className="px-5 py-3 bg-green-600 text-white rounded-xl font-semibold text-sm shadow hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save
+            {saving ? "Saving..." : "Save"}
           </button>
         )}
       </div>
@@ -48,7 +54,8 @@ export default function LeadFooter({
         {!deleteConfirm ? (
           <button
             onClick={() => setDeleteConfirm(true)}
-            className="text-sm text-red-600 hover:text-red-800 underline"
+            disabled={saving}
+            className="text-sm text-red-600 hover:text-red-800 underline disabled:opacity-50"
           >
             Delete Contact
           </button>

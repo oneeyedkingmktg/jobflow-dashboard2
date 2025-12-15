@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/company/CompanyModal.jsx
-// Version: v1.4.0 - Role-based conditional tabs (Master/Admin)
+// Version: v1.5.0 - Add all company fields + fix estimator save + suspended toggle
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
@@ -42,7 +42,12 @@ export default function CompanyModal({
         name: "",
         phone: "",
         email: "",
+        website: "",
         address: "",
+        city: "",
+        state: "",
+        zip: "",
+        suspended: false,
       });
       setGhlForm({
         ghlApiKey: "",
@@ -60,7 +65,12 @@ export default function CompanyModal({
         name: company.name || "",
         phone: company.phone || "",
         email: company.email || "",
+        website: company.website || "",
         address: company.address || "",
+        city: company.city || "",
+        state: company.state || "",
+        zip: company.zip || "",
+        suspended: company.suspended || false,
       });
       setGhlForm({
         ghlApiKey: company.ghlApiKey || "",
@@ -94,8 +104,17 @@ export default function CompanyModal({
 
     try {
       setSaving(true);
-      await onSave(form);
+      setError("");
+      
+      if (isCreate) {
+        await onSave(form);
+      } else {
+        await onSave(company.id, form);
+      }
+      
       setSectionMode("view");
+    } catch (err) {
+      setError(err.message || "Failed to save company");
     } finally {
       setSaving(false);
     }
@@ -107,7 +126,17 @@ export default function CompanyModal({
     try {
       setSaving(true);
       setError("");
-      await onSave({ ...form, ...ghlForm });
+      
+      // Send all data combined
+      const payload = {
+        ...form,
+        ghl_api_key: ghlForm.ghlApiKey,
+        ghl_location_id: ghlForm.ghlLocationId,
+        ghl_install_calendar: ghlForm.ghlInstallCalendar,
+        ghl_appt_calendar: ghlForm.ghlApptCalendar,
+      };
+      
+      await onSave(company.id, payload);
       console.log("GHL Keys saved");
     } catch (err) {
       setError(err.message || "Failed to save GHL keys");
@@ -122,9 +151,19 @@ export default function CompanyModal({
     try {
       setSaving(true);
       setError("");
-      await onSave({ ...form, ...estimatorForm });
-      console.log("Estimator settings saved");
+      
+      // Send estimator_enabled field
+      const payload = {
+        ...form,
+        estimator_enabled: estimatorForm.estimatorEnabled,
+      };
+      
+      console.log("Saving estimator with payload:", payload);
+      
+      await onSave(company.id, payload);
+      console.log("Estimator settings saved successfully");
     } catch (err) {
+      console.error("Estimator save error:", err);
       setError(err.message || "Failed to save estimator settings");
     } finally {
       setSaving(false);
@@ -190,9 +229,25 @@ export default function CompanyModal({
           <div className={viewValue}>{form.email || "—"}</div>
         ) : (
           <input
+            type="email"
             className={editBox}
             value={form.email}
             onChange={(e) => handleChange("email", e.target.value)}
+          />
+        )}
+      </div>
+
+      <div>
+        <div className={viewLabel}>Website</div>
+        {sectionMode === "view" ? (
+          <div className={viewValue}>{form.website || "—"}</div>
+        ) : (
+          <input
+            type="url"
+            className={editBox}
+            value={form.website}
+            onChange={(e) => handleChange("website", e.target.value)}
+            placeholder="https://example.com"
           />
         )}
       </div>
@@ -202,14 +257,77 @@ export default function CompanyModal({
         {sectionMode === "view" ? (
           <div className={viewValue}>{form.address || "—"}</div>
         ) : (
-          <textarea
+          <input
             className={editBox}
-            rows={3}
             value={form.address}
             onChange={(e) => handleChange("address", e.target.value)}
           />
         )}
       </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <div className={viewLabel}>City</div>
+          {sectionMode === "view" ? (
+            <div className={viewValue}>{form.city || "—"}</div>
+          ) : (
+            <input
+              className={editBox}
+              value={form.city}
+              onChange={(e) => handleChange("city", e.target.value)}
+            />
+          )}
+        </div>
+
+        <div>
+          <div className={viewLabel}>State</div>
+          {sectionMode === "view" ? (
+            <div className={viewValue}>{form.state || "—"}</div>
+          ) : (
+            <input
+              className={editBox}
+              value={form.state}
+              onChange={(e) => handleChange("state", e.target.value)}
+              maxLength={2}
+              placeholder="CA"
+            />
+          )}
+        </div>
+
+        <div>
+          <div className={viewLabel}>ZIP</div>
+          {sectionMode === "view" ? (
+            <div className={viewValue}>{form.zip || "—"}</div>
+          ) : (
+            <input
+              className={editBox}
+              value={form.zip}
+              onChange={(e) => handleChange("zip", e.target.value)}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* SUSPENDED - Master only */}
+      {isMasterUser && (
+        <div className="pt-4 border-t">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.suspended}
+              onChange={(e) => handleChange("suspended", e.target.checked)}
+              className="w-5 h-5 text-red-600 rounded focus:ring-2 focus:ring-red-500"
+              disabled={sectionMode === "view"}
+            />
+            <div>
+              <div className="font-semibold text-gray-900">Suspend Account</div>
+              <div className="text-sm text-gray-600">
+                Prevent all users from this company from logging in
+              </div>
+            </div>
+          </label>
+        </div>
+      )}
     </div>
   );
 

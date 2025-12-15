@@ -201,7 +201,7 @@ export default function SettingsMenu() {
       {showUserMgmt && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex">
           <div className="flex-1 bg-white shadow-xl overflow-auto">
-            <UsersHome />
+            <UsersHome showAllUsers={true} />
           </div>
           <button
             onClick={() => setShowUserMgmt(false)}

@@ -144,7 +144,12 @@ export default function LeadsHome({ currentUser }) {
       return nameMatch || cityMatch || phoneMatch;
     };
 
-    return leads.filter((lead) => {
+    // Filter by currentCompany first
+    const companyFiltered = currentCompany 
+      ? leads.filter((lead) => lead.companyId === currentCompany.id)
+      : leads;
+
+    return companyFiltered.filter((lead) => {
       let m = true;
 
       switch (activeTab) {
@@ -159,16 +164,20 @@ export default function LeadsHome({ currentUser }) {
 
       return m && matchesSearch(lead);
     });
-  }, [leads, activeTab, searchTerm]);
+  }, [leads, activeTab, searchTerm, currentCompany]);
 
-  // Tab counts
+  // Tab counts - filter by currentCompany
+  const companyLeads = currentCompany 
+    ? leads.filter((l) => l.companyId === currentCompany.id)
+    : leads;
+
   const counts = {
-    Leads: leads.filter((l) => l.status === "lead").length,
-    "Booked Appt": leads.filter((l) => l.status === "appointment_set").length,
-    Sold: leads.filter((l) => l.status === "sold").length,
-    "Not Sold": leads.filter((l) => l.status === "not_sold").length,
-    Completed: leads.filter((l) => l.status === "complete").length,
-    All: leads.length,
+    Leads: companyLeads.filter((l) => l.status === "lead").length,
+    "Booked Appt": companyLeads.filter((l) => l.status === "appointment_set").length,
+    Sold: companyLeads.filter((l) => l.status === "sold").length,
+    "Not Sold": companyLeads.filter((l) => l.status === "not_sold").length,
+    Completed: companyLeads.filter((l) => l.status === "complete").length,
+    All: companyLeads.length,
   };
 
   // ==================================================
@@ -200,6 +209,8 @@ export default function LeadsHome({ currentUser }) {
       appointment_time: lead.apptTime,
       install_date: lead.installDate,
       install_tentative: lead.installTentative,
+      // Send company_id for new leads
+      company_id: currentCompany?.id,
     };
 
     let resp;

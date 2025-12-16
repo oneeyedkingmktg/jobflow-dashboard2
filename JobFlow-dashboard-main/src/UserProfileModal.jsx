@@ -1,5 +1,5 @@
 // File: src/UserProfileModal.jsx
-// Version: v1.1.1 – Fix form initialization to prevent null return
+// Version: v1.1.2 – Fix z-index to appear above SettingsModal
 
 import React, { useEffect, useState } from "react";
 import { UsersAPI, CompaniesAPI } from "./api";
@@ -113,7 +113,7 @@ export default function UserProfileModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* HEADER */}
         <div className="bg-blue-600 text-white p-6">

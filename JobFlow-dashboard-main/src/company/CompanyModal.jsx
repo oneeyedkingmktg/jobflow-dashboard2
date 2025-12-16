@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/company/CompanyModal.jsx
-// Version: v1.6.2 - Clean payload: snake_case only, explicit nulls
+// Version: v1.6.3 - Fix boolean initialization and add logging
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
@@ -56,7 +56,7 @@ export default function CompanyModal({
         city: "",
         state: "",
         zip: "",
-        suspended: false,
+        suspended: false, // Explicit false, not undefined
       });
       setGhlForm({
         ghlApiKey: "",
@@ -65,7 +65,7 @@ export default function CompanyModal({
         ghlApptCalendar: "",
       });
       setEstimatorForm({
-        estimatorEnabled: false,
+        estimatorEnabled: false, // Explicit false, not undefined
       });
     } else if (company) {
       setActiveSection("info");
@@ -79,7 +79,7 @@ export default function CompanyModal({
         city: company.city || "",
         state: company.state || "",
         zip: company.zip || "",
-        suspended: company.suspended || false,
+        suspended: company.suspended === true, // Explicit boolean conversion
       });
       setGhlForm({
         ghlApiKey: company.ghlApiKey || "",
@@ -88,7 +88,7 @@ export default function CompanyModal({
         ghlApptCalendar: company.ghlApptCalendar || "",
       });
       setEstimatorForm({
-        estimatorEnabled: company.estimatorEnabled || false,
+        estimatorEnabled: company.estimatorEnabled === true, // Explicit boolean conversion
       });
     }
   }, [isCreate, company]);
@@ -125,10 +125,11 @@ export default function CompanyModal({
         city: form.city || null,
         state: form.state || null,
         zip: form.zip || null,
-        suspended: form.suspended,
+        suspended: form.suspended, // Always boolean
       };
 
       console.log("Saving company info:", payload);
+      console.log("Suspended value type:", typeof form.suspended, "value:", form.suspended);
       
       await onSave(payload);
       
@@ -195,10 +196,11 @@ export default function CompanyModal({
         state: form.state || null,
         zip: form.zip || null,
         suspended: form.suspended,
-        estimator_enabled: estimatorForm.estimatorEnabled,
+        estimator_enabled: estimatorForm.estimatorEnabled, // Always boolean
       };
       
       console.log("Saving estimator with payload:", payload);
+      console.log("Estimator value type:", typeof estimatorForm.estimatorEnabled, "value:", estimatorForm.estimatorEnabled);
       
       await onSave(payload);
       console.log("Estimator settings saved successfully");

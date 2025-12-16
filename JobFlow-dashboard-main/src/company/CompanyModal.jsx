@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/company/CompanyModal.jsx
-// Version: v1.6.4 - Add detailed checkbox state logging
+// Version: v1.6.5 - CRITICAL FIX: Prevent useEffect from resetting checkboxes
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
@@ -31,14 +31,18 @@ export default function CompanyModal({
   // ------------------------------------------------------------
   // SECTION STATE
   // ------------------------------------------------------------
-  const [activeSection, setActiveSection] = useState("info"); // info | ghl | estimator | users
-  const [sectionMode, setSectionMode] = useState("view"); // view | edit (Company Info only)
+  const [activeSection, setActiveSection] = useState("info");
+  const [sectionMode, setSectionMode] = useState("view");
 
   const [form, setForm] = useState(null);
   const [ghlForm, setGhlForm] = useState(null);
   const [estimatorForm, setEstimatorForm] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  
+  // CRITICAL: Track if user has modified checkboxes to prevent reset
+  const [estimatorTouched, setEstimatorTouched] = useState(false);
+  const [suspendedTouched, setSuspendedTouched] = useState(false);
 
   // ------------------------------------------------------------
   // INIT FORM
@@ -56,7 +60,7 @@ export default function CompanyModal({
         city: "",
         state: "",
         zip: "",
-        suspended: false, // Explicit false, not undefined
+        suspended: false,
       });
       setGhlForm({
         ghlApiKey: "",
@@ -65,11 +69,17 @@ export default function CompanyModal({
         ghlApptCalendar: "",
       });
       setEstimatorForm({
-        estimatorEnabled: false, // Explicit false, not undefined
+        estimatorEnabled: false,
       });
+      setEstimatorTouched(false);
+      setSuspendedTouched(false);
     } else if (company) {
       setActiveSection("info");
       setSectionMode("view");
+      
+      // Preserve suspended if user touched it
+      const suspendedValue = suspendedTouched ? form?.suspended : (company.suspended === true);
+      
       setForm({
         name: company.name || "",
         phone: company.phone || "",
@@ -79,7 +89,7 @@ export default function CompanyModal({
         city: company.city || "",
         state: company.state || "",
         zip: company.zip || "",
-        suspended: company.suspended === true, // Explicit boolean conversion
+        suspended: suspendedValue,
       });
       setGhlForm({
         ghlApiKey: company.ghlApiKey || "",
@@ -87,11 +97,18 @@ export default function CompanyModal({
         ghlInstallCalendar: company.ghlInstallCalendar || "",
         ghlApptCalendar: company.ghlApptCalendar || "",
       });
-      setEstimatorForm({
-        estimatorEnabled: company.estimatorEnabled === true, // Explicit boolean conversion
-      });
+      
+      // CRITICAL: Only reset estimatorForm if user hasn't touched it
+      if (!estimatorTouched) {
+        console.log("RESETTING estimatorForm from company data:", company.estimatorEnabled);
+        setEstimatorForm({
+          estimatorEnabled: company.estimatorEnabled === true,
+        });
+      } else {
+        console.log("PRESERVING estimatorForm (user touched it)");
+      }
     }
-  }, [isCreate, company]);
+  }, [isCreate, company, estimatorTouched, suspendedTouched, form]);
 
   // DEBUG: Log whenever estimatorForm changes
   useEffect(() => {
@@ -106,6 +123,10 @@ export default function CompanyModal({
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setError("");
+    if (field === "suspended") {
+      setSuspendedTouched(true);
+      console.log("Suspended changed to:", value, "- Set suspendedTouched = true");
+    }
   };
 
   const handleSave = async () => {
@@ -463,6 +484,8 @@ export default function CompanyModal({
                   const newForm = { ...estimatorForm, estimatorEnabled: e.target.checked };
                   console.log("AFTER UPDATE - newForm:", newForm);
                   setEstimatorForm(newForm);
+                  setEstimatorTouched(true); // ← Prevent useEffect from resetting
+                  console.log("Set estimatorTouched = true");
                 }}
                 className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
               />

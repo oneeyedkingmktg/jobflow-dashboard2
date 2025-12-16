@@ -1,7 +1,7 @@
 /* ============================================================================
    API Configuration
    ============================================================================
-   FORCE REBUILD - Cache bust v5.1
+   FORCE REBUILD - Cache bust v5.2 - Add company_id filtering to UsersAPI
 ============================================================================ */
 
 const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com';
@@ -102,7 +102,10 @@ export const AuthAPI = {
 ============================================================================ */
 
 export const UsersAPI = {
-  getAll: () => apiRequest('/users'),
+  getAll: (companyId) => {
+    const url = companyId ? `/users?company_id=${companyId}` : '/users';
+    return apiRequest(url);
+  },
   get: (id) => apiRequest(`/users/${id}`),
 
   create: (data) =>

@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/CompanyContext.jsx
-// Version: 4.2 – Fix camelCase normalization (companyName → name)
+// Version: v4.3 – Fix admin company resolution (companyId vs company_id)
 // ============================================================================
 
 import { createContext, useContext, useState, useEffect } from "react";
@@ -68,13 +68,14 @@ export const CompanyProvider = ({ children }) => {
           return normalized[0] || null;
         });
       } else {
-        if (!user.company_id) {
+        // ✅ FIX: use normalized companyId
+        if (!user.companyId) {
           setCompanies([]);
           setCurrentCompany(null);
           return;
         }
 
-        const res = await CompaniesAPI.get(user.company_id);
+        const res = await CompaniesAPI.get(user.companyId);
         const company = normalizeCompany(res.company);
 
         setCompanies(company ? [company] : []);
@@ -179,3 +180,4 @@ export const CompanyProvider = ({ children }) => {
     </CompanyContext.Provider>
   );
 };
+

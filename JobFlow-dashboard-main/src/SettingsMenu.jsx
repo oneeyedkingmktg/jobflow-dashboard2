@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/SettingsMenu.jsx
-// Version: v1.3.1 – Restarted baseline (no functional changes)
+// Version: v1.3.2 – Fix isMaster boolean/function crash for admin users
 // ============================================================================
 
 import React, { useState } from "react";
@@ -58,6 +58,7 @@ export default function SettingsMenu() {
 
   const isAdmin = user?.role === "admin";
   const isRegularUser = user?.role === "user";
+  const isMasterUser = typeof isMaster === "function" ? isMaster() : !!isMaster;
 
   return (
     <>
@@ -100,7 +101,7 @@ export default function SettingsMenu() {
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden border border-gray-200">
               
               {/* MASTER ADMIN MENU */}
-              {isMaster() && (
+              {isMasterUser && (
                 <>
                   {/* COMPANY SWITCHER - DROPDOWN */}
                   <div className="bg-gray-600 px-6 py-4">
@@ -154,7 +155,7 @@ export default function SettingsMenu() {
               )}
 
               {/* ADMIN MENU */}
-              {isAdmin && (
+              {isAdmin && !isMasterUser && (
                 <div className="p-4 space-y-2">
                   <button
                     onClick={handleCompanySettings}
@@ -180,7 +181,7 @@ export default function SettingsMenu() {
               )}
 
               {/* USER MENU */}
-              {isRegularUser && (
+              {isRegularUser && !isAdmin && !isMasterUser && (
                 <div className="p-4 space-y-2">
                   <button
                     onClick={handleMyProfile}

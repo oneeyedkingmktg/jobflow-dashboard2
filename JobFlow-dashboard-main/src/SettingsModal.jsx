@@ -1,5 +1,5 @@
 // File: src/SettingsModal.jsx
-// Version: v2.3 - Fix My Profile rendering with loading state
+// Version: v2.4 - Simplify My Profile rendering logic
 
 import React, { useState } from "react";
 import { useAuth } from "./AuthContext";
@@ -210,22 +210,22 @@ export default function SettingsModal({ onClose }) {
 
   return (
     <>
-      {screen === "my_profile" && user ? (
-        // Render profile modal outside wrapper to avoid nesting
-        <UserProfileModal
-          user={user}
-          currentUser={user}
-          onClose={handleBack}
-          onSave={handleSaveProfile}
-          onDelete={handleDeleteUser}
-        />
-      ) : screen === "my_profile" ? (
-        // Loading state if user not ready
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[999]">
-          <div className="bg-white rounded-2xl shadow-2xl p-8">
-            <p className="text-gray-600">Loading profile...</p>
+      {screen === "my_profile" ? (
+        user ? (
+          <UserProfileModal
+            user={user}
+            currentUser={user}
+            onClose={handleBack}
+            onSave={handleSaveProfile}
+            onDelete={handleDeleteUser}
+          />
+        ) : (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[999]">
+            <div className="bg-white rounded-2xl shadow-2xl p-8">
+              <p className="text-gray-600">Loading profile...</p>
+            </div>
           </div>
-        </div>
+        )
       ) : (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[999] p-4 overflow-auto">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-auto">

@@ -1,5 +1,5 @@
 // File: src/SettingsModal.jsx
-// Version: v2.1 - Fix My Profile by passing user prop and handlers
+// Version: v2.2 - Fix My Profile nested modal issue
 
 import React, { useState } from "react";
 import { useAuth } from "./AuthContext";
@@ -216,10 +216,23 @@ export default function SettingsModal({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[999] p-4 overflow-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-auto">
-        {content}
-      </div>
-    </div>
+    <>
+      {screen === "my_profile" ? (
+        // Render profile modal outside wrapper to avoid nesting
+        <UserProfileModal
+          user={user}
+          currentUser={user}
+          onClose={handleBack}
+          onSave={handleSaveProfile}
+          onDelete={handleDeleteUser}
+        />
+      ) : (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[999] p-4 overflow-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-auto">
+            {content}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

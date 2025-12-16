@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/company/CompanyModal.jsx
-// Version: v1.6.3 - Fix boolean initialization and add logging
+// Version: v1.6.4 - Add detailed checkbox state logging
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
@@ -93,6 +93,11 @@ export default function CompanyModal({
     }
   }, [isCreate, company]);
 
+  // DEBUG: Log whenever estimatorForm changes
+  useEffect(() => {
+    console.log("estimatorForm state changed:", estimatorForm);
+  }, [estimatorForm]);
+
   if (!form) return null;
 
   // ------------------------------------------------------------
@@ -184,6 +189,10 @@ export default function CompanyModal({
     try {
       setSaving(true);
       setError("");
+      
+      console.log("=== SAVE ESTIMATOR CALLED ===");
+      console.log("estimatorForm state:", estimatorForm);
+      console.log("estimatorForm.estimatorEnabled:", estimatorForm.estimatorEnabled);
       
       // Send ONLY snake_case for API
       const payload = {
@@ -448,7 +457,13 @@ export default function CompanyModal({
               <input
                 type="checkbox"
                 checked={estimatorForm.estimatorEnabled}
-                onChange={(e) => setEstimatorForm({ ...estimatorForm, estimatorEnabled: e.target.checked })}
+                onChange={(e) => {
+                  console.log("CHECKBOX CLICKED - checked:", e.target.checked);
+                  console.log("BEFORE UPDATE - estimatorForm:", estimatorForm);
+                  const newForm = { ...estimatorForm, estimatorEnabled: e.target.checked };
+                  console.log("AFTER UPDATE - newForm:", newForm);
+                  setEstimatorForm(newForm);
+                }}
                 className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
               />
               <div>

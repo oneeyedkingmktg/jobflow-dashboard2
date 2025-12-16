@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/company/CompanyModal.jsx
-// Version: v1.6.1 - CRITICAL FIX: Remove company.id from onSave calls
+// Version: v1.6.2 - Clean payload: snake_case only, explicit nulls
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
@@ -115,17 +115,16 @@ export default function CompanyModal({
       setSaving(true);
       setError("");
       
-      // Convert to snake_case for API
+      // Send ONLY snake_case for API
       const payload = {
-        name: form.name,
-        company_name: form.name, // Send both formats
-        phone: form.phone,
-        email: form.email,
-        website: form.website,
-        address: form.address,
-        city: form.city,
-        state: form.state,
-        zip: form.zip,
+        company_name: form.name,
+        phone: form.phone || null,
+        email: form.email || null,
+        website: form.website || null,
+        address: form.address || null,
+        city: form.city || null,
+        state: form.state || null,
+        zip: form.zip || null,
         suspended: form.suspended,
       };
 
@@ -149,22 +148,21 @@ export default function CompanyModal({
       setSaving(true);
       setError("");
       
-      // Send all data combined in snake_case
+      // Send ONLY snake_case for API
       const payload = {
-        name: form.name,
         company_name: form.name,
-        phone: form.phone,
-        email: form.email,
-        website: form.website,
-        address: form.address,
-        city: form.city,
-        state: form.state,
-        zip: form.zip,
+        phone: form.phone || null,
+        email: form.email || null,
+        website: form.website || null,
+        address: form.address || null,
+        city: form.city || null,
+        state: form.state || null,
+        zip: form.zip || null,
         suspended: form.suspended,
-        ghl_api_key: ghlForm.ghlApiKey,
-        ghl_location_id: ghlForm.ghlLocationId,
-        ghl_install_calendar: ghlForm.ghlInstallCalendar,
-        ghl_appt_calendar: ghlForm.ghlApptCalendar,
+        ghl_api_key: ghlForm.ghlApiKey || null,
+        ghl_location_id: ghlForm.ghlLocationId || null,
+        ghl_install_calendar: ghlForm.ghlInstallCalendar || null,
+        ghl_appt_calendar: ghlForm.ghlApptCalendar || null,
       };
       
       console.log("Saving GHL keys:", payload);
@@ -186,17 +184,16 @@ export default function CompanyModal({
       setSaving(true);
       setError("");
       
-      // Send estimator_enabled field in snake_case
+      // Send ONLY snake_case for API
       const payload = {
-        name: form.name,
         company_name: form.name,
-        phone: form.phone,
-        email: form.email,
-        website: form.website,
-        address: form.address,
-        city: form.city,
-        state: form.state,
-        zip: form.zip,
+        phone: form.phone || null,
+        email: form.email || null,
+        website: form.website || null,
+        address: form.address || null,
+        city: form.city || null,
+        state: form.state || null,
+        zip: form.zip || null,
         suspended: form.suspended,
         estimator_enabled: estimatorForm.estimatorEnabled,
       };

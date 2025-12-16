@@ -1,5 +1,5 @@
 // File: src/UserProfileModal.jsx
-// Version: v1.1.0 – Resolve company from viewed user (master-safe)
+// Version: v1.1.1 – Fix form initialization to prevent null return
 
 import React, { useEffect, useState } from "react";
 import { UsersAPI, CompaniesAPI } from "./api";
@@ -15,7 +15,14 @@ export default function UserProfileModal({
   const { companies } = useCompany();
 
   const [mode, setMode] = useState("view"); // view | edit
-  const [form, setForm] = useState(null);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "user",
+    is_active: true,
+    password: "",
+  });
   const [error, setError] = useState("");
 
   // 🔑 resolved company for THIS user (not currentCompany)
@@ -71,7 +78,7 @@ export default function UserProfileModal({
     };
   }, [user, companies]);
 
-  if (!user || !form) return null;
+  if (!user) return null;
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));

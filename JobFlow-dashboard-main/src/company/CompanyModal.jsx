@@ -45,8 +45,10 @@ export default function CompanyModal({
   const [suspendedTouched, setSuspendedTouched] = useState(false);
 
   // ------------------------------------------------------------
-  // INIT FORM
+  // INIT FORM - Track previous company to avoid unnecessary resets
   // ------------------------------------------------------------
+  const [prevCompanyId, setPrevCompanyId] = useState(null);
+  
   useEffect(() => {
     if (isCreate) {
       setActiveSection("info");
@@ -73,12 +75,11 @@ export default function CompanyModal({
       });
       setEstimatorTouched(false);
       setSuspendedTouched(false);
-    } else if (company) {
+      setPrevCompanyId(null);
+    } else if (company && company.id !== prevCompanyId) {
+      // Only reset form when company actually changes (different ID)
       setActiveSection("info");
       setSectionMode("view");
-      
-      // Preserve suspended if user touched it
-      const suspendedValue = suspendedTouched ? form?.suspended : (company.suspended === true);
       
       setForm({
         name: company.name || "",
@@ -89,7 +90,7 @@ export default function CompanyModal({
         city: company.city || "",
         state: company.state || "",
         zip: company.zip || "",
-        suspended: suspendedValue,
+        suspended: company.suspended === true,
       });
       setGhlForm({
         ghlApiKey: company.ghlApiKey || "",
@@ -97,18 +98,15 @@ export default function CompanyModal({
         ghlInstallCalendar: company.ghlInstallCalendar || "",
         ghlApptCalendar: company.ghlApptCalendar || "",
       });
+      setEstimatorForm({
+        estimatorEnabled: company.estimatorEnabled === true,
+      });
       
-      // CRITICAL: Only reset estimatorForm if user hasn't touched it
-      if (!estimatorTouched) {
-        console.log("RESETTING estimatorForm from company data:", company.estimatorEnabled);
-        setEstimatorForm({
-          estimatorEnabled: company.estimatorEnabled === true,
-        });
-      } else {
-        console.log("PRESERVING estimatorForm (user touched it)");
-      }
+      setEstimatorTouched(false);
+      setSuspendedTouched(false);
+      setPrevCompanyId(company.id);
     }
-  }, [isCreate, company, estimatorTouched, suspendedTouched, form]);
+  }, [isCreate, company, prevCompanyId]);
 
   // DEBUG: Log whenever estimatorForm changes
   useEffect(() => {
@@ -611,11 +609,15 @@ export default function CompanyModal({
 
           {activeSection === "info" && (
             <button
-              onClick={() =>
-                sectionMode === "view"
-                  ? setSectionMode("edit")
-                  : handleSave()
-              }
+              onClick={() => {
+                if (sectionMode === "view") {
+                  setSectionMode("edit");
+                  // Notify parent that we're entering edit mode
+                  if (onEdit) onEdit();
+                } else {
+                  handleSave();
+                }
+              }}
               className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
               disabled={saving}
             >

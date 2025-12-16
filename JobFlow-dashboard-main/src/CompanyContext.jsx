@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/CompanyContext.jsx
-// Version: v4.4 - Add GHL fields support for create/update
+// Version: 4.2 – Fix camelCase normalization (companyName → name)
 // ============================================================================
 
 import { createContext, useContext, useState, useEffect } from "react";
@@ -23,7 +23,7 @@ const normalizeCompany = (c) => {
 
   return {
     ...c,
-    name: c.name ?? c.companyName ?? c.company_name ?? "",
+    name: c.name ?? c.companyName ?? "",
   };
 };
 
@@ -106,33 +106,22 @@ export const CompanyProvider = ({ children }) => {
   // ============================================================================
   const createCompany = async (data) => {
     try {
-      console.log("Creating company with data:", data);
-
-      const payload = {
-        name: data.name,
+      const res = await CompaniesAPI.create({
+        company_name: data.name,
         phone: data.phone || "",
         email: data.email || "",
         address: data.address || "",
-        // Include GHL fields if present
-        ghl_api_key: data.ghl_api_key || "",
-        ghl_location_id: data.ghl_location_id || "",
-        ghl_install_calendar: data.ghl_install_calendar || "",
-        ghl_appt_calendar: data.ghl_appt_calendar || "",
-      };
-
-      const res = await CompaniesAPI.create(payload);
-
-      console.log("Create company response:", res);
+      });
 
       if (!res.company) {
-        throw new Error(res.error || "Failed to create company");
+        return { success: false, error: res.error || "Missing company from API" };
       }
 
       await loadCompanies();
       return { success: true, company: normalizeCompany(res.company) };
     } catch (err) {
       console.error("createCompany error:", err);
-      throw err; // Re-throw so CompaniesHome can catch it
+      return { success: false, error: err.message };
     }
   };
 
@@ -141,29 +130,22 @@ export const CompanyProvider = ({ children }) => {
   // ============================================================================
   const updateCompany = async (companyId, updates) => {
     try {
-      console.log("Updating company", companyId, "with:", updates);
-
-      const payload = {
-        name: updates.name,
-        phone: updates.phone,
-        email: updates.email,
-        address: updates.address,
-        // Include GHL fields if present
-        ghl_api_key: updates.ghl_api_key,
-        ghl_location_id: updates.ghl_location_id,
-        ghl_install_calendar: updates.ghl_install_calendar,
-        ghl_appt_calendar: updates.ghl_appt_calendar,
-      };
-
-      const res = await CompaniesAPI.update(companyId, payload);
-
-      console.log("Update company response:", res);
+      console.log("=== CompanyContext.updateCompany CALLED ===");
+      console.log("Company ID:", companyId);
+      console.log("Updates payload:", JSON.stringify(updates, null, 2));
+      
+      const res = await CompaniesAPI.update(companyId, updates);
+      
+      console.log("API response:", JSON.stringify(res, null, 2));
 
       if (!res.company) {
-        throw new Error(res.error || "Failed to update company");
+        console.error("No company in response!");
+        return { success: false, error: res.error || "Failed to update company" };
       }
 
       const normalized = normalizeCompany(res.company);
+      console.log("Normalized company:", JSON.stringify(normalized, null, 2));
+      
       setCurrentCompany(normalized);
 
       if (user.role === "master") {
@@ -173,7 +155,7 @@ export const CompanyProvider = ({ children }) => {
       return { success: true, company: normalized };
     } catch (err) {
       console.error("updateCompany error:", err);
-      throw err; // Re-throw so CompaniesHome can catch it
+      return { success: false, error: err.message };
     }
   };
 

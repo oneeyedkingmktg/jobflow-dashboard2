@@ -1,4 +1,5 @@
-// File: src/SettingsModal.jsx 
+// File: src/SettingsModal.jsx
+// Version: v2.0 - Add working Company Settings for Admin
 
 import React, { useState } from "react";
 import { useAuth } from "./AuthContext";
@@ -6,12 +7,13 @@ import { useCompany } from "./CompanyContext";
 
 import CompanyManagement from "./CompanyManagement";
 import CompanyDetails from "./CompanyDetails";
+import CompanyModal from "./company/CompanyModal";
 import UsersHome from "./users/UsersHome";
 import UserProfileModal from "./UserProfileModal";
 
 export default function SettingsModal({ onClose }) {
   const { logout, isMaster } = useAuth();
-  const { currentCompany } = useCompany();
+  const { currentCompany, updateCompany } = useCompany();
 
   const [screen, setScreen] = useState("home");
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -35,6 +37,18 @@ export default function SettingsModal({ onClose }) {
     if (screen === "company_details") return setScreen("manage_companies");
     if (screen !== "home") return goHome();
     onClose();
+  };
+
+  // Handle saving company for admin
+  const handleSaveCompany = async (formData) => {
+    try {
+      console.log("SettingsModal saving company:", formData);
+      await updateCompany(currentCompany.id, formData);
+      console.log("Company saved successfully");
+    } catch (err) {
+      console.error("Failed to save company:", err);
+      throw err;
+    }
   };
 
   const renderHome = () => (
@@ -142,15 +156,12 @@ export default function SettingsModal({ onClose }) {
 
     case "company_settings":
       content = (
-        <div className="p-6">
-          <p className="text-lg text-gray-700">Company Settings Coming Soon…</p>
-          <button
-            onClick={handleBack}
-            className="mt-4 px-4 py-2 bg-gray-700 text-white rounded-lg"
-          >
-            Back
-          </button>
-        </div>
+        <CompanyModal
+          mode="edit"
+          company={currentCompany}
+          onClose={handleBack}
+          onSave={handleSaveCompany}
+        />
       );
       break;
 

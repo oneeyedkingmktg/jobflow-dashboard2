@@ -1,5 +1,5 @@
 // File: src/company/CompaniesHome.jsx
-// Version: v1.0.6 – App-level Close wiring (no modal assumptions)
+// Version: v1.0.7 – Fix estimator save by removing edit mode check
 
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../AuthContext";
@@ -71,9 +71,8 @@ export default function CompaniesHome() {
 
       if (modalMode === "create") {
         await createCompany(form);
-      }
-
-      if (modalMode === "edit" && selectedCompany) {
+      } else if (selectedCompany) {
+        // Update existing company (from any tab - Info, GHL, Estimator, etc.)
         await updateCompany(selectedCompany.id, form);
       }
 

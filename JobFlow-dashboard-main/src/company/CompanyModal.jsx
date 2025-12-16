@@ -1,11 +1,20 @@
 // ============================================================================
 // File: src/company/CompanyModal.jsx
-// Version: v1.5.0 - Add all company fields + fix estimator save + suspended toggle
+// Version: v1.6.1 - CRITICAL FIX: Remove company.id from onSave calls
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../AuthContext";
 import UsersHome from "../users/UsersHome";
+
+// Phone formatter utility
+const formatPhoneNumber = (value) => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  if (digits.length < 4) return digits;
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+};
 
 export default function CompanyModal({
   mode, // "view" | "edit" | "create"
@@ -106,14 +115,27 @@ export default function CompanyModal({
       setSaving(true);
       setError("");
       
-      if (isCreate) {
-        await onSave(form);
-      } else {
-        await onSave(company.id, form);
-      }
+      // Convert to snake_case for API
+      const payload = {
+        name: form.name,
+        company_name: form.name, // Send both formats
+        phone: form.phone,
+        email: form.email,
+        website: form.website,
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        zip: form.zip,
+        suspended: form.suspended,
+      };
+
+      console.log("Saving company info:", payload);
+      
+      await onSave(payload);
       
       setSectionMode("view");
     } catch (err) {
+      console.error("Save company info error:", err);
       setError(err.message || "Failed to save company");
     } finally {
       setSaving(false);
@@ -127,18 +149,30 @@ export default function CompanyModal({
       setSaving(true);
       setError("");
       
-      // Send all data combined
+      // Send all data combined in snake_case
       const payload = {
-        ...form,
+        name: form.name,
+        company_name: form.name,
+        phone: form.phone,
+        email: form.email,
+        website: form.website,
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        zip: form.zip,
+        suspended: form.suspended,
         ghl_api_key: ghlForm.ghlApiKey,
         ghl_location_id: ghlForm.ghlLocationId,
         ghl_install_calendar: ghlForm.ghlInstallCalendar,
         ghl_appt_calendar: ghlForm.ghlApptCalendar,
       };
       
-      await onSave(company.id, payload);
-      console.log("GHL Keys saved");
+      console.log("Saving GHL keys:", payload);
+      
+      await onSave(payload);
+      console.log("GHL Keys saved successfully");
     } catch (err) {
+      console.error("GHL save error:", err);
       setError(err.message || "Failed to save GHL keys");
     } finally {
       setSaving(false);
@@ -152,15 +186,24 @@ export default function CompanyModal({
       setSaving(true);
       setError("");
       
-      // Send estimator_enabled field
+      // Send estimator_enabled field in snake_case
       const payload = {
-        ...form,
+        name: form.name,
+        company_name: form.name,
+        phone: form.phone,
+        email: form.email,
+        website: form.website,
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        zip: form.zip,
+        suspended: form.suspended,
         estimator_enabled: estimatorForm.estimatorEnabled,
       };
       
       console.log("Saving estimator with payload:", payload);
       
-      await onSave(company.id, payload);
+      await onSave(payload);
       console.log("Estimator settings saved successfully");
     } catch (err) {
       console.error("Estimator save error:", err);
@@ -218,7 +261,8 @@ export default function CompanyModal({
           <input
             className={editBox}
             value={form.phone}
-            onChange={(e) => handleChange("phone", e.target.value)}
+            onChange={(e) => handleChange("phone", formatPhoneNumber(e.target.value))}
+            placeholder="(555) 555-5555"
           />
         )}
       </div>

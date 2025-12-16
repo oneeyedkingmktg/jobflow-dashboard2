@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/SettingsMenu.jsx
-// Version: v1.3.2 – Fix isMaster boolean/function crash for admin users
+// Version: v1.3.3 – Normalize isMaster (boolean OR function) to prevent crash
 // ============================================================================
 
 import React, { useState } from "react";
@@ -21,8 +21,14 @@ export default function SettingsMenu() {
   const [showSettings, setShowSettings] = useState(false);
   const [showCompanyWizard, setShowCompanyWizard] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
-
   const [showUserMgmt, setShowUserMgmt] = useState(false);
+
+  // 🔒 CRITICAL: normalize isMaster safely
+  const isMasterUser =
+    typeof isMaster === "function" ? isMaster() : Boolean(isMaster);
+
+  const isAdmin = user?.role === "admin";
+  const isRegularUser = user?.role === "user";
 
   const handleSwitchCompany = (e) => {
     const companyId = parseInt(e.target.value, 10);
@@ -56,10 +62,6 @@ export default function SettingsMenu() {
     logout();
   };
 
-  const isAdmin = user?.role === "admin";
-  const isRegularUser = user?.role === "user";
-  const isMasterUser = typeof isMaster === "function" ? isMaster() : !!isMaster;
-
   return (
     <>
       {/* Gear Icon */}
@@ -69,23 +71,23 @@ export default function SettingsMenu() {
           className="touch-target p-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"
           aria-label="Menu"
         >
-          <svg 
-            className="w-6 h-6 text-white" 
-            fill="none" 
-            stroke="currentColor" 
+          <svg
+            className="w-6 h-6 text-white"
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" 
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
             />
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
             />
           </svg>
         </button>
@@ -99,11 +101,9 @@ export default function SettingsMenu() {
             />
 
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden border border-gray-200">
-              
-              {/* MASTER ADMIN MENU */}
+              {/* MASTER MENU */}
               {isMasterUser && (
                 <>
-                  {/* COMPANY SWITCHER - DROPDOWN */}
                   <div className="bg-gray-600 px-6 py-4">
                     <label className="block text-xs font-semibold text-white uppercase tracking-wide mb-2">
                       Current Company
@@ -111,7 +111,7 @@ export default function SettingsMenu() {
                     <select
                       value={currentCompany?.id || ""}
                       onChange={handleSwitchCompany}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 font-semibold"
                     >
                       {companies.map((company) => (
                         <option key={company.id} value={company.id}>
@@ -121,33 +121,17 @@ export default function SettingsMenu() {
                     </select>
                   </div>
 
-                  {/* MASTER ACTIONS */}
                   <div className="p-4 space-y-2">
-                    <button
-                      onClick={handleManageCompanies}
-                      className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
-                    >
+                    <button onClick={handleManageCompanies} className="w-full px-4 py-3 border rounded-lg">
                       Manage Companies
                     </button>
-
-                    <button
-                      onClick={handleManageUsers}
-                      className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
-                    >
+                    <button onClick={handleManageUsers} className="w-full px-4 py-3 border rounded-lg">
                       Manage Users
                     </button>
-
-                    <button
-                      onClick={handleMyProfile}
-                      className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
-                    >
+                    <button onClick={handleMyProfile} className="w-full px-4 py-3 border rounded-lg">
                       My Profile
                     </button>
-
-                    <button
-                      onClick={handleLogout}
-                      className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
-                    >
+                    <button onClick={handleLogout} className="w-full px-4 py-3 border rounded-lg">
                       Logout
                     </button>
                   </div>
@@ -157,24 +141,13 @@ export default function SettingsMenu() {
               {/* ADMIN MENU */}
               {isAdmin && !isMasterUser && (
                 <div className="p-4 space-y-2">
-                  <button
-                    onClick={handleCompanySettings}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
-                  >
+                  <button onClick={handleCompanySettings} className="w-full px-4 py-3 border rounded-lg">
                     Company Settings
                   </button>
-
-                  <button
-                    onClick={handleMyProfile}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
-                  >
+                  <button onClick={handleMyProfile} className="w-full px-4 py-3 border rounded-lg">
                     My Profile
                   </button>
-
-                  <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
-                  >
+                  <button onClick={handleLogout} className="w-full px-4 py-3 border rounded-lg">
                     Logout
                   </button>
                 </div>
@@ -183,17 +156,10 @@ export default function SettingsMenu() {
               {/* USER MENU */}
               {isRegularUser && !isAdmin && !isMasterUser && (
                 <div className="p-4 space-y-2">
-                  <button
-                    onClick={handleMyProfile}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
-                  >
+                  <button onClick={handleMyProfile} className="w-full px-4 py-3 border rounded-lg">
                     My Profile
                   </button>
-
-                  <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition text-center"
-                  >
+                  <button onClick={handleLogout} className="w-full px-4 py-3 border rounded-lg">
                     Logout
                   </button>
                 </div>
@@ -204,26 +170,22 @@ export default function SettingsMenu() {
       </div>
 
       {/* MODALS */}
-      {showSettings && (
-        <SettingsModal onClose={() => setShowSettings(false)} />
-      )}
-
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showCompanyWizard && (
         <CompanyWizard
           onComplete={() => setShowCompanyWizard(false)}
           onCancel={() => setShowCompanyWizard(false)}
         />
       )}
-
       {showUserProfile && (
         <UserProfileModal onClose={() => setShowUserProfile(false)} />
       )}
 
       {/* FULL PAGE PANELS */}
       {showUserMgmt && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex">
-          <div className="flex-1 bg-white shadow-xl overflow-auto">
-            <UsersHome showAllUsers={true} />
+        <div className="fixed inset-0 bg-black/30 z-50 flex">
+          <div className="flex-1 bg-white overflow-auto">
+            <UsersHome showAllUsers />
           </div>
           <button
             onClick={() => setShowUserMgmt(false)}

@@ -1,6 +1,6 @@
 // ============================================================================
 // File: src/SettingsMenu.jsx
-// Version: v1.3.0 - Role-based conditional menus (Master/Admin/User)
+// Version: v1.3.1 – Restarted baseline (no functional changes)
 // ============================================================================
 
 import React, { useState } from "react";

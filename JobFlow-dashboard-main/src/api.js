@@ -12,7 +12,14 @@ const toSnake = (obj) => {
   const out = {};
   for (const key in obj) {
     const snake = key.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`);
-    out[snake] = obj[key] === '' ? null : obj[key];
+    const value = obj[key] === '' ? null : obj[key];
+    
+    // Debug logging for booleans
+    if (typeof obj[key] === 'boolean') {
+      console.log(`toSnake: ${key} (${typeof obj[key]}) = ${obj[key]} → ${snake} (${typeof value}) = ${value}`);
+    }
+    
+    out[snake] = value;
   }
   return out;
 };
@@ -139,12 +146,25 @@ export const CompaniesAPI = {
     console.log("=== CompaniesAPI.update CALLED ===");
     console.log("ID:", id);
     console.log("Data received:", JSON.stringify(data, null, 2));
-    const snakeData = toSnake(data);
-    console.log("After toSnake:", JSON.stringify(snakeData, null, 2));
+    
+    // CRITICAL FIX: Don't call toSnake if data is already snake_case
+    // Check if data has snake_case keys (contains underscore)
+    const hasSnakeCase = Object.keys(data).some(key => key.includes('_'));
+    
+    let finalData;
+    if (hasSnakeCase) {
+      console.log("Data is already snake_case, sending as-is");
+      finalData = data;
+    } else {
+      console.log("Data is camelCase, converting to snake_case");
+      finalData = toSnake(data);
+    }
+    
+    console.log("Final data to send:", JSON.stringify(finalData, null, 2));
     
     return apiRequest(`/companies/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(snakeData),
+      body: JSON.stringify(finalData),
     });
   },
 

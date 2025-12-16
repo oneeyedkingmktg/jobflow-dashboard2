@@ -1,13 +1,11 @@
 // ============================================================================
-// File: src/company/CompanyModal.jsx
-// Version: v1.6.1 - CRITICAL FIX: Remove company.id from onSave calls
+// File: src/users/UserModal.jsx
+// Version: v2.0.0 - Complete rewrite for proper user management
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../AuthContext";
-import UsersHome from "../users/UsersHome";
+import { useCompany } from "../CompanyContext";
 
-// Phone formatter utility
 const formatPhoneNumber = (value) => {
   if (!value) return "";
   const digits = value.replace(/\D/g, "").slice(0, 10);
@@ -16,96 +14,74 @@ const formatPhoneNumber = (value) => {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 };
 
-export default function CompanyModal({
+export default function UserModal({
   mode, // "view" | "edit" | "create"
-  company,
+  user,
+  currentUser,
+  defaultCompanyId,
   onEdit,
   onClose,
   onSave,
+  onDelete,
 }) {
-  const { user, isMaster } = useAuth();
-  const isCreate = mode === "create";
-  const isMasterUser = isMaster();
-  const isAdminUser = user?.role === "admin";
-
-  // ------------------------------------------------------------
-  // SECTION STATE
-  // ------------------------------------------------------------
-  const [activeSection, setActiveSection] = useState("info"); // info | ghl | estimator | users
-  const [sectionMode, setSectionMode] = useState("view"); // view | edit (Company Info only)
-
-  const [form, setForm] = useState(null);
-  const [ghlForm, setGhlForm] = useState(null);
-  const [estimatorForm, setEstimatorForm] = useState(null);
+  const { companies } = useCompany();
+  const [viewMode, setViewMode] = useState(mode === "create" ? "edit" : "view");
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "user",
+    company_id: defaultCompanyId || null,
+    is_active: true,
+    password: "",
+  });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // ------------------------------------------------------------
-  // INIT FORM
-  // ------------------------------------------------------------
   useEffect(() => {
-    if (isCreate) {
-      setActiveSection("info");
-      setSectionMode("edit");
+    if (mode === "create") {
+      setViewMode("edit");
       setForm({
         name: "",
-        phone: "",
         email: "",
-        website: "",
-        address: "",
-        city: "",
-        state: "",
-        zip: "",
-        suspended: false,
+        phone: "",
+        role: "user",
+        company_id: defaultCompanyId || null,
+        is_active: true,
+        password: "",
       });
-      setGhlForm({
-        ghlApiKey: "",
-        ghlLocationId: "",
-        ghlInstallCalendar: "",
-        ghlApptCalendar: "",
-      });
-      setEstimatorForm({
-        estimatorEnabled: false,
-      });
-    } else if (company) {
-      setActiveSection("info");
-      setSectionMode("view");
+    } else if (user) {
+      setViewMode("view");
       setForm({
-        name: company.name || "",
-        phone: company.phone || "",
-        email: company.email || "",
-        website: company.website || "",
-        address: company.address || "",
-        city: company.city || "",
-        state: company.state || "",
-        zip: company.zip || "",
-        suspended: company.suspended || false,
-      });
-      setGhlForm({
-        ghlApiKey: company.ghlApiKey || "",
-        ghlLocationId: company.ghlLocationId || "",
-        ghlInstallCalendar: company.ghlInstallCalendar || "",
-        ghlApptCalendar: company.ghlApptCalendar || "",
-      });
-      setEstimatorForm({
-        estimatorEnabled: company.estimatorEnabled || false,
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        role: user.role || "user",
+        company_id: user.companyId || user.company_id || null,
+        is_active: user.is_active !== false,
+        password: "",
       });
     }
-  }, [isCreate, company]);
+  }, [mode, user, defaultCompanyId]);
 
-  if (!form) return null;
-
-  // ------------------------------------------------------------
-  // HANDLERS
-  // ------------------------------------------------------------
   const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    if (field === "phone") {
+      setForm((prev) => ({ ...prev, [field]: formatPhoneNumber(value) }));
+    } else {
+      setForm((prev) => ({ ...prev, [field]: value }));
+    }
     setError("");
   };
 
   const handleSave = async () => {
-    if (!form.name) {
-      setError("Company name is required");
+    // Validation
+    if (!form.name || !form.email) {
+      setError("Name and email are required");
+      return;
+    }
+
+    if (mode === "create" && !form.password) {
+      setError("Password is required for new users");
       return;
     }
 
@@ -114,481 +90,246 @@ export default function CompanyModal({
     try {
       setSaving(true);
       setError("");
-      
-      // Convert to snake_case for API
-      const payload = {
-        name: form.name,
-        company_name: form.name, // Send both formats
-        phone: form.phone,
-        email: form.email,
-        website: form.website,
-        address: form.address,
-        city: form.city,
-        state: form.state,
-        zip: form.zip,
-        suspended: form.suspended,
-      };
-
-      console.log("Saving company info:", payload);
-      
-      await onSave(payload);
-      
-      setSectionMode("view");
+      await onSave(form);
+      if (mode !== "create") {
+        setViewMode("view");
+      }
     } catch (err) {
-      console.error("Save company info error:", err);
-      setError(err.message || "Failed to save company");
+      setError(err.message || "Failed to save user");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleSaveGHLKeys = async () => {
-    if (saving) return;
-
-    try {
-      setSaving(true);
-      setError("");
-      
-      // Send all data combined in snake_case
-      const payload = {
-        name: form.name,
-        company_name: form.name,
-        phone: form.phone,
-        email: form.email,
-        website: form.website,
-        address: form.address,
-        city: form.city,
-        state: form.state,
-        zip: form.zip,
-        suspended: form.suspended,
-        ghl_api_key: ghlForm.ghlApiKey,
-        ghl_location_id: ghlForm.ghlLocationId,
-        ghl_install_calendar: ghlForm.ghlInstallCalendar,
-        ghl_appt_calendar: ghlForm.ghlApptCalendar,
-      };
-      
-      console.log("Saving GHL keys:", payload);
-      
-      await onSave(payload);
-      console.log("GHL Keys saved successfully");
-    } catch (err) {
-      console.error("GHL save error:", err);
-      setError(err.message || "Failed to save GHL keys");
-    } finally {
-      setSaving(false);
+  const handleDelete = () => {
+    if (!user) return;
+    if (currentUser && user.id === currentUser.id) {
+      setError("You cannot delete your own account");
+      return;
+    }
+    if (window.confirm(`Are you sure you want to delete ${user.name}?`)) {
+      onDelete(user);
     }
   };
 
-  const handleSaveEstimator = async () => {
-    if (saving) return;
-
-    try {
-      setSaving(true);
-      setError("");
-      
-      // Send estimator_enabled field in snake_case
-      const payload = {
-        name: form.name,
-        company_name: form.name,
-        phone: form.phone,
-        email: form.email,
-        website: form.website,
-        address: form.address,
-        city: form.city,
-        state: form.state,
-        zip: form.zip,
-        suspended: form.suspended,
-        estimator_enabled: estimatorForm.estimatorEnabled,
-      };
-      
-      console.log("Saving estimator with payload:", payload);
-      
-      await onSave(payload);
-      console.log("Estimator settings saved successfully");
-    } catch (err) {
-      console.error("Estimator save error:", err);
-      setError(err.message || "Failed to save estimator settings");
-    } finally {
-      setSaving(false);
-    }
+  const handleEdit = () => {
+    setViewMode("edit");
+    if (onEdit) onEdit();
   };
 
-  // ------------------------------------------------------------
-  // UI CLASSES
-  // ------------------------------------------------------------
-  const sectionBtn = (active) =>
-    `px-4 py-2 rounded-lg font-semibold transition ${
-      active
-        ? "bg-blue-600 text-white"
-        : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-    }`;
+  const isCreate = mode === "create";
+  const isSelf = user && currentUser && user.id === currentUser.id;
+  const isMaster = currentUser?.role === "master";
 
-  const editBox =
-    "w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
-
-  const viewLabel = "text-xs text-gray-500 uppercase tracking-wide";
-  const viewValue = "text-sm font-semibold text-gray-800";
-
-  // ------------------------------------------------------------
-  // RENDER SECTIONS
-  // ------------------------------------------------------------
-  const renderCompanyInfo = () => (
-    <div className="space-y-5">
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800 rounded">
-          {error}
-        </div>
-      )}
-
-      <div>
-        <div className={viewLabel}>Company Name</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{form.name}</div>
-        ) : (
-          <input
-            className={editBox}
-            value={form.name}
-            onChange={(e) => handleChange("name", e.target.value)}
-          />
-        )}
-      </div>
-
-      <div>
-        <div className={viewLabel}>Phone</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{form.phone || "—"}</div>
-        ) : (
-          <input
-            className={editBox}
-            value={form.phone}
-            onChange={(e) => handleChange("phone", formatPhoneNumber(e.target.value))}
-            placeholder="(555) 555-5555"
-          />
-        )}
-      </div>
-
-      <div>
-        <div className={viewLabel}>Email</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{form.email || "—"}</div>
-        ) : (
-          <input
-            type="email"
-            className={editBox}
-            value={form.email}
-            onChange={(e) => handleChange("email", e.target.value)}
-          />
-        )}
-      </div>
-
-      <div>
-        <div className={viewLabel}>Website</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{form.website || "—"}</div>
-        ) : (
-          <input
-            type="url"
-            className={editBox}
-            value={form.website}
-            onChange={(e) => handleChange("website", e.target.value)}
-            placeholder="https://example.com"
-          />
-        )}
-      </div>
-
-      <div>
-        <div className={viewLabel}>Address</div>
-        {sectionMode === "view" ? (
-          <div className={viewValue}>{form.address || "—"}</div>
-        ) : (
-          <input
-            className={editBox}
-            value={form.address}
-            onChange={(e) => handleChange("address", e.target.value)}
-          />
-        )}
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <div className={viewLabel}>City</div>
-          {sectionMode === "view" ? (
-            <div className={viewValue}>{form.city || "—"}</div>
-          ) : (
-            <input
-              className={editBox}
-              value={form.city}
-              onChange={(e) => handleChange("city", e.target.value)}
-            />
-          )}
-        </div>
-
-        <div>
-          <div className={viewLabel}>State</div>
-          {sectionMode === "view" ? (
-            <div className={viewValue}>{form.state || "—"}</div>
-          ) : (
-            <input
-              className={editBox}
-              value={form.state}
-              onChange={(e) => handleChange("state", e.target.value)}
-              maxLength={2}
-              placeholder="CA"
-            />
-          )}
-        </div>
-
-        <div>
-          <div className={viewLabel}>ZIP</div>
-          {sectionMode === "view" ? (
-            <div className={viewValue}>{form.zip || "—"}</div>
-          ) : (
-            <input
-              className={editBox}
-              value={form.zip}
-              onChange={(e) => handleChange("zip", e.target.value)}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* SUSPENDED - Master only */}
-      {isMasterUser && (
-        <div className="pt-4 border-t">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.suspended}
-              onChange={(e) => handleChange("suspended", e.target.checked)}
-              className="w-5 h-5 text-red-600 rounded focus:ring-2 focus:ring-red-500"
-              disabled={sectionMode === "view"}
-            />
-            <div>
-              <div className="font-semibold text-gray-900">Suspend Account</div>
-              <div className="text-sm text-gray-600">
-                Prevent all users from this company from logging in
-              </div>
-            </div>
-          </label>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderGHLKeys = () => {
-    if (!ghlForm) return null;
-
-    const viewLabel = "text-xs uppercase text-gray-500 font-semibold mb-1";
-    const editBox = "w-full px-3 py-2 border rounded-lg text-sm";
-
-    return (
-      <div className="space-y-4">
-        <div>
-          <div className={viewLabel}>API Key</div>
-          <input
-            type="password"
-            className={editBox}
-            value={ghlForm.ghlApiKey}
-            onChange={(e) => setGhlForm({ ...ghlForm, ghlApiKey: e.target.value })}
-            placeholder="Enter GHL API Key"
-          />
-        </div>
-
-        <div>
-          <div className={viewLabel}>Location ID</div>
-          <input
-            className={editBox}
-            value={ghlForm.ghlLocationId}
-            onChange={(e) => setGhlForm({ ...ghlForm, ghlLocationId: e.target.value })}
-            placeholder="Enter Location ID"
-          />
-        </div>
-
-        <div>
-          <div className={viewLabel}>Install Calendar ID</div>
-          <input
-            className={editBox}
-            value={ghlForm.ghlInstallCalendar}
-            onChange={(e) => setGhlForm({ ...ghlForm, ghlInstallCalendar: e.target.value })}
-            placeholder="Enter Install Calendar ID"
-          />
-        </div>
-
-        <div>
-          <div className={viewLabel}>Appointment Calendar ID</div>
-          <input
-            className={editBox}
-            value={ghlForm.ghlApptCalendar}
-            onChange={(e) => setGhlForm({ ...ghlForm, ghlApptCalendar: e.target.value })}
-            placeholder="Enter Appointment Calendar ID"
-          />
-        </div>
-
-        <div className="pt-4">
-          <button
-            onClick={handleSaveGHLKeys}
-            className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
-            disabled={saving}
-          >
-            {saving ? "Saving..." : "Save GHL Keys"}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderEstimator = () => {
-    if (!estimatorForm) return null;
-
-    return (
-      <div className="space-y-4">
-        {/* MASTER: Show toggle */}
-        {isMasterUser && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={estimatorForm.estimatorEnabled}
-                onChange={(e) => setEstimatorForm({ ...estimatorForm, estimatorEnabled: e.target.checked })}
-                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-              />
-              <div>
-                <div className="font-semibold text-gray-900">Enable Estimator</div>
-                <div className="text-sm text-gray-600">
-                  Allow company admins to access and configure estimator pricing
-                </div>
-              </div>
-            </label>
-
-            <div className="mt-4">
-              <button
-                onClick={handleSaveEstimator}
-                className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
-                disabled={saving}
-              >
-                {saving ? "Saving..." : "Save Estimator Settings"}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ADMIN: Show status */}
-        {isAdminUser && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <div className="font-semibold text-gray-900 mb-2">Estimator Pricing</div>
-            <div className="text-sm text-gray-600 mb-4">
-              Configure pricing for your public-facing estimator tool
-            </div>
-            <div className="text-sm text-gray-500">
-              [Pricing configuration interface coming soon]
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderPlaceholder = (label) => (
-    <div className="text-gray-600 text-sm">
-      {label} settings will live here.
-    </div>
-  );
-
-  // ------------------------------------------------------------
-  // MODAL
-  // ------------------------------------------------------------
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        <div className="bg-blue-600 text-white px-6 py-4 rounded-t-2xl">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        {/* HEADER */}
+        <div className="bg-blue-600 text-white p-6">
           <h2 className="text-xl font-bold">
-            {isCreate ? "Add Company" : form.name}
+            {isCreate ? "Add New User" : viewMode === "edit" ? "Edit User" : "User Details"}
           </h2>
         </div>
 
-        <div className="px-6 py-4 flex flex-wrap gap-2 border-b">
-          <button
-            className={sectionBtn(activeSection === "info")}
-            onClick={() => {
-              setActiveSection("info");
-              setSectionMode("view");
-            }}
-          >
-            Company Info
-          </button>
-
-          {/* GHL KEYS - Master only */}
-          {isMasterUser && (
-            <button
-              className={sectionBtn(activeSection === "ghl")}
-              onClick={() => {
-                setActiveSection("ghl");
-                setSectionMode("edit");
-              }}
-            >
-              GHL Keys
-            </button>
+        {/* BODY */}
+        <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-600 p-3 text-red-800 text-sm">
+              {error}
+            </div>
           )}
 
-          {/* ESTIMATOR - Master always, Admin only if enabled */}
-          {(isMasterUser || (isAdminUser && company?.estimatorEnabled)) && (
-            <button
-              className={sectionBtn(activeSection === "estimator")}
-              onClick={() => {
-                setActiveSection("estimator");
-                setSectionMode("edit");
-              }}
+          {/* NAME */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Name *
+            </label>
+            <input
+              disabled={viewMode === "view"}
+              value={form.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              className="w-full rounded-lg border px-4 py-3 disabled:bg-gray-50 disabled:text-gray-700"
+              placeholder="John Doe"
+            />
+          </div>
+
+          {/* EMAIL */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Email *
+            </label>
+            <input
+              type="email"
+              disabled={viewMode === "view"}
+              value={form.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+              className="w-full rounded-lg border px-4 py-3 disabled:bg-gray-50 disabled:text-gray-700"
+              placeholder="john@example.com"
+            />
+          </div>
+
+          {/* PHONE */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Phone
+            </label>
+            <input
+              type="tel"
+              disabled={viewMode === "view"}
+              value={form.phone}
+              onChange={(e) => handleChange("phone", e.target.value)}
+              className="w-full rounded-lg border px-4 py-3 disabled:bg-gray-50 disabled:text-gray-700"
+              placeholder="(555) 123-4567"
+            />
+          </div>
+
+          {/* ROLE */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Role
+            </label>
+            <select
+              disabled={viewMode === "view" || isSelf}
+              value={form.role}
+              onChange={(e) => handleChange("role", e.target.value)}
+              className="w-full rounded-lg border px-4 py-3 disabled:bg-gray-50 disabled:text-gray-700"
             >
-              Estimator
-            </button>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+              {isMaster && <option value="master">Master</option>}
+            </select>
+            {isSelf && (
+              <p className="text-xs text-gray-500 mt-1">Cannot change your own role</p>
+            )}
+          </div>
+
+          {/* COMPANY (Master only) */}
+          {isMaster && companies && companies.length > 0 && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Company
+              </label>
+              <select
+                disabled={viewMode === "view"}
+                value={form.company_id || ""}
+                onChange={(e) => handleChange("company_id", parseInt(e.target.value))}
+                className="w-full rounded-lg border px-4 py-3 disabled:bg-gray-50 disabled:text-gray-700"
+              >
+                <option value="">Select Company</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name || c.companyName}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
 
-          {/* USERS - Master and Admin */}
-          {(isMasterUser || isAdminUser) && !isCreate && (
-            <button
-              className={sectionBtn(activeSection === "users")}
-              onClick={() => {
-                setActiveSection("users");
-                setSectionMode("view");
-              }}
-            >
-              Users
-            </button>
+          {/* STATUS */}
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-sm font-semibold text-gray-700">Status</span>
+            {viewMode === "view" ? (
+              <span className="font-medium text-gray-700">
+                {form.is_active ? "Active" : "Inactive"}
+              </span>
+            ) : (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => handleChange("is_active", e.target.checked)}
+                  disabled={isSelf}
+                  className="w-5 h-5"
+                />
+                <span className="text-sm text-gray-600">Active</span>
+              </label>
+            )}
+          </div>
+
+          {/* PASSWORD */}
+          {viewMode === "edit" && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                {isCreate ? "Password *" : "New Password"}
+              </label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+                className="w-full rounded-lg border px-4 py-3"
+                placeholder={isCreate ? "Set password" : "Leave blank to keep current"}
+              />
+              {!isCreate && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Only enter if changing password
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* META INFO (view mode only) */}
+          {viewMode === "view" && user && (
+            <div className="pt-4 border-t space-y-2">
+              <div className="text-sm text-gray-500 flex justify-between">
+                <span>User ID</span>
+                <span className="font-medium text-gray-700">{user.id}</span>
+              </div>
+              {user.created_at && (
+                <div className="text-sm text-gray-500 flex justify-between">
+                  <span>Created</span>
+                  <span className="font-medium text-gray-700">
+                    {new Date(user.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+              {user.last_login && (
+                <div className="text-sm text-gray-500 flex justify-between">
+                  <span>Last Login</span>
+                  <span className="font-medium text-gray-700">
+                    {new Date(user.last_login).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          {activeSection === "info" && renderCompanyInfo()}
-          {activeSection === "ghl" && renderGHLKeys()}
-          {activeSection === "estimator" && renderEstimator()}
-          {activeSection === "users" && <UsersHome scopedCompany={company} />}
-        </div>
-
-        <div className="border-t px-6 py-4 bg-white rounded-b-2xl flex justify-between">
+        {/* FOOTER */}
+        <div className="border-t px-6 py-4 bg-gray-50 flex items-center justify-between">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold"
+            className="px-4 py-2 text-gray-600 font-semibold hover:text-gray-800"
           >
-            Close
+            {isCreate || viewMode === "edit" ? "Cancel" : "Close"}
           </button>
 
-          {activeSection === "info" && (
-            <button
-              onClick={() =>
-                sectionMode === "view"
-                  ? setSectionMode("edit")
-                  : handleSave()
-              }
-              className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold"
-              disabled={saving}
-            >
-              {sectionMode === "view"
-                ? "Edit Company Info"
-                : saving
-                ? "Saving…"
-                : "Save"}
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {viewMode === "view" && !isCreate && !isSelf && (
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 text-red-600 font-semibold hover:text-red-700"
+              >
+                Delete
+              </button>
+            )}
+
+            {viewMode === "view" && !isCreate ? (
+              <button
+                onClick={handleEdit}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+              >
+                Edit
+              </button>
+            ) : (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saving ? "Saving..." : isCreate ? "Create User" : "Save"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,7 @@
+// ============================================================================
 // File: src/UserProfileModal.jsx
-// Version: v1.1.2 – Fix z-index to appear above SettingsModal
+// Version: v1.1.3 – Allow My Profile modal to resolve currentUser
+// ============================================================================
 
 import React, { useEffect, useState } from "react";
 import { UsersAPI, CompaniesAPI } from "./api";
@@ -13,6 +15,9 @@ export default function UserProfileModal({
   onDelete,
 }) {
   const { companies } = useCompany();
+
+  // ✅ resolve user for self-profile
+  const resolvedUser = user || currentUser;
 
   const [mode, setMode] = useState("view"); // view | edit
   const [form, setForm] = useState({
@@ -29,24 +34,26 @@ export default function UserProfileModal({
   const [resolvedCompany, setResolvedCompany] = useState(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!resolvedUser) return;
 
     setForm({
-      name: user.name || "",
-      email: user.email || "",
-      phone: user.phone || "",
-      role: user.role || "user",
-      is_active: user.is_active !== false,
+      name: resolvedUser.name || "",
+      email: resolvedUser.email || "",
+      phone: resolvedUser.phone || "",
+      role: resolvedUser.role || "user",
+      is_active: resolvedUser.is_active !== false,
       password: "",
     });
-  }, [user]);
+  }, [resolvedUser]);
 
   // Resolve the user's company deterministically
   useEffect(() => {
     let alive = true;
 
     const run = async () => {
-      const companyId = user?.companyId ?? user?.company_id ?? null;
+      const companyId =
+        resolvedUser?.companyId ?? resolvedUser?.company_id ?? null;
+
       if (!companyId) {
         if (alive) setResolvedCompany(null);
         return;
@@ -76,9 +83,9 @@ export default function UserProfileModal({
     return () => {
       alive = false;
     };
-  }, [user, companies]);
+  }, [resolvedUser, companies]);
 
-  if (!user) return null;
+  if (!resolvedUser) return null;
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -91,14 +98,15 @@ export default function UserProfileModal({
       return;
     }
 
-    onSave({
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
-      role: form.role,
-      is_active: form.is_active,
-      ...(form.password ? { password: form.password } : {}),
-    });
+    onSave &&
+      onSave({
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        role: form.role,
+        is_active: form.is_active,
+        ...(form.password ? { password: form.password } : {}),
+      });
 
     setMode("view");
   };
@@ -234,10 +242,10 @@ export default function UserProfileModal({
                 resolvedCompany?.company_name ||
                   resolvedCompany?.name
               )}
-              {metaRow("Created", user.created_at)}
-              {metaRow("Last Updated", user.updated_at)}
-              {metaRow("Last Login", user.last_login)}
-              {metaRow("User ID", user.id)}
+              {metaRow("Created", resolvedUser.created_at)}
+              {metaRow("Last Updated", resolvedUser.updated_at)}
+              {metaRow("Last Login", resolvedUser.last_login)}
+              {metaRow("User ID", resolvedUser.id)}
             </div>
           )}
         </div>
@@ -252,7 +260,7 @@ export default function UserProfileModal({
           </button>
 
           <button
-            onClick={() => onDelete(user)}
+            onClick={() => onDelete && onDelete(resolvedUser)}
             className="text-red-600 font-semibold"
           >
             Delete User

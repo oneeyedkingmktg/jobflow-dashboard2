@@ -1,7 +1,7 @@
 /* ============================================================================
    API Configuration
    ============================================================================
-   FORCE REBUILD - Cache bust v5.2
+   FORCE REBUILD - Cache bust v5.1
 ============================================================================ */
 
 const API_BASE_URL = 'https://jobflow-backend-tw5u.onrender.com';
@@ -95,12 +95,7 @@ export const AuthAPI = {
 ============================================================================ */
 
 export const UsersAPI = {
-  getAll: (companyId = null) => {
-    // Master admin can pass companyId to get users for a specific company
-    const query = companyId ? `?company_id=${companyId}` : '';
-    return apiRequest(`/users${query}`);
-  },
-
+  getAll: () => apiRequest('/users'),
   get: (id) => apiRequest(`/users/${id}`),
 
   create: (data) =>
@@ -140,11 +135,18 @@ export const CompaniesAPI = {
 
   get: (id) => apiRequest(`/companies/${id}`),
 
-  update: (id, data) =>
-    apiRequest(`/companies/${id}`, {
+  update: (id, data) => {
+    console.log("=== CompaniesAPI.update CALLED ===");
+    console.log("ID:", id);
+    console.log("Data received:", JSON.stringify(data, null, 2));
+    const snakeData = toSnake(data);
+    console.log("After toSnake:", JSON.stringify(snakeData, null, 2));
+    
+    return apiRequest(`/companies/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(toSnake(data)),
-    }),
+      body: JSON.stringify(snakeData),
+    });
+  },
 
   getAll: () => apiRequest('/companies'),
 };

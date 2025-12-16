@@ -1,9 +1,10 @@
 // File: src/SettingsModal.jsx
-// Version: v2.0 - Add working Company Settings for Admin
+// Version: v2.1 - Fix My Profile by passing user prop and handlers
 
 import React, { useState } from "react";
 import { useAuth } from "./AuthContext";
 import { useCompany } from "./CompanyContext";
+import { UsersAPI } from "./api";
 
 import CompanyManagement from "./CompanyManagement";
 import CompanyDetails from "./CompanyDetails";
@@ -12,7 +13,7 @@ import UsersHome from "./users/UsersHome";
 import UserProfileModal from "./UserProfileModal";
 
 export default function SettingsModal({ onClose }) {
-  const { logout, isMaster } = useAuth();
+  const { logout, isMaster, user } = useAuth();
   const { currentCompany, updateCompany } = useCompany();
 
   const [screen, setScreen] = useState("home");
@@ -49,6 +50,29 @@ export default function SettingsModal({ onClose }) {
       console.error("Failed to save company:", err);
       throw err;
     }
+  };
+
+  // Handle saving user profile
+  const handleSaveProfile = async (formData) => {
+    try {
+      console.log("SettingsModal saving user profile:", formData);
+      await UsersAPI.update(user.id, formData);
+      console.log("Profile saved successfully");
+      // Optionally refresh user data here
+    } catch (err) {
+      console.error("Failed to save profile:", err);
+      throw err;
+    }
+  };
+
+  // Handle deleting user (shouldn't delete own account)
+  const handleDeleteUser = (userToDelete) => {
+    if (userToDelete.id === user.id) {
+      alert("You cannot delete your own account");
+      return;
+    }
+    // This shouldn't happen for "My Profile" but keep it safe
+    alert("Cannot delete user from profile view");
   };
 
   const renderHome = () => (
@@ -151,7 +175,15 @@ export default function SettingsModal({ onClose }) {
       break;
 
     case "my_profile":
-      content = <UserProfileModal onClose={handleBack} />;
+      content = (
+        <UserProfileModal
+          user={user}
+          currentUser={user}
+          onClose={handleBack}
+          onSave={handleSaveProfile}
+          onDelete={handleDeleteUser}
+        />
+      );
       break;
 
     case "company_settings":

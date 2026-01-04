@@ -40,16 +40,16 @@ const webhookController = {
       const company = companyResult.rows[0];
       console.log(`✅ Found company: ${company.name} (ID: ${company.id})`);
       
-      // Extract contact data from webhook
+// Extract contact data from webhook
       const contactData = {
-        ghl_contact_id: webhookData.id,
-        name: `${webhookData.firstName || ''} ${webhookData.lastName || ''}`.trim(),
-        phone: webhookData.phone || null,
+        ghl_contact_id: webhookData.contact_id || webhookData.id,
+        name: `${webhookData.first_name || webhookData.firstName || ''} ${webhookData.last_name || webhookData.lastName || ''}`.trim(),
+        phone: webhookData.phone ? webhookData.phone.replace(/\+1/, '').replace(/\D/g, '') : null, // Remove +1 and non-digits
         email: webhookData.email || null,
         address: webhookData.address1 || null,
         city: webhookData.city || null,
         state: webhookData.state || null,
-        zip: webhookData.postalCode || null,
+        zip: webhookData.postal_code || webhookData.postalCode || null,
         referral_source: webhookData['contact.jf_lead_source'] || null,
         project_type: webhookData['contact.est_project_type'] || null,
         notes: webhookData['contact.jf_notes'] || null,
@@ -100,7 +100,7 @@ const webhookController = {
         let paramCount = 1;
         
         // Always update these fields
-        const fieldsToUpdate = {
+const fieldsToUpdate = {
           ghl_contact_id: contactData.ghl_contact_id,
           name: contactData.name,
           phone: contactData.phone,
@@ -111,6 +111,7 @@ const webhookController = {
           zip: contactData.zip,
           project_type: contactData.project_type,
           notes: contactData.notes,
+          sync_source: 'GHL',
           ghl_last_synced: now
         };
         
@@ -131,23 +132,12 @@ const webhookController = {
         
         updateValues.push(existingLead.id); // WHERE clause
         
-        result = await client.query(
-          `UPDATE leads SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`,
-          updateValues
-        );
-        
-        console.log('✅ Lead updated successfully');
-        
-      } else {
-        // CREATE new lead
-        console.log('➕ Creating new lead');
-        
-        result = await client.query(
+result = await client.query(
           `INSERT INTO leads (
             company_id, ghl_contact_id, name, phone, email,
             address, city, state, zip, referral_source, project_type,
-            notes, status, ghl_last_synced, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            notes, status, sync_source, ghl_last_synced, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
           RETURNING *`,
           [
             company.id,
@@ -163,6 +153,7 @@ const webhookController = {
             contactData.project_type,
             contactData.notes,
             'lead', // Default status
+            'GHL', // sync_source
             now,
             now
           ]

@@ -11,11 +11,13 @@ const webhookController = {
       const webhookData = req.body;
       
 // DEBUG: Log the entire webhook payload
-      console.log('🔍 [WEBHOOK DEBUG] Full req.body:', JSON.stringify(req.body, null, 2));
-      console.log('🔍 [WEBHOOK DEBUG] webhookData:', JSON.stringify(webhookData, null, 2));
+      console.log('🔍 [WEBHOOK DEBUG] Full webhook received:', JSON.stringify(webhookData, null, 2));
       
-      // Extract locationId to identify which company
-      const locationId = webhookData.locationId;
+      // Extract locationId - check multiple possible locations
+      let locationId = webhookData.locationId || 
+                       webhookData.customData?.locationId || 
+                       webhookData.location?.id;
+      
       console.log('🔍 [WEBHOOK DEBUG] Extracted locationId:', locationId);
       
       if (!locationId) {
